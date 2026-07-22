@@ -3,28 +3,30 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 
 import { ApiContract, toApiUrl } from '../../../api/api-contract';
+import { resolveRoles } from '../../auth/services/auth-api.service';
 import type { UserProfile } from '../models/profile.model';
 
-function normalizeUserProfile(
-  profile: Partial<UserProfile> & { id: string },
-): UserProfile {
+// There is no dedicated ProfileController on the backend — the current user's
+// profile data is served by GET /api/auth/me (CurrentUserResponse), which
+// carries a single `role` field rather than a `roles` array. `resolveRoles`
+// (from the auth feature) already normalises that shape; reused here instead
+// of duplicating the logic.
+function normalizeUserProfile(raw: Record<string, unknown>): UserProfile {
   return {
-    id: String(profile.id),
-    firstName: typeof profile.firstName === 'string' ? profile.firstName : '',
-    lastName: typeof profile.lastName === 'string' ? profile.lastName : '',
-    email: typeof profile.email === 'string' ? profile.email : '',
+    id: typeof raw['id'] === 'string' ? raw['id'] : '',
+    firstName: typeof raw['firstName'] === 'string' ? raw['firstName'] : '',
+    lastName: typeof raw['lastName'] === 'string' ? raw['lastName'] : '',
+    email: typeof raw['email'] === 'string' ? raw['email'] : '',
     phoneNumber:
-      typeof profile.phoneNumber === 'string' && profile.phoneNumber.length > 0
-        ? profile.phoneNumber
+      typeof raw['phoneNumber'] === 'string' && raw['phoneNumber'].length > 0
+        ? raw['phoneNumber']
         : null,
     preferredLanguage:
-      typeof profile.preferredLanguage === 'string' &&
-      profile.preferredLanguage.length > 0
-        ? profile.preferredLanguage
+      typeof raw['preferredLanguage'] === 'string' &&
+      raw['preferredLanguage'].length > 0
+        ? raw['preferredLanguage']
         : null,
-    roles: Array.isArray(profile.roles)
-      ? profile.roles.filter((role): role is string => typeof role === 'string')
-      : [],
+    roles: resolveRoles(raw),
   };
 }
 
@@ -34,7 +36,7 @@ export class ProfileApiService {
 
   getMyProfile(): Observable<UserProfile> {
     return this.http
-      .get<UserProfile>(toApiUrl(ApiContract.profile.me))
+      .get<Record<string, unknown>>(toApiUrl(ApiContract.auth.currentUser))
       .pipe(map((profile) => normalizeUserProfile(profile)));
   }
 }

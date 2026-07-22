@@ -67,9 +67,6 @@ export const ApiContract = {
     reject: (listingId: string): ApiPath =>
       `/api/admin/listings/${encodeURIComponent(listingId)}/reject`,
   },
-  profile: {
-    me: '/api/profile/me',
-  },
   home: {
     sections: '/api/home/sections',
   },

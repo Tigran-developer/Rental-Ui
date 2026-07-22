@@ -20,7 +20,7 @@ import type {
  *   { role: 'Admin' }     – single string (claim)
  *   { role: 1 }           – integer enum  (0 = User, 1 = Admin)
  */
-function resolveRoles(raw: Record<string, unknown>): string[] {
+export function resolveRoles(raw: Record<string, unknown>): string[] {
   // Preferred: array of strings
   if (Array.isArray(raw['roles'])) {
     return (raw['roles'] as unknown[]).filter((r): r is string => typeof r === 'string');
