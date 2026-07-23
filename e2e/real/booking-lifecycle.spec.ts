@@ -36,6 +36,20 @@ const OWNER_PHONE = '+374 99 100 002';
 
 const MONTHS_AHEAD = 2;
 
+/**
+ * Matches how DramCurrencyPipe renders `amount` — the grouped whole number
+ * (Intl 'en-US', same grouping Angular's formatNumber uses) followed by the ֏
+ * symbol. Whitespace between the number and the symbol is tolerated as an
+ * ordinary space, NBSP, or narrow NBSP (the pipe currently emits a plain
+ * space, but locale-driven number formatting elsewhere in the app can
+ * substitute either NBSP variant), while the digits/grouping must match
+ * exactly — this must never pass on the wrong amount.
+ */
+function expectedTotalPattern(amount: number): RegExp {
+  const grouped = amount.toLocaleString('en-US'); // e.g. "14,000" — no regex metacharacters
+  return new RegExp(`^${grouped}[ \\u00A0\\u202F]?֏$`);
+}
+
 interface BookingWindow {
   readonly startDay: number;
   readonly endDay: number;
@@ -119,9 +133,23 @@ async function selectRange(
   // total) verified after every move.
   await expect(async () => {
     // Deterministic clear via the quick-book toggle (selecting then unselecting
-    // a chip resets the whole range through app logic).
+    // a chip resets the whole range through app logic). The chip's class
+    // binding repaints asynchronously (Angular change detection after the
+    // click event, not synchronously with it) — reading
+    // `clearChip.getAttribute('class')` immediately after `.click()` races
+    // that flush and was observed (diagnostic script, 2026-07-23) to read the
+    // STALE pre-click class roughly at random, which made this helper
+    // mis-judge whether a second click was needed and could leave the chip
+    // toggled the wrong way, poisoning every later toPass() retry (the box
+    // then never clears within the loop). Read the pickup box's own text
+    // instead: capture it before clicking, then wait for Playwright's
+    // auto-retrying assertion to confirm it actually changed (no fixed
+    // sleep) before deciding whether a second click is required — this is
+    // correct regardless of which state the chip/box started in.
+    const beforeClear = (await pickupBox.textContent()) ?? '';
     await clearChip.click();
-    if ((await clearChip.getAttribute('class'))?.includes('quick-chip--active')) {
+    await expect(pickupBox).not.toHaveText(beforeClear, { timeout: 2_000 });
+    if (((await pickupBox.textContent()) ?? '').trim() !== '—') {
       await clearChip.click();
     }
     await expect(pickupBox).toHaveText('—', { timeout: 2_000 });
@@ -197,9 +225,15 @@ test.describe('Booking lifecycle (real stack)', () => {
         TOY_KITCHEN.title,
       );
 
-      // 4 inclusive days x $9/day = $36 — selectRange only returns once the
+      // 4 inclusive days x 3,500 AMD/day = 14,000 AMD. Rendered by
+      // DramCurrencyPipe (dram-currency.pipe.ts) as Angular's
+      // formatNumber(total, 'en-US', '1.0-0') + ' ֏' — e.g. "14,000 ֏". Build
+      // the expected grouping the same way (Intl, en-US) rather than
+      // hardcoding a string, and tolerate the ordinary space, a non-breaking
+      // space, or a narrow no-break space between amount and symbol without
+      // loosening what amount is required — selectRange only returns once the
       // breakdown shows it.
-      await selectRange(renterPage, window, /\$36(\.00)?/);
+      await selectRange(renterPage, window, expectedTotalPattern(TOY_KITCHEN.pricePerDay * 4));
 
       await renterPage
         .locator('.booking-page__request-card')

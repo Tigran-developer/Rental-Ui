@@ -23,7 +23,9 @@ export interface Credentials {
 
 /**
  * Seed invariant: "Wooden Toy Kitchen Set" (DevelopmentSeedData.ListingIds
- * .ToyKitchenSet), Approved, owned by owner@rental.local, $9/day. Its only
+ * .ToyKitchenSet), Approved, owned by owner@rental.local, 3,500 AMD/day (see
+ * DevelopmentSeedData.cs — ADR-007 moved the app to dram-only pricing; this
+ * was previously documented as "$9/day" before that migration). Its only
  * seeded bookings are terminal (Completed/…), so renter@ can always book it
  * once leftover bookings from crashed runs are released (see
  * releaseListingForRenter).
@@ -31,7 +33,7 @@ export interface Credentials {
 export const TOY_KITCHEN = {
   id: '77777777-0007-4000-9000-000000000007',
   title: 'Wooden Toy Kitchen Set',
-  pricePerDay: 9,
+  pricePerDay: 3_500,
 } as const;
 
 /**
