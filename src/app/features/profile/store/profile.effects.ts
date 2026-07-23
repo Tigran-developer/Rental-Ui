@@ -14,6 +14,9 @@ function toErrorMessage(error: unknown): string {
   return toApiErrorMessage(error);
 }
 
+// Fallback used when GET /api/auth/me fails but the auth store already has a
+// CurrentUser (e.g. from login). CurrentUser doesn't carry avatarUrl/createdAt/
+// isBlocked, so those fall back to null/false here rather than being fabricated.
 function mapAuthUserToProfile(user: CurrentUser): UserProfile {
   return {
     id: user.id,
@@ -22,6 +25,9 @@ function mapAuthUserToProfile(user: CurrentUser): UserProfile {
     email: user.email,
     phoneNumber: null,
     preferredLanguage: null,
+    avatarUrl: null,
+    createdAt: null,
+    isBlocked: false,
     roles: [...user.roles],
   };
 }

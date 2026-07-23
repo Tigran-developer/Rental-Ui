@@ -26,6 +26,15 @@ function normalizeUserProfile(raw: Record<string, unknown>): UserProfile {
       raw['preferredLanguage'].length > 0
         ? raw['preferredLanguage']
         : null,
+    avatarUrl:
+      typeof raw['avatarUrl'] === 'string' && raw['avatarUrl'].length > 0
+        ? raw['avatarUrl']
+        : null,
+    createdAt:
+      typeof raw['createdAt'] === 'string' && raw['createdAt'].length > 0
+        ? raw['createdAt']
+        : null,
+    isBlocked: raw['isBlocked'] === true,
     roles: resolveRoles(raw),
   };
 }

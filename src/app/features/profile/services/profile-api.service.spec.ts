@@ -45,6 +45,53 @@ describe('ProfileApiService', () => {
     });
   });
 
+  it('maps avatarUrl, createdAt and isBlocked from CurrentUserResponse', () => {
+    let result:
+      | { avatarUrl: string | null; createdAt: string | null; isBlocked: boolean }
+      | undefined;
+    service.getMyProfile().subscribe((profile) => {
+      result = profile;
+    });
+
+    const req = httpMock.expectOne(toApiUrl(ApiContract.auth.currentUser));
+    req.flush({
+      id: 'u5',
+      firstName: 'Blocked',
+      lastName: 'User',
+      email: 'blocked@rental.local',
+      role: 'User',
+      avatarUrl: 'https://cdn.example/avatar.png',
+      createdAt: '2026-01-01T00:00:00Z',
+      isBlocked: true,
+    });
+
+    expect(result?.avatarUrl).toBe('https://cdn.example/avatar.png');
+    expect(result?.createdAt).toBe('2026-01-01T00:00:00Z');
+    expect(result?.isBlocked).toBe(true);
+  });
+
+  it('defaults avatarUrl/createdAt/isBlocked when absent from the response', () => {
+    let result:
+      | { avatarUrl: string | null; createdAt: string | null; isBlocked: boolean }
+      | undefined;
+    service.getMyProfile().subscribe((profile) => {
+      result = profile;
+    });
+
+    const req = httpMock.expectOne(toApiUrl(ApiContract.auth.currentUser));
+    req.flush({
+      id: 'u6',
+      firstName: 'No',
+      lastName: 'Extras',
+      email: 'user2@rental.local',
+      role: 'User',
+    });
+
+    expect(result?.avatarUrl).toBeNull();
+    expect(result?.createdAt).toBeNull();
+    expect(result?.isBlocked).toBe(false);
+  });
+
   it('maps a single string role to a roles array', () => {
     let result: { roles: string[] } | undefined;
     service.getMyProfile().subscribe((profile) => {
