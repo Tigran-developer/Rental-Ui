@@ -1,6 +1,6 @@
 import { createAction, props } from '@ngrx/store';
 
-import type { OwnerReviewSummary, ToyReviewSummary } from '../models/review.model';
+import type { OwnerReviewSummary, RenterReviewSummary, ToyReviewSummary } from '../models/review.model';
 
 // ── Listing toy reviews (aggregate + comments) ───────────────────────────────
 
@@ -40,7 +40,7 @@ export const loadRenterReviews = createAction(
 );
 export const loadRenterReviewsSuccess = createAction(
   '[Reviews] Load Renter Reviews Success',
-  props<{ userId: string; summary: OwnerReviewSummary }>(),
+  props<{ userId: string; summary: RenterReviewSummary }>(),
 );
 export const loadRenterReviewsFailure = createAction(
   '[Reviews] Load Renter Reviews Failure',

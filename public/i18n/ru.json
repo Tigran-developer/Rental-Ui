@@ -1511,6 +1511,7 @@
     "breakdownFriendliness": "Дружелюбие",
     "breakdownReturnedOnTime": "Возврат вовремя",
     "breakdownCareOfToy": "Уход за игрушкой",
+    "breakdownWouldRentAgain": "Арендовали бы снова",
     "noOwnerReviews": "{{name}} пока не получил отзывов как владелец.",
     "noRenterReviews": "{{name}} пока не получил отзывов как арендатор.",
     "noReviewsYet": "Отзывов пока нет",

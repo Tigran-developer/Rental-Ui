@@ -41,6 +41,26 @@ export interface OwnerReviewSummary {
   readonly comments: readonly ReviewComment[];
 }
 
+// Mirrors RenterReviewSummaryResponse (rental-api DTOs/RenterReviewSummaryResponse.cs).
+// NOT the same shape as OwnerReviewSummary above — renter subscores are
+// communication / returned-on-time / care-of-toy / would-rent-again, distinct
+// field names from the owner summary's pickup-handover / friendliness. Previously
+// this endpoint's response was mistyped as OwnerReviewSummary throughout the
+// store, which silently dropped the returned-on-time and care-of-toy breakdown
+// values (read under field names the renter response never sends) and omitted
+// would-rent-again entirely.
+export interface RenterReviewSummary {
+  readonly reviewCount: number;
+  readonly hasAggregate: boolean;
+  readonly overallAverage: number;
+  readonly communicationAverage: number;
+  readonly returnedOnTimeAverage: number;
+  readonly careOfToyAverage: number;
+  readonly wouldRentAgainAverage: number;
+  readonly distribution: readonly number[];
+  readonly comments: readonly ReviewComment[];
+}
+
 export type ReviewerSide = 'renter' | 'owner' | 'none';
 
 export interface BookingReviewStatus {

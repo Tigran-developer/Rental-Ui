@@ -174,17 +174,14 @@ export class AllReviewsPageComponent {
     ];
   });
 
-  // The backend reuses OwnerReviewSummary for renter reviews, mapping fields to renter context:
-  // communicationAverage → Communication
-  // pickupHandoverAverage → Returned on time
-  // friendlinessAverage → Care of toy
   protected readonly renterBreakdown = computed(() => {
     const s = this.renterSummary();
     if (!s) return [];
     return [
-      { key: 'allReviews.breakdownCommunication',  value: s.communicationAverage },
-      { key: 'allReviews.breakdownReturnedOnTime', value: s.pickupHandoverAverage },
-      { key: 'allReviews.breakdownCareOfToy',      value: s.friendlinessAverage },
+      { key: 'allReviews.breakdownCommunication',   value: s.communicationAverage },
+      { key: 'allReviews.breakdownReturnedOnTime',  value: s.returnedOnTimeAverage },
+      { key: 'allReviews.breakdownCareOfToy',       value: s.careOfToyAverage },
+      { key: 'allReviews.breakdownWouldRentAgain',  value: s.wouldRentAgainAverage },
     ];
   });
 

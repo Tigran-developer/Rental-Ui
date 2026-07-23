@@ -1,6 +1,6 @@
 import { createFeatureSelector, createSelector } from '@ngrx/store';
 
-import type { OwnerReviewSummary, ToyReviewSummary } from '../models/review.model';
+import type { OwnerReviewSummary, RenterReviewSummary, ToyReviewSummary } from '../models/review.model';
 import { reviewsFeatureKey } from './reviews.reducer';
 import type { AsyncEntry, ReviewsState } from './reviews.state';
 
@@ -46,11 +46,11 @@ export const selectOwnerReviewsError = (userId: string) =>
 const selectRenterEntry = (userId: string) =>
   createSelector(
     selectReviewsState,
-    (s): AsyncEntry<OwnerReviewSummary> => s.renterReviews[userId] ?? emptyEntry(),
+    (s): AsyncEntry<RenterReviewSummary> => s.renterReviews[userId] ?? emptyEntry(),
   );
 
 export const selectRenterReviews = (userId: string) =>
-  createSelector(selectRenterEntry(userId), (e): OwnerReviewSummary | null => e.data);
+  createSelector(selectRenterEntry(userId), (e): RenterReviewSummary | null => e.data);
 
 export const selectRenterReviewsLoading = (userId: string) =>
   createSelector(selectRenterEntry(userId), (e): boolean => e.isLoading);

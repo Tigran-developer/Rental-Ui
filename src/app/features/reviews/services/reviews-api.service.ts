@@ -9,6 +9,7 @@ import type {
   CreateRenterReviewRequest,
   CreateToyReviewRequest,
   OwnerReviewSummary,
+  RenterReviewSummary,
   ToyReviewSummary,
 } from '../models/review.model';
 
@@ -40,7 +41,7 @@ export class ReviewsApiService {
     return this.http.get<OwnerReviewSummary>(toApiUrl(ApiContract.reviews.ownerReviews(userId)));
   }
 
-  getRenterReviews(userId: string): Observable<OwnerReviewSummary> {
-    return this.http.get<OwnerReviewSummary>(toApiUrl(ApiContract.reviews.renterReviews(userId)));
+  getRenterReviews(userId: string): Observable<RenterReviewSummary> {
+    return this.http.get<RenterReviewSummary>(toApiUrl(ApiContract.reviews.renterReviews(userId)));
   }
 }

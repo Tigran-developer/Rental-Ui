@@ -1511,6 +1511,7 @@
     "breakdownFriendliness": "Friendliness",
     "breakdownReturnedOnTime": "Returned on time",
     "breakdownCareOfToy": "Care of toy",
+    "breakdownWouldRentAgain": "Would rent again",
     "noOwnerReviews": "{{name}} hasn't received any reviews as an owner yet.",
     "noRenterReviews": "{{name}} hasn't received any reviews as a renter yet.",
     "noReviewsYet": "No reviews yet",
