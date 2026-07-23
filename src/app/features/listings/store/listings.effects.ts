@@ -20,6 +20,7 @@ import * as ListingsActions from './listings.actions';
 import {
   selectListingsFilters,
   selectListingsHasMore,
+  selectListingsOriginCoords,
   selectListingsPage,
   selectListingsPageSize,
 } from './listings.selectors';
@@ -40,9 +41,10 @@ export class ListingsEffects {
       withLatestFrom(
         this.store.select(selectListingsFilters),
         this.store.select(selectListingsPageSize),
+        this.store.select(selectListingsOriginCoords),
       ),
-      switchMap(([, filters, pageSize]) =>
-        this.listingsApi.getListings(filters, 1, pageSize).pipe(
+      switchMap(([, filters, pageSize, originCoords]) =>
+        this.listingsApi.getListings(filters, 1, pageSize, originCoords).pipe(
           map((result) =>
             ListingsActions.loadListingsSuccess({
               items: result.items,
@@ -71,10 +73,11 @@ export class ListingsEffects {
         this.store.select(selectListingsPage),
         this.store.select(selectListingsFilters),
         this.store.select(selectListingsPageSize),
+        this.store.select(selectListingsOriginCoords),
       ),
       filter(([, hasMore]) => hasMore),
-      switchMap(([, , page, filters, pageSize]) =>
-        this.listingsApi.getListings(filters, page + 1, pageSize).pipe(
+      switchMap(([, , page, filters, pageSize, originCoords]) =>
+        this.listingsApi.getListings(filters, page + 1, pageSize, originCoords).pipe(
           map((result) =>
             ListingsActions.loadListingsSuccess({
               items: result.items,

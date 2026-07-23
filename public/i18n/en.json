@@ -370,7 +370,9 @@
       "sortNewest": "Newest",
       "sortNearest": "Nearest first",
       "sortBy": "Sort by",
-      "inYerevan": "in Yerevan"
+      "inYerevan": "in Yerevan",
+      "geolocationErrorTitle": "Location unavailable",
+      "geolocationErrorDetail": "We couldn't get your location, so the distance filter wasn't applied."
     },
     "details": {
       "back": "Back to toys",

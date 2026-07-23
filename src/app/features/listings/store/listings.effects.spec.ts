@@ -12,6 +12,7 @@ import { ListingsEffects } from './listings.effects';
 import {
   selectListingsFilters,
   selectListingsHasMore,
+  selectListingsOriginCoords,
   selectListingsPage,
   selectListingsPageSize,
 } from './listings.selectors';
@@ -31,6 +32,7 @@ function setup(api: Partial<ListingsApiService> = {}) {
   store.overrideSelector(selectListingsPage, 1);
   store.overrideSelector(selectListingsPageSize, 20);
   store.overrideSelector(selectListingsHasMore, true);
+  store.overrideSelector(selectListingsOriginCoords, null);
   store.overrideSelector(selectFavoriteIds, new Set<string>());
   return { harness, store, effects: TestBed.inject(ListingsEffects) };
 }
@@ -52,7 +54,7 @@ describe('ListingsEffects', () => {
 
       const emitted = await result;
       expect(emitted).toHaveLength(1);
-      expect(getListings).toHaveBeenCalledWith(expect.anything(), 2, 20);
+      expect(getListings).toHaveBeenCalledWith(expect.anything(), 2, 20, null);
     });
 
     it('does nothing when there are no more pages', async () => {

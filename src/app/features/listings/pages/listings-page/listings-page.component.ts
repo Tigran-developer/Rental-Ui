@@ -10,9 +10,10 @@ import {
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store, createSelector } from '@ngrx/store';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
+import { MessageService } from 'primeng/api';
 import { combineLatest, map, of, switchMap } from 'rxjs';
 
 import { EmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
@@ -37,6 +38,7 @@ import {
   selectListingsFilters,
   selectListingsHasMore,
   selectListingsLoading,
+  selectListingsOriginCoords,
   selectListingsPageSize,
 } from '../../store/listings.selectors';
 import type { ParamMap } from '@angular/router';
@@ -156,6 +158,8 @@ export class ListingsPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly location = inject(Location);
+  private readonly messageService = inject(MessageService);
+  private readonly translate = inject(TranslateService);
 
   protected readonly isAuthenticated = this.store.selectSignal(selectIsAuthenticated);
   protected readonly showAuthDialog = signal(false);
@@ -200,6 +204,7 @@ export class ListingsPageComponent {
   private readonly itemsSignal = this.store.selectSignal(selectListingItems);
   private readonly hasMoreSignal = this.store.selectSignal(selectListingsHasMore);
   private readonly filtersSignal = this.store.selectSignal(selectListingsFilters);
+  private readonly originCoordsSignal = this.store.selectSignal(selectListingsOriginCoords);
   protected readonly categoriesSignal = this.store.selectSignal(selectListingCategories);
 
   protected readonly activeCategoryId = computed(() => this.filtersSignal().categoryId);
@@ -342,10 +347,65 @@ export class ListingsPageComponent {
 
   protected selectDistance(value: number | null): void {
     const current = this.filtersSignal().maxDistance;
+    const nextValue = current === value ? null : value;
+
+    if (nextValue === null) {
+      this.applyMaxDistance(null);
+      return;
+    }
+
+    if (this.originCoordsSignal() !== null) {
+      this.applyMaxDistance(nextValue);
+      return;
+    }
+
+    this.requestOriginCoords(nextValue);
+  }
+
+  private applyMaxDistance(value: number | null): void {
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { maxDistance: current === value ? null : value },
+      queryParams: { maxDistance: value },
       queryParamsHandling: 'merge',
+    });
+  }
+
+  /**
+   * Requests the renter's position once per session (cached in the store as
+   * `originCoords` — never persisted, never written to the URL, per Maps
+   * P2-3). Only activates the distance chip once the browser grants
+   * permission; on denial/error/unavailable, surfaces a toast and leaves the
+   * chip inactive so the UI never shows a filter it can't honor.
+   */
+  private requestOriginCoords(nextDistance: number): void {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      this.showGeolocationError();
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        this.store.dispatch(
+          ListingsActions.setOriginCoords({
+            coords: {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            },
+          }),
+        );
+        this.applyMaxDistance(nextDistance);
+      },
+      () => {
+        this.showGeolocationError();
+      },
+    );
+  }
+
+  private showGeolocationError(): void {
+    this.messageService.add({
+      severity: 'warn',
+      summary: this.translate.instant('listings.page.geolocationErrorTitle'),
+      detail: this.translate.instant('listings.page.geolocationErrorDetail'),
     });
   }
 

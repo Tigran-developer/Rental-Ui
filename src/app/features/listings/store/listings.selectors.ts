@@ -3,7 +3,7 @@ import { createFeatureSelector, createSelector } from '@ngrx/store';
 import type { ListingCategoryOption } from '../models/create-listing.model';
 import type { ListingDetails } from '../models/listing-details.model';
 import type { ListingPreview } from '../models/listing.model';
-import type { ListingsFilter } from '../models/listings-filter.model';
+import type { ListingsFilter, ListingsOriginCoords } from '../models/listings-filter.model';
 import { listingsFeatureKey } from './listings.reducer';
 import type { ListingsState } from './listings.state';
 
@@ -23,6 +23,11 @@ export const selectSelectedListing = createSelector(
 export const selectListingsFilters = createSelector(
   selectListingsState,
   (state: ListingsState): ListingsFilter => state.filters,
+);
+
+export const selectListingsOriginCoords = createSelector(
+  selectListingsState,
+  (state: ListingsState): ListingsOriginCoords | null => state.originCoords,
 );
 
 export const selectListingsPage = createSelector(

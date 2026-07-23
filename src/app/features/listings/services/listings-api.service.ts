@@ -19,7 +19,8 @@ import type {
   ListingOwner,
   ListingPreview,
 } from '../models/listing.model';
-import type { ListingsFilter } from '../models/listings-filter.model';
+import type { ListingsFilter, ListingsOriginCoords } from '../models/listings-filter.model';
+import { parseAgeGroupToMonths } from '../models/listings-filter.model';
 import type { PagedResult } from '../models/paged-result.model';
 
 export function normalizeListingPreview(
@@ -114,8 +115,9 @@ export class ListingsApiService {
     filter: ListingsFilter,
     page: number,
     pageSize: number,
+    originCoords: ListingsOriginCoords | null = null,
   ): Observable<PagedResult<ListingPreview>> {
-    const params = this.buildListingsQueryParams(filter, page, pageSize);
+    const params = this.buildListingsQueryParams(filter, page, pageSize, originCoords);
     return this.http.get<PagedResult<ListingPreview>>(
       toApiUrl(ApiContract.listings.root),
       { params },
@@ -252,6 +254,7 @@ export class ListingsApiService {
     filter: ListingsFilter,
     page: number,
     pageSize: number,
+    originCoords: ListingsOriginCoords | null,
   ): HttpParams {
     let params = new HttpParams()
       .set('page', String(page))
@@ -259,7 +262,7 @@ export class ListingsApiService {
 
     const query = filter.query?.trim();
     if (query) {
-      params = params.set('title', query);
+      params = params.set('search', query);
     }
 
     const city = filter.city?.trim();
@@ -277,6 +280,27 @@ export class ListingsApiService {
     }
     if (filter.maxPrice !== null) {
       params = params.set('maxPrice', String(filter.maxPrice));
+    }
+
+    const ageGroup = filter.ageGroup?.trim();
+    const ageBounds = ageGroup ? parseAgeGroupToMonths(ageGroup) : null;
+    if (ageBounds) {
+      params = params.set('ageFromMonths', String(ageBounds.ageFromMonths));
+      if (ageBounds.ageToMonths !== null) {
+        params = params.set('ageToMonths', String(ageBounds.ageToMonths));
+      }
+    }
+
+    // Distance is only meaningful once we know the renter's position; the
+    // component guarantees `originCoords` is set before dispatching a request
+    // with `maxDistance` (see ListingsPageComponent.selectDistance) — if
+    // coords aren't available, silently omit the distance params rather than
+    // send a radius with no origin.
+    if (filter.maxDistance !== null && originCoords !== null) {
+      params = params
+        .set('originLat', String(originCoords.lat))
+        .set('originLng', String(originCoords.lng))
+        .set('radiusKm', String(filter.maxDistance));
     }
 
     return params;

@@ -7,7 +7,7 @@ import type {
 } from '../models/create-listing.model';
 import type { ListingDetails } from '../models/listing-details.model';
 import type { ListingPreview } from '../models/listing.model';
-import type { ListingsFilter } from '../models/listings-filter.model';
+import type { ListingsFilter, ListingsOriginCoords } from '../models/listings-filter.model';
 
 export const loadListings = createAction('[Listings] Load Listings');
 
@@ -34,6 +34,16 @@ export const updateFilters = createAction(
 );
 
 export const resetListings = createAction('[Listings] Reset Listings');
+
+/**
+ * Caches the renter's geolocation for the session so the distance filter can
+ * be honored without re-prompting. Dispatched only after the browser grants
+ * permission (see ListingsPageComponent.selectDistance) — never persisted.
+ */
+export const setOriginCoords = createAction(
+  '[Listings] Set Origin Coords',
+  props<{ coords: ListingsOriginCoords }>(),
+);
 
 export const loadListingDetails = createAction(
   '[Listings] Load Listing Details',
