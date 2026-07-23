@@ -50,14 +50,14 @@ bundle is indistinguishable from a fresh one by eye. Rules:
   service (or the stack) before `npm run e2e`, or you will silently test a
   stale bundle.
 
-## Coverage map — critical journeys (2026-07-23)
+## Coverage map — critical journeys (2026-07-24)
 
 Layers: **U** = unit (vitest / xUnit), **M** = mocked Playwright, **R** = real-stack Playwright.
 
 | Journey | Covered today | Gap |
 |---|---|---|
 | Auth (login, session hydrate, blocked user) | U: auth store/guard specs, xUnit auth tests · M: `auth.spec.ts` happy + rejected · R: real BCrypt/JWT login exercised as part of the booking journey | no dedicated R spec for register / blocked@ rejection / expiry |
-| Listing discovery (browse, filter, details) | U: store/selector specs · M: `listings.smoke.spec.ts` render + favorite toggle | R: only the one seeded listing opened in the booking journey; no search/filter/pagination at any e2e layer |
+| Listing discovery (browse, filter, details) | U: store/selector specs, `listings-api.service.spec.ts` (param serialization) · M: `listings.smoke.spec.ts` render + favorite toggle · **R: `real/listings-search-filter.spec.ts`** — proves `?search=` actually narrows the real backend result set (regression for the search contract-drift bug, sibling of M-020) | age-group and distance filters have backend xUnit coverage (`ListingsQueryServiceFilterTests.cs`) and frontend param-serialization unit coverage, but no R spec — distance depends on `navigator.geolocation` (flaky in CI); pagination not e2e-covered at any layer |
 | Listing location (pin picker, approximate-map tap-to-load, districts) | U: `ListingDetailCoordinatePrivacyTests`/`ListingDetailAddressRevealTests` (xUnit, privacy gate) · M: `create-listing-location.spec.ts` (Step 3 pin → request body), `listing-location.spec.ts` (district/city text, tap-to-load map, no-coordinates fallback) | R: no real-stack coverage yet (real geohash fuzzing / district derivation only unit-tested); district-select override in the wizard not e2e-covered |
 | Booking request + lifecycle (Pending→Approved→Active→Completed) | U: xUnit `BookingsService` transition tests (SQLite) · **R: `real/booking-lifecycle.spec.ts` — full journey, both parties** | Rejected / Cancelled / Expired paths not e2e-covered (unit-only) |
 | Role boundaries renter/owner/admin | U: xUnit authorization tests · M: adminGuard admits seeded admin · R: owner-only handover/complete CTAs asserted for both roles | no R coverage for admin vs API (e.g. non-admin hitting /admin), blocked-user writes |
