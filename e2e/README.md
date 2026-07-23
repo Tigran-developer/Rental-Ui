@@ -50,7 +50,7 @@ bundle is indistinguishable from a fresh one by eye. Rules:
   service (or the stack) before `npm run e2e`, or you will silently test a
   stale bundle.
 
-## Coverage map — critical journeys (2026-07-22)
+## Coverage map — critical journeys (2026-07-23)
 
 Layers: **U** = unit (vitest / xUnit), **M** = mocked Playwright, **R** = real-stack Playwright.
 
@@ -66,6 +66,8 @@ Layers: **U** = unit (vitest / xUnit), **M** = mocked Playwright, **R** = real-s
 | Chat negotiate / messaging (SignalR) | U: chat store/component specs · xUnit ChatService | no e2e at all; realtime WS through nginx broke before (M-008) and only manual checks would catch it |
 | Moderation (approve/reject listing) | U: xUnit admin tests · M: `admin-moderation.spec.ts` queue clears | R: none (seeded PendingApproval listings exist — cheap to add) |
 | Language switching + user-facing validation errors | U: some pipe/component specs · M: error-detail rendering on failed login | no e2e for hy/ru switch persistence or localized validation texts |
+| Client/server contract conformance (every `ApiContract` path resolves to a real backend route) | **R: `real/api-contract-conformance.spec.ts`** — diffs `ApiContract` against the live API's OpenAPI route table | verb (GET/POST) not checked, only path existence; auth/authorization on the route not checked |
+| Profile page (view own profile: phone, language, avatar) | U: `profile-api.service.spec.ts` pins the endpoint URL and role mapping | no e2e at any layer for the rendered page itself — see `api-contract-conformance.spec.ts` docblock for why route-existence (not a browser journey) was the fix chosen for the dorent.am `/api/profile/me` incident |
 
 Keep the mocked tier **thin** — catastrophic-if-broken journeys only. New
 regression coverage grows in the real tier or below (unit/integration), never as
