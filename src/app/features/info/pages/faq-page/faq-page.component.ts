@@ -124,7 +124,7 @@ const FAQ_GROUPS: readonly FaqGroup[] = [
         id: 'a3',
         question: 'How do I contact support?',
         answer:
-          'Send us an email at support@toyshare.local and we will get back to you as soon as possible. We aim to respond within 1 business day.',
+          'Send us an email at support@dorent.am and we will get back to you as soon as possible. We aim to respond within 1 business day.',
       },
     ],
   },
