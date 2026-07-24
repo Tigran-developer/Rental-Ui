@@ -313,6 +313,18 @@
   font-size: 1rem;
 }
 
+/* PrimeNG MultiSelect (districts) in sheet */
+.lf-field__multiselect.p-multiselect {
+  width: 100%;
+  min-height: 2.75rem;
+  border-radius: var(--ui-radius-input);
+}
+
+.lf-field__multiselect ::ng-deep .p-multiselect-label {
+  padding-block: var(--ui-space-6);
+  font-size: 1rem;
+}
+
 /* Native select in sheet */
 .lf-field__select {
   width: 100%;

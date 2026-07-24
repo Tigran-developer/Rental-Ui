@@ -39,6 +39,7 @@ export const initialListingsState: ListingsState = {
     maxPrice: null,
     ageGroup: null,
     maxDistance: null,
+    districtIds: [],
   },
   originCoords: null,
   page: 1,

@@ -291,6 +291,14 @@ export class ListingsApiService {
       }
     }
 
+    // Repeating query key, NOT a single comma-joined value — the backend reads
+    // `districtIds` as `List<Guid>` bound from repeated keys
+    // (`?districtIds=<guid>&districtIds=<guid>`). `.append` (not `.set`) is
+    // required here or only the last id would survive.
+    for (const districtId of filter.districtIds) {
+      params = params.append('districtIds', districtId);
+    }
+
     // Distance is only meaningful once we know the renter's position; the
     // component guarantees `originCoords` is set before dispatching a request
     // with `maxDistance` (see ListingsPageComponent.selectDistance) — if

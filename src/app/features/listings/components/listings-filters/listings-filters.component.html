@@ -24,14 +24,14 @@
 <!-- ── Active filter chips (hidden when parent manages chip display) ── -->
 @if (showChips() && activeChips().length > 0) {
   <div class="lf-chips" role="list">
-    @for (chip of activeChips(); track chip.key) {
+    @for (chip of activeChips(); track chip.key + (chip.districtId ?? '')) {
       <div class="lf-chip" role="listitem">
         <span class="lf-chip__label">{{ chip.label }}</span>
         <button
           type="button"
           class="lf-chip__remove"
           [attr.aria-label]="chip.label"
-          (click)="removeChip(chip.key)"
+          (click)="removeChip(chip)"
         >
           <i class="pi pi-times" aria-hidden="true"></i>
         </button>
@@ -72,6 +72,26 @@
           [selectedCategoryId]="draftForm.controls.categoryId.value || null"
           [placeholder]="'listings.filters.categoryPlaceholder' | translate"
           (categoryChange)="draftForm.controls.categoryId.setValue($event ?? '')"
+        />
+      </div>
+
+      <!-- Districts -->
+      <div class="lf-field">
+        <span class="lf-field__label" id="lf-districts-label">
+          {{ 'listings.filters.districtIds' | translate }}
+        </span>
+        <p-multiSelect
+          formControlName="districtIds"
+          [options]="districtOptions()"
+          optionLabel="label"
+          optionValue="id"
+          display="chip"
+          [filter]="true"
+          [showToggleAll]="false"
+          [placeholder]="'listings.filters.districtsPlaceholder' | translate"
+          [ariaLabelledBy]="'lf-districts-label'"
+          styleClass="lf-field__input lf-field__multiselect"
+          appendTo="body"
         />
       </div>
 

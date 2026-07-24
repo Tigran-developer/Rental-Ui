@@ -6,6 +6,16 @@ export interface ListingsFilter {
   maxPrice: number | null;
   ageGroup: string | null;
   maxDistance: number | null;
+  /**
+   * Selected Yerevan district ids (Maps P1-7). Always an array — an empty
+   * array means "no district filter applied" — so chip/URL logic has one
+   * shape to handle instead of `string[] | null`'s two. Serialized to the
+   * `districtIds` URL param as a comma-joined list (see
+   * `serializeDistrictIdsParam`/`parseDistrictIdsParam` below) and to the API
+   * as one repeated `districtIds` query key per id (see
+   * `ListingsApiService.buildListingsQueryParams`).
+   */
+  districtIds: string[];
 }
 
 /**
@@ -58,4 +68,27 @@ export function parseAgeGroupToMonths(token: string): AgeGroupMonthRange | null 
   }
 
   return { ageFromMonths, ageToMonths };
+}
+
+const GUID_PATTERN =
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+/**
+ * Parses the comma-joined `districtIds` URL param into a clean id list.
+ * Anything that isn't a well-formed GUID — empty segments, stray whitespace,
+ * garbage a user typed by hand — is silently dropped rather than thrown, the
+ * same tolerant treatment `parseAgeGroupToMonths` gives its own token: a bad
+ * URL should degrade to "no district filter", never a crash.
+ */
+export function parseDistrictIdsParam(value: string | null): string[] {
+  if (!value) return [];
+  return value
+    .split(',')
+    .map((segment) => segment.trim())
+    .filter((segment) => GUID_PATTERN.test(segment));
+}
+
+/** Inverse of `parseDistrictIdsParam`: comma-joins ids for the URL, or `null` when empty (so the param is omitted rather than written as `""`). */
+export function serializeDistrictIdsParam(ids: readonly string[]): string | null {
+  return ids.length > 0 ? ids.join(',') : null;
 }

@@ -289,6 +289,8 @@
       "minPricePlaceholder": "Min",
       "maxPrice": "Maximum price",
       "maxPricePlaceholder": "Max",
+      "districtIds": "Districts",
+      "districtsPlaceholder": "All districts",
       "filterBtn": "Filters",
       "sidebar": {
         "title": "Filters",

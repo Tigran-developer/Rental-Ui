@@ -27,6 +27,7 @@ import { selectMyBookings } from '../../../bookings/store/bookings.selectors';
 import { selectFavoriteIds } from '../../../favorites/store/favorites.selectors';
 import { ListingCardComponent } from '../../components/listing-card/listing-card.component';
 import { ListingsFiltersComponent } from '../../components/listings-filters/listings-filters.component';
+import { parseDistrictIdsParam } from '../../models/listings-filter.model';
 import type { ListingsFilter } from '../../models/listings-filter.model';
 import type { ListingPreview } from '../../models/listing.model';
 import * as ListingsActions from '../../store/listings.actions';
@@ -82,7 +83,9 @@ const selectListingsPageViewModel = createSelector(
     const hasError = error !== null;
     const hasActiveFilters =
       filters !== null &&
-      Object.values(filters).some((v) => v !== null && v !== '');
+      Object.values(filters).some((v) =>
+        Array.isArray(v) ? v.length > 0 : v !== null && v !== '',
+      );
     return {
       items: items.map((i) => ({ ...i, isFavorite: favoriteIds.has(i.id) })),
       loading,
@@ -476,6 +479,7 @@ export class ListingsPageComponent {
         maxDistanceStr != null && !Number.isNaN(Number(maxDistanceStr))
           ? Number(maxDistanceStr)
           : null,
+      districtIds: parseDistrictIdsParam(params.get('districtIds')),
     };
   }
 }

@@ -21,6 +21,7 @@ const BASE_FILTER: ListingsFilter = {
   maxPrice: null,
   ageGroup: null,
   maxDistance: null,
+  districtIds: [],
 };
 
 describe('ListingsApiService — buildListingsQueryParams', () => {
@@ -124,6 +125,28 @@ describe('ListingsApiService — buildListingsQueryParams', () => {
     expect(req.request.params.has('originLat')).toBe(false);
     expect(req.request.params.has('originLng')).toBe(false);
     expect(req.request.params.has('radiusKm')).toBe(false);
+    req.flush({ items: [], totalCount: 0, page: 1, pageSize: 20, hasMore: false });
+  });
+
+  it('sends one districtIds param per selected district, not a single comma-joined value', () => {
+    service
+      .getListings({ ...BASE_FILTER, districtIds: ['d1', 'd2'] }, 1, 20)
+      .subscribe();
+
+    const req = httpMock.expectOne(
+      (r) => r.url === toApiUrl(ApiContract.listings.root),
+    );
+    expect(req.request.params.getAll('districtIds')).toEqual(['d1', 'd2']);
+    req.flush({ items: [], totalCount: 0, page: 1, pageSize: 20, hasMore: false });
+  });
+
+  it('omits districtIds entirely when no district is selected', () => {
+    service.getListings({ ...BASE_FILTER, districtIds: [] }, 1, 20).subscribe();
+
+    const req = httpMock.expectOne(
+      (r) => r.url === toApiUrl(ApiContract.listings.root),
+    );
+    expect(req.request.params.has('districtIds')).toBe(false);
     req.flush({ items: [], totalCount: 0, page: 1, pageSize: 20, hasMore: false });
   });
 
