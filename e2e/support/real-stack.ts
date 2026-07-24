@@ -14,6 +14,7 @@ export const UI_URL = 'http://localhost:4200';
 export const ACCOUNTS = {
   owner: { email: 'owner@rental.local', password: 'Demo1234' },
   renter: { email: 'renter@rental.local', password: 'Demo1234' },
+  admin: { email: 'admin@rental.local', password: 'Demo1234' },
 } as const;
 
 export interface Credentials {
@@ -29,11 +30,24 @@ export interface Credentials {
  * seeded bookings are terminal (Completed/…), so renter@ can always book it
  * once leftover bookings from crashed runs are released (see
  * releaseListingForRenter).
+ *
+ * `exactLatitude`/`exactLongitude` are the literal owner-dropped pin from
+ * `DevelopmentSeedData.Listings` (`40.1776m, 44.5126m` — 5 Republic Square,
+ * Yerevan). `ListingLocationBackfillExtensions.BackfillListingLocationsAsync`
+ * runs unconditionally on every API startup and derives `PublicLatitude`/
+ * `PublicLongitude` (the geohash-6 cell centroid, ADR-008) from that exact
+ * pair deterministically, so the fuzzed public pair never drifts between
+ * runs either — confirmed live: `40.179749, 44.511108`. Do not hand-derive
+ * that value from geohash math in a test; treat it as an opaque, currently-
+ * stable seed fact and assert the *relationship* (differs from exact, same
+ * across callers) rather than recomputing it.
  */
 export const TOY_KITCHEN = {
   id: '77777777-0007-4000-9000-000000000007',
   title: 'Wooden Toy Kitchen Set',
   pricePerDay: 3_500,
+  exactLatitude: 40.1776,
+  exactLongitude: 44.5126,
 } as const;
 
 /**
