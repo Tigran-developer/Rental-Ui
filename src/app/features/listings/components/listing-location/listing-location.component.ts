@@ -26,16 +26,31 @@ const DETAIL_MAP_ZOOM = 15;
 
 /**
  * Listing-detail location block (P1-8): always shows the district + city as
- * text; when the listing has a coordinate, additionally offers a tap-to-load
- * map so the public tile server isn't hit for every page view.
+ * text; when the listing has a coordinate, the map renders immediately on
+ * page load — no tap-to-load gate.
  *
- * The map, once loaded, is a frozen `app-map` thumbnail (non-interactive) with
- * a translucent circle honestly sized to the backend's real fuzz radius — see
- * `APPROXIMATE_AREA_RADIUS_METERS`.
+ * **Reversed 2026-07-24 (human decision, Tigran):** this used to sit behind a
+ * `mapRequested` signal + "Show map" button specifically so a page view never
+ * hit the tile server (see ADR-007's original text and M-017's neighbourhood).
+ * That reasoning is gone: ADR-007's 2026-07-22 amendment moved tiles off raw
+ * `tile.openstreetmap.org` onto MapTiler with a real key. MapTiler's free tier
+ * has its own cap (100k tiles/month), but measured production traffic leaves
+ * comfortable headroom — a tradeoff made knowingly, not an oversight. See the
+ * ADR-007 amendment-of-the-amendment for the full writeup.
+ *
+ * The map is a frozen `app-map` thumbnail (non-interactive) with a
+ * translucent circle honestly sized to the backend's real fuzz radius — see
+ * `APPROXIMATE_AREA_RADIUS_METERS` — plus a floating "approximate area" chip.
+ * The privacy promise made in three languages in the create-listing wizard
+ * (only the general area is shown, never the exact address) used to live in
+ * the placeholder copy this component no longer has; it now lives in
+ * `privacyNote`, rendered as a caption under the map, alongside the chip —
+ * see `listing-location.component.html`.
  *
  * Degradation: if `app-map` reports `mapError` (dynamic `import('leaflet')`
  * rejected, tile host unreachable, etc.), this falls back to the district +
- * city text plus the `mapUnavailable` line — never an empty grey box.
+ * city text plus the `mapUnavailable` line — never an empty grey box. This
+ * behaviour is unchanged by the 2026-07-24 reversal.
  *
  * No coordinates at all (`latitude`/`longitude` null — legal, the pin is
  * optional) means no map affordance is shown, per spec — just the text.
@@ -59,9 +74,6 @@ export class ListingLocationComponent {
   protected readonly circleRadiusMeters = APPROXIMATE_AREA_RADIUS_METERS;
   protected readonly mapZoom = DETAIL_MAP_ZOOM;
 
-  /** True once the visitor has tapped "show map" — before that, no tiles are
-   *  fetched at all. */
-  protected readonly mapRequested = signal(false);
   /** True if `app-map` reported it could not come up; permanent for this
    *  view — the fallback text + district above are always still available. */
   protected readonly mapFailed = signal(false);
@@ -80,12 +92,6 @@ export class ListingLocationComponent {
     const lng = this.longitude();
     return typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : null;
   });
-
-  protected requestMap(): void {
-    if (!this.hasCoordinates()) return;
-    this.mapFailed.set(false);
-    this.mapRequested.set(true);
-  }
 
   protected onMapError(): void {
     this.mapFailed.set(true);

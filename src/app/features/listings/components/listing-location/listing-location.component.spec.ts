@@ -5,11 +5,12 @@ import { ListingLocationComponent } from './listing-location.component';
 import type { ListingDistrict } from '../../models/district.model';
 
 /**
- * `app-map` (used inside this component's template once a map is requested)
- * dynamic-imports the real `leaflet` package — stubbed here for the same
- * reason `location-picker.component.spec.ts` stubs it: these tests care about
- * this component's OWN wiring (tap-to-load gating, fallback text, error
- * degradation), not Leaflet's rendering (covered by `map.component.spec.ts`).
+ * `app-map` (used inside this component's template whenever the listing has
+ * coordinates) dynamic-imports the real `leaflet` package — stubbed here for
+ * the same reason `location-picker.component.spec.ts` stubs it: these tests
+ * care about this component's OWN wiring (the map mounting on load, fallback
+ * text, error degradation), not Leaflet's rendering (covered by
+ * `map.component.spec.ts`).
  */
 vi.mock('leaflet', () => ({
   map: vi.fn(() => ({
@@ -62,8 +63,8 @@ describe('ListingLocationComponent', () => {
 
     expect(el.textContent).toContain('Kentron');
     expect(el.textContent).toContain('Yerevan');
-    expect(el.querySelector('.listing-location__show-map-btn')).toBeNull();
     expect(el.querySelector('.listing-location__map-card')).toBeNull();
+    expect(el.querySelector('.listing-location__privacy-note')).toBeNull();
     expect(el.querySelector('.listing-location__unavailable')).toBeNull();
     expect(el.querySelector('app-map')).toBeNull();
   });
@@ -75,54 +76,37 @@ describe('ListingLocationComponent', () => {
     expect(el.textContent).toContain('Yerevan');
   });
 
-  it('shows a "show map" button (not the map itself) when coordinates are present but not yet requested', async () => {
+  it('mounts app-map immediately when coordinates are present — no tap-to-load gate', async () => {
     const fixture = await createComponent({ latitude: 40.18, longitude: 44.51 });
     const el: HTMLElement = fixture.nativeElement;
-
-    const button = el.querySelector<HTMLButtonElement>('.listing-location__show-map-btn');
-    expect(button).not.toBeNull();
-    expect(button?.tagName).toBe('BUTTON');
-    // The accessible name must not be empty — a real, distinguishable label.
-    expect(button?.textContent?.trim().length).toBeGreaterThan(0);
-
-    // No tiles fetched yet: `app-map` is not in the DOM at all.
-    expect(el.querySelector('app-map')).toBeNull();
-  });
-
-  it('mounts app-map only after the "show map" button is activated', async () => {
-    const fixture = await createComponent({ latitude: 40.18, longitude: 44.51 });
-    const el: HTMLElement = fixture.nativeElement;
-
-    el.querySelector<HTMLButtonElement>('.listing-location__show-map-btn')?.click();
-    fixture.detectChanges();
     await vi.runAllTimersAsync();
     fixture.detectChanges();
 
     expect(el.querySelector('app-map')).not.toBeNull();
     expect(el.querySelector('.listing-location__map-card')).not.toBeNull();
-    expect(el.querySelector('.listing-location__show-map-btn')).toBeNull();
   });
 
-  it('shows the floating "approximate area" chip once the map is requested', async () => {
+  it('shows the floating "approximate area" chip and the privacy caption alongside the map', async () => {
     const fixture = await createComponent({ latitude: 40.18, longitude: 44.51 });
     const el: HTMLElement = fixture.nativeElement;
-
-    el.querySelector<HTMLButtonElement>('.listing-location__show-map-btn')?.click();
-    fixture.detectChanges();
     await vi.runAllTimersAsync();
     fixture.detectChanges();
 
     const chip = el.querySelector('.listing-location__chip');
     expect(chip).not.toBeNull();
     expect(chip?.textContent?.trim().length).toBeGreaterThan(0);
+
+    // The full trilingual privacy promise ("only the general area is shown —
+    // not the exact address") must still reach the reader now that the old
+    // tap-to-load placeholder copy is gone — see ADR-008 / M-017.
+    const note = el.querySelector('.listing-location__privacy-note');
+    expect(note).not.toBeNull();
+    expect(note?.textContent?.trim().length).toBeGreaterThan(0);
   });
 
   it('degrades to the district/city text + mapUnavailable line when app-map reports an error, and removes the map', async () => {
     const fixture = await createComponent({ city: 'Yerevan', district, latitude: 40.18, longitude: 44.51 });
     const el: HTMLElement = fixture.nativeElement;
-
-    el.querySelector<HTMLButtonElement>('.listing-location__show-map-btn')?.click();
-    fixture.detectChanges();
     await vi.runAllTimersAsync();
     fixture.detectChanges();
 
@@ -134,7 +118,7 @@ describe('ListingLocationComponent', () => {
 
     expect(el.querySelector('app-map')).toBeNull();
     expect(el.querySelector('.listing-location__map-card')).toBeNull();
-    expect(el.querySelector('.listing-location__show-map-btn')).toBeNull();
+    expect(el.querySelector('.listing-location__privacy-note')).toBeNull();
     const unavailable = el.querySelector('.listing-location__unavailable');
     expect(unavailable).not.toBeNull();
     expect(unavailable?.textContent?.trim().length).toBeGreaterThan(0);

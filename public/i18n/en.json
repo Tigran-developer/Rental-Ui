@@ -476,9 +476,8 @@
         "heading": "Location",
         "approximateChip": "Approximate area",
         "mapUnavailable": "Map preview isn't available right now — see the district above.",
-        "showMap": "Show map",
         "mapRegionLabel": "Map showing the approximate location of this listing",
-        "placeholderBody": "For privacy, only the general area is shown — not the exact address."
+        "privacyNote": "For privacy, only the general area is shown — not the exact address."
       }
     },
     "createPage": {

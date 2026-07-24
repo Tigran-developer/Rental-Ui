@@ -23,70 +23,28 @@
   }
 }
 
-/* ── Tap-to-load placeholder (no tiles fetched yet) ──────────────────── */
-.listing-location__placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--ui-space-12);
-  padding: var(--ui-space-20);
-  background: var(--ui-color-surface-muted);
-  border: 1px solid var(--ui-color-border);
-  border-radius: var(--ui-radius-card);
-}
-
-.listing-location__placeholder-copy {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 0;
-  font-size: 0.8125rem;
-  line-height: 1.5;
-  color: var(--ui-color-text-secondary);
-
-  i {
-    flex-shrink: 0;
-    margin-top: 2px;
-    color: var(--ui-color-primary);
-  }
-}
-
-.listing-location__show-map-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  border: 1.5px solid var(--ui-color-border);
-  border-radius: var(--ui-radius-pill);
-  background: var(--ui-color-surface);
-  color: var(--ui-color-text-primary);
-  font-size: 0.875rem;
-  font-weight: 700;
-  font-family: inherit;
-  cursor: pointer;
-  transition:
-    border-color 140ms ease,
-    color 140ms ease,
-    background-color 140ms ease;
-
-  i {
-    color: var(--ui-color-primary);
-  }
-
-  &:hover {
-    border-color: var(--ui-color-primary);
-    color: var(--ui-color-primary-strong);
-    background: var(--ui-color-primary-wash);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--ui-color-primary);
-    outline-offset: 2px;
-  }
-}
-
-/* ── Loaded map card: 16px-rounded, 1px border, floating pill chip ──── */
+/* ── Map card: 16px-rounded, 1px border, floating pill chip ──────────── */
 .listing-location__map-card {
+  /* Renders on page load now (no tap-to-load gate — see the component's class
+     doc comment for the 2026-07-24 reversal). Height grows in three tiers
+     rather than one fixed value: tall enough on desktop to read the
+     honest-uncertainty circle comfortably (~400px, up from the original
+     220px), but capped well short of full-viewport on a 375px phone. Width is
+     untouched — the map stays inside the left content column exactly as
+     before. Exposed as a custom property (rather than a literal in the
+     template) so `app-map`'s `[style.height]` inline binding — which would
+     otherwise out-specificity a plain class rule here — still resolves
+     against these breakpoints. */
+  --listing-location-map-height: 260px;
+
+  @media (min-width: 700px) {
+    --listing-location-map-height: 320px;
+  }
+
+  @media (min-width: 1100px) {
+    --listing-location-map-height: 400px;
+  }
+
   position: relative;
   border: 1px solid var(--ui-color-border);
   border-radius: var(--ui-radius-card);
@@ -117,6 +75,29 @@
   i {
     color: var(--ui-color-primary);
     font-size: 0.75rem;
+  }
+}
+
+/* ── Privacy caption under the map ────────────────────────────────────
+   The "approximate area" chip on the map itself is a short label, not the
+   full owner-facing promise ("only the general area is shown — not the
+   exact address", shipped trilingually in the create-listing wizard, see
+   ADR-008 / M-017). That full sentence used to live in the now-removed
+   tap-to-load placeholder; it moves here so the promise still reaches the
+   reader once the map renders unprompted. */
+.listing-location__privacy-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--ui-color-text-secondary);
+
+  i {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--ui-color-primary);
   }
 }
 
