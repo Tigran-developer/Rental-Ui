@@ -170,8 +170,15 @@ export class ListingsFiltersComponent implements OnInit, OnDestroy {
         const filter = this.toListingsFilter();
         void this.router.navigate([], {
           relativeTo: this.route,
+          // 'merge' (not 'replace'): this form only ever knows about its own
+          // six fields (see `toQueryParams` below). Sibling filters that live
+          // elsewhere — `ageGroup`/`maxDistance` in the desktop sidebar
+          // (`ListingsPageComponent`) — must survive a navigation triggered
+          // from here. Each of this form's own keys is still explicitly set
+          // to `null` when cleared, so 'merge' + explicit null still removes
+          // them; it only leaves keys this form never mentions untouched.
           queryParams: this.toQueryParams(filter),
-          queryParamsHandling: 'replace',
+          queryParamsHandling: 'merge',
         });
         this.filtersChanged.emit(filter);
       });
