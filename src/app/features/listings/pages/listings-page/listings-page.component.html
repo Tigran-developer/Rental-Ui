@@ -223,12 +223,12 @@
 
             <!-- Active filter chips (desktop only) -->
             <div class="lp-toolbar__chips" role="list" aria-label="Active filters">
-              @for (chip of activeFilterChips(); track chip.key) {
+              @for (chip of activeFilterChips(); track chip.key + (chip.districtId ?? '')) {
                 <button
                   type="button"
                   class="lp-active-chip"
                   role="listitem"
-                  (click)="removeFilterChip(chip.key)"
+                  (click)="removeFilterChip(chip)"
                 >
                   {{ chip.label }}
                   <i class="pi pi-times lp-active-chip__icon" aria-hidden="true"></i>

@@ -107,6 +107,16 @@ const selectListingsPageViewModel = createSelector(
   },
 );
 
+/** Desktop toolbar's removable-filter-chip row. `districtId` is only set for
+ *  `key: 'districtId'` — several district chips share that key, so removal
+ *  needs to know which one to drop (same reasoning as the mobile sheet's
+ *  own `ActiveChip` in `listings-filters.component.ts`). */
+interface ActiveFilterChip {
+  readonly key: string;
+  readonly label: string;
+  readonly districtId?: string;
+}
+
 type SortBy = '' | 'price_asc' | 'price_desc' | 'rating_desc' | 'newest';
 
 interface SortOption {
@@ -267,7 +277,7 @@ export class ListingsPageComponent {
 
   protected readonly activeFilterChips = computed(() => {
     const f = this.filtersSignal();
-    const chips: { key: string; label: string }[] = [];
+    const chips: ActiveFilterChip[] = [];
     if (f.categoryId) {
       const cat = this.categoriesSignal().find((c) => c.id === f.categoryId);
       chips.push({ key: 'categoryId', label: cat?.name ?? f.categoryId });
@@ -279,6 +289,10 @@ export class ListingsPageComponent {
     if (f.maxDistance != null) {
       const d = DISTANCES.find((dist) => dist.value === f.maxDistance);
       chips.push({ key: 'maxDistance', label: d?.label ?? `< ${f.maxDistance} km` });
+    }
+    for (const districtId of f.districtIds) {
+      const district = this.districtOptions().find((d) => d.id === districtId);
+      chips.push({ key: 'districtId', label: district?.label ?? districtId, districtId });
     }
     return chips;
   });
@@ -465,14 +479,26 @@ export class ListingsPageComponent {
     });
   }
 
-  protected removeFilterChip(key: string): void {
+  protected removeFilterChip(chip: ActiveFilterChip): void {
+    if (chip.key === 'districtId') {
+      const current = this.filtersSignal().districtIds;
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: {
+          districtIds: serializeDistrictIdsParam(current.filter((id) => id !== chip.districtId)),
+        },
+        queryParamsHandling: 'merge',
+      });
+      return;
+    }
+
     const paramKey =
-      key === 'categoryId'  ? 'categoryId'  :
-      key === 'city'        ? 'city'        :
-      key === 'minPrice'    ? 'minPrice'    :
-      key === 'maxPrice'    ? 'maxPrice'    :
-      key === 'ageGroup'    ? 'ageGroup'    :
-      key === 'maxDistance' ? 'maxDistance' :
+      chip.key === 'categoryId'  ? 'categoryId'  :
+      chip.key === 'city'        ? 'city'        :
+      chip.key === 'minPrice'    ? 'minPrice'    :
+      chip.key === 'maxPrice'    ? 'maxPrice'    :
+      chip.key === 'ageGroup'    ? 'ageGroup'    :
+      chip.key === 'maxDistance' ? 'maxDistance' :
       null;
     if (!paramKey) return;
     void this.router.navigate([], {
