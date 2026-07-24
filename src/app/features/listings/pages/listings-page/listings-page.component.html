@@ -40,6 +40,24 @@
 
       <div class="lp-sidebar__divider"></div>
 
+      <!-- Districts -->
+      <div class="lp-sidebar__section">
+        <p class="lp-sidebar__section-label">{{ 'listings.filters.sidebar.districts' | translate }}</p>
+        @for (d of districtOptions(); track d.id) {
+          <label class="lp-sidebar__checkbox-row">
+            <input
+              type="checkbox"
+              class="lp-sidebar__checkbox"
+              [checked]="activeDistrictIds().includes(d.id)"
+              (change)="selectDistrictFromSidebar(d.id)"
+            />
+            <span class="lp-sidebar__checkbox-name">{{ d.label }}</span>
+          </label>
+        }
+      </div>
+
+      <div class="lp-sidebar__divider"></div>
+
       <!-- Age -->
       <div class="lp-sidebar__section">
         <p class="lp-sidebar__section-label">{{ 'listings.filters.sidebar.age' | translate }}</p>

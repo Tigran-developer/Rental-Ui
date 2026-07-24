@@ -296,6 +296,7 @@
         "title": "Filters",
         "clearAll": "Clear all",
         "category": "CATEGORY",
+        "districts": "DISTRICTS",
         "age": "AGE",
         "pricePerDay": "PRICE PER DAY",
         "distance": "DISTANCE"

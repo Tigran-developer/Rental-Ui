@@ -14,8 +14,9 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
 import { MessageService } from 'primeng/api';
-import { combineLatest, map, of, switchMap } from 'rxjs';
+import { catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
 
+import { LanguageService } from '../../../../shared/services/language.service';
 import { EmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { LoadingSkeletonComponent } from '../../../../shared/ui/loading-skeleton/loading-skeleton.component';
 import { AuthDialogComponent } from '../../../auth/components/auth-dialog/auth-dialog.component';
@@ -27,9 +28,12 @@ import { selectMyBookings } from '../../../bookings/store/bookings.selectors';
 import { selectFavoriteIds } from '../../../favorites/store/favorites.selectors';
 import { ListingCardComponent } from '../../components/listing-card/listing-card.component';
 import { ListingsFiltersComponent } from '../../components/listings-filters/listings-filters.component';
-import { parseDistrictIdsParam } from '../../models/listings-filter.model';
+import { districtDisplayName } from '../../models/district-ui.util';
+import type { ListingDistrict } from '../../models/district.model';
+import { parseDistrictIdsParam, serializeDistrictIdsParam } from '../../models/listings-filter.model';
 import type { ListingsFilter } from '../../models/listings-filter.model';
 import type { ListingPreview } from '../../models/listing.model';
+import { ListingsApiService } from '../../services/listings-api.service';
 import * as ListingsActions from '../../store/listings.actions';
 
 import {
@@ -163,6 +167,8 @@ export class ListingsPageComponent {
   private readonly location = inject(Location);
   private readonly messageService = inject(MessageService);
   private readonly translate = inject(TranslateService);
+  private readonly listingsApi = inject(ListingsApiService);
+  private readonly languageService = inject(LanguageService);
 
   protected readonly isAuthenticated = this.store.selectSignal(selectIsAuthenticated);
   protected readonly showAuthDialog = signal(false);
@@ -210,11 +216,31 @@ export class ListingsPageComponent {
   private readonly originCoordsSignal = this.store.selectSignal(selectListingsOriginCoords);
   protected readonly categoriesSignal = this.store.selectSignal(selectListingCategories);
 
+  // Anonymous, unchanging reference data — same treatment as `categoriesSignal`
+  // would get if categories weren't already in NgRx, and identical to how
+  // `ListingsFiltersComponent` (the mobile filter sheet) loads the SAME
+  // `getDistricts()` stream: no second copy of state, just two components
+  // reading the same anonymous endpoint independently, same as the codebase
+  // already does for categories vs. this page vs. the create-listing wizard.
+  private readonly districtsSignal = toSignal(
+    this.listingsApi.getDistricts().pipe(
+      startWith<ListingDistrict[]>([]),
+      catchError(() => of<ListingDistrict[]>([])),
+    ),
+    { initialValue: [] as ListingDistrict[] },
+  );
+
+  protected readonly districtOptions = computed(() => {
+    const lang = this.languageService.current().code;
+    return this.districtsSignal().map((d) => ({ id: d.id, label: districtDisplayName(d, lang) }));
+  });
+
   protected readonly activeCategoryId = computed(() => this.filtersSignal().categoryId);
   protected readonly activeAgeGroup   = computed(() => this.filtersSignal().ageGroup);
   protected readonly activeMaxDistance = computed(() => this.filtersSignal().maxDistance);
   protected readonly activeMinPrice   = computed(() => this.filtersSignal().minPrice);
   protected readonly activeMaxPrice   = computed(() => this.filtersSignal().maxPrice);
+  protected readonly activeDistrictIds = computed(() => this.filtersSignal().districtIds);
 
   protected readonly ageGroups  = AGE_GROUPS;
   protected readonly distances  = DISTANCES;
@@ -229,7 +255,14 @@ export class ListingsPageComponent {
 
   protected readonly hasSidebarFilters = computed(() => {
     const f = this.filtersSignal();
-    return !!(f.categoryId || f.ageGroup || f.minPrice != null || f.maxPrice != null || f.maxDistance != null);
+    return !!(
+      f.categoryId ||
+      f.ageGroup ||
+      f.minPrice != null ||
+      f.maxPrice != null ||
+      f.maxDistance != null ||
+      f.districtIds.length > 0
+    );
   });
 
   protected readonly activeFilterChips = computed(() => {
@@ -452,6 +485,25 @@ export class ListingsPageComponent {
   protected selectCategoryFromSidebar(id: string): void {
     const current = this.filtersSignal().categoryId;
     this.selectCategory(current === id ? null : id);
+  }
+
+  /**
+   * Toggles one district checkbox in the desktop sidebar. Shares the exact
+   * same `districtIds: string[]` filter field, `districtIds` URL param, and
+   * store slice as the mobile filter sheet's multiselect
+   * (`ListingsFiltersComponent`) — there is no second copy of this state, so
+   * a selection made here survives a resize down to mobile and back.
+   */
+  protected selectDistrictFromSidebar(id: string): void {
+    const current = this.filtersSignal().districtIds;
+    const next = current.includes(id)
+      ? current.filter((existing) => existing !== id)
+      : [...current, id];
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { districtIds: serializeDistrictIdsParam(next) },
+      queryParamsHandling: 'merge',
+    });
   }
 
   private parseFiltersFromParams(params: ParamMap): ListingsFilter {
