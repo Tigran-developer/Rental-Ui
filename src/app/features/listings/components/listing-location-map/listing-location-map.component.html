@@ -1,0 +1,123 @@
+<p-dialog
+  [visible]="open()"
+  (visibleChange)="onVisibleChange($event)"
+  [modal]="true"
+  [showHeader]="false"
+  [closable]="false"
+  [dismissableMask]="false"
+  [draggable]="false"
+  [resizable]="false"
+  [closeOnEscape]="true"
+  role="dialog"
+  ariaLabelledBy="listingLocationMapHeading"
+  styleClass="listing-location-map-dialog"
+  appendTo="body"
+>
+  <h2 id="listingLocationMapHeading" class="listing-location-map__visually-hidden">
+    {{ title() }}
+  </h2>
+
+  <div class="listing-location-map__surface">
+    @if (open()) {
+      <app-map
+        [center]="center()"
+        [pin]="center()"
+        [userPin]="userPin()"
+        [fitPins]="hasUserPin()"
+        [zoom]="zoom()"
+        [interactive]="true"
+        [scrollGate]="false"
+        [circleRadiusMeters]="circleRadiusMeters()"
+        [zoomInLabel]="'listings.details.location.zoomIn' | translate"
+        [zoomOutLabel]="'listings.details.location.zoomOut' | translate"
+        height="100%"
+        (mapError)="onMapError()"
+      >
+        <button
+          app-map-actions
+          type="button"
+          class="app-map__btn"
+          [class.listing-location-map__locate-btn--active]="hasUserPin()"
+          [attr.aria-label]="'listings.details.location.myLocationButton' | translate"
+          (click)="locateMe.emit()"
+        >
+          <i class="pi pi-compass" aria-hidden="true"></i>
+        </button>
+      </app-map>
+    }
+
+    <div class="listing-location-map__topbar">
+      <button
+        type="button"
+        class="listing-location-map__close-btn"
+        [attr.aria-label]="'listings.details.location.fullscreen.closeLabel' | translate"
+        (click)="close()"
+      >
+        <i class="pi pi-times" aria-hidden="true"></i>
+      </button>
+
+      <span class="listing-location-map__chip">
+        <span class="listing-location-map__chip-icon">
+          <i class="pi pi-shield" aria-hidden="true"></i>
+        </span>
+        <span class="listing-location-map__chip-text">
+          <span class="listing-location-map__chip-title">
+            {{ 'listings.details.location.approximateChip' | translate }}
+          </span>
+          <span class="listing-location-map__chip-sub">
+            {{
+              'listings.details.location.approximateRadius'
+                | translate: { radius: circleRadiusMeters() }
+            }}
+          </span>
+        </span>
+      </span>
+    </div>
+
+    @if (mapFailed()) {
+      <div class="listing-location-map__fallback" role="status">
+        <span class="listing-location-map__fallback-icon">
+          <i class="pi pi-map" aria-hidden="true"></i>
+        </span>
+        <p class="listing-location-map__fallback-title">
+          {{ 'listings.details.location.mapUnavailableTitle' | translate }}
+        </p>
+        <p class="listing-location-map__fallback-desc">
+          {{
+            'listings.details.location.mapUnavailableDescription'
+              | translate: { place: placeLabel() }
+          }}
+        </p>
+        <button type="button" class="listing-location-map__back-btn" (click)="close()">
+          <i class="pi pi-arrow-left" aria-hidden="true"></i>
+          {{ 'listings.details.location.fullscreen.backToListing' | translate }}
+        </button>
+      </div>
+    } @else {
+      <div class="listing-location-map__plaque">
+        @if (imageUrl(); as url) {
+          <img class="listing-location-map__thumb" [src]="url" alt="" />
+        } @else {
+          <span class="listing-location-map__thumb listing-location-map__thumb--placeholder">
+            <i class="pi pi-image" aria-hidden="true"></i>
+          </span>
+        }
+        <div class="listing-location-map__plaque-body">
+          <p class="listing-location-map__plaque-title">{{ title() }}</p>
+          <p class="listing-location-map__plaque-meta">
+            <span>{{ placeLabel() }}</span>
+            @if (distanceDisplay(); as distance) {
+              <span class="listing-location-map__plaque-distance">
+                {{ 'listings.details.location.distanceFromYou' | translate: { distance } }}
+              </span>
+            }
+          </p>
+        </div>
+        <button type="button" class="listing-location-map__back-btn" (click)="close()">
+          <i class="pi pi-arrow-right" aria-hidden="true"></i>
+          {{ 'listings.details.location.fullscreen.backToListing' | translate }}
+        </button>
+      </div>
+    }
+  </div>
+</p-dialog>

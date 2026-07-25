@@ -11,10 +11,24 @@
 
   @if (hasCoordinates()) {
     @if (mapFailed()) {
-      <p class="listing-location__unavailable" role="status">
-        <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
-        <span>{{ 'listings.details.location.mapUnavailable' | translate }}</span>
-      </p>
+      <div class="listing-location__fallback" role="status">
+        <span class="listing-location__fallback-icon">
+          <i class="pi pi-map" aria-hidden="true"></i>
+        </span>
+        <p class="listing-location__fallback-title">
+          {{ 'listings.details.location.mapUnavailableTitle' | translate }}
+        </p>
+        <p class="listing-location__fallback-desc">
+          {{
+            'listings.details.location.mapUnavailableDescription'
+              | translate: { place: placeLabel() }
+          }}
+        </p>
+      </div>
+      <button type="button" class="listing-location__locate-btn" disabled>
+        <i class="pi pi-compass" aria-hidden="true"></i>
+        {{ 'listings.details.location.myLocationButton' | translate }}
+      </button>
     } @else if (pin(); as p) {
       <div
         class="listing-location__map-card"
@@ -22,22 +36,127 @@
         [attr.aria-label]="'listings.details.location.mapRegionLabel' | translate"
       >
         <span class="listing-location__chip">
-          <i class="pi pi-shield" aria-hidden="true"></i>
-          {{ 'listings.details.location.approximateChip' | translate }}
+          <span class="listing-location__chip-icon">
+            <i class="pi pi-shield" aria-hidden="true"></i>
+          </span>
+          <span class="listing-location__chip-text">
+            <span class="listing-location__chip-title">
+              {{ 'listings.details.location.approximateChip' | translate }}
+            </span>
+            <span class="listing-location__chip-sub">
+              {{
+                'listings.details.location.approximateRadius'
+                  | translate: { radius: circleRadiusMeters }
+              }}
+            </span>
+          </span>
         </span>
+
         <app-map
           [center]="p"
           [pin]="p"
+          [userPin]="userPin()"
+          [fitPins]="hasUserPin()"
           [zoom]="mapZoom"
+          [interactive]="true"
+          [scrollGate]="true"
           [circleRadiusMeters]="circleRadiusMeters"
+          [zoomInLabel]="'listings.details.location.zoomIn' | translate"
+          [zoomOutLabel]="'listings.details.location.zoomOut' | translate"
           height="var(--listing-location-map-height)"
           (mapError)="onMapError()"
-        />
+        >
+          <button
+            app-map-actions
+            #expandTrigger
+            type="button"
+            class="app-map__btn"
+            [attr.aria-label]="'listings.details.location.expandLabel' | translate"
+            (click)="openExpanded()"
+          >
+            <i class="pi pi-window-maximize" aria-hidden="true"></i>
+          </button>
+          <span app-map-scroll-hint>{{ 'listings.details.location.scrollGateHint' | translate }}</span>
+          <span app-map-gate-hint>{{ 'listings.details.location.touchGateHint' | translate }}</span>
+        </app-map>
       </div>
+
+      @switch (geoState()) {
+        @case ('granted') {
+          <div class="listing-location__distance" role="status">
+            <span class="listing-location__distance-icon">
+              <i class="pi pi-directions" aria-hidden="true"></i>
+            </span>
+            <span class="listing-location__distance-text">
+              <b>
+                {{
+                  'listings.details.location.distanceFromYou'
+                    | translate: { distance: distanceDisplay() }
+                }}
+              </b>
+              <small>{{ 'listings.details.location.distanceLegend' | translate }}</small>
+            </span>
+          </div>
+        }
+        @case ('denied') {
+          <div class="listing-location__geo-denied">
+            <div class="listing-location__geo-denied-msg">
+              <i class="pi pi-info-circle" aria-hidden="true"></i>
+              <span>{{ 'listings.details.location.geoDeniedMessage' | translate }}</span>
+            </div>
+            <button
+              type="button"
+              class="listing-location__pick-btn"
+              (click)="openManualPicker()"
+            >
+              <i class="pi pi-map-marker" aria-hidden="true"></i>
+              {{ 'listings.details.location.pickPointButton' | translate }}
+            </button>
+          </div>
+        }
+        @default {
+          <button
+            type="button"
+            class="listing-location__locate-btn"
+            [disabled]="geoState() === 'locating'"
+            (click)="requestMyLocation()"
+          >
+            <i class="pi pi-compass" aria-hidden="true"></i>
+            {{
+              (geoState() === 'locating'
+                ? 'listings.details.location.myLocationLocating'
+                : 'listings.details.location.myLocationButton'
+              ) | translate
+            }}
+          </button>
+        }
+      }
+
       <p class="listing-location__privacy-note">
         <i class="pi pi-shield" aria-hidden="true"></i>
         <span>{{ 'listings.details.location.privacyNote' | translate }}</span>
       </p>
+
+      <app-listing-location-point-picker
+        [open]="showPointPicker()"
+        [initialCenter]="p"
+        (confirmed)="onManualPickConfirmed($event)"
+        (cancelled)="onManualPickCancelled()"
+      />
+
+      <app-listing-location-map
+        [open]="expanded()"
+        [center]="p"
+        [circleRadiusMeters]="circleRadiusMeters"
+        [zoom]="mapZoom"
+        [userPin]="userPin()"
+        [distanceDisplay]="distanceDisplay()"
+        [title]="title()"
+        [imageUrl]="imageUrl()"
+        [placeLabel]="placeLabel()"
+        (locateMe)="requestMyLocation()"
+        (closed)="closeExpanded()"
+      />
     }
   }
 </div>

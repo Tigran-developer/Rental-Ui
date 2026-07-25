@@ -1,0 +1,51 @@
+<p-dialog
+  [visible]="open()"
+  (visibleChange)="onVisibleChange($event)"
+  [modal]="true"
+  [closable]="true"
+  [dismissableMask]="false"
+  [draggable]="false"
+  [resizable]="false"
+  [header]="'listings.details.location.pointPicker.title' | translate"
+  styleClass="listing-location-point-picker-dialog"
+  appendTo="body"
+>
+  <div class="listing-location-point-picker__map-wrap">
+    @if (open()) {
+      <app-map
+        [center]="initialCenter()"
+        [zoom]="initialZoom()"
+        [interactive]="true"
+        [crosshair]="true"
+        height="100%"
+        (centerChange)="onCenterChange($event)"
+      />
+    }
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="listing-location-point-picker__footer">
+      <p class="listing-location-point-picker__privacy">
+        <i class="pi pi-shield" aria-hidden="true"></i>
+        {{ 'listings.details.location.pointPicker.privacyNote' | translate }}
+      </p>
+      <div class="listing-location-point-picker__actions">
+        <button
+          type="button"
+          class="listing-location-point-picker__btn listing-location-point-picker__btn--cancel"
+          (click)="cancel()"
+        >
+          {{ 'listings.details.location.pointPicker.cancel' | translate }}
+        </button>
+        <button
+          type="button"
+          class="listing-location-point-picker__btn listing-location-point-picker__btn--confirm"
+          (click)="confirm()"
+        >
+          <i class="pi pi-check" aria-hidden="true"></i>
+          {{ 'listings.details.location.pointPicker.confirm' | translate }}
+        </button>
+      </div>
+    </div>
+  </ng-template>
+</p-dialog>

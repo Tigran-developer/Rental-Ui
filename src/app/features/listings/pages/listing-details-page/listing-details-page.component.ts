@@ -282,6 +282,24 @@ export class ListingDetailsPageComponent {
 
   protected readonly listingTitle = computed(() => this.currentListingSignal()?.title ?? '');
 
+  /** Cover photo for the Screen 2 full-screen map's plaque thumbnail
+   *  (`ListingLocationComponent`'s `imageUrl` input) — same "primary, then
+   *  lowest sortOrder" precedence `ListingsQueryService.PrimaryImageUrl`
+   *  (rental-api) uses server-side for the catalogue card, so the plaque's
+   *  photo always matches whichever image the rest of the app treats as this
+   *  listing's cover. `null` when the listing has no images at all; the
+   *  plaque renders a placeholder icon in that case rather than a broken
+   *  `<img>`. */
+  protected readonly listingHeroImageUrl = computed<string | null>(() => {
+    const images = this.currentListingSignal()?.images ?? [];
+    if (images.length === 0) return null;
+    const [first] = [...images].sort((a, b) => {
+      if (a.isPrimary !== b.isPrimary) return a.isPrimary ? -1 : 1;
+      return a.sortOrder - b.sortOrder;
+    });
+    return first.url;
+  });
+
   protected readonly existingBookingId = computed<string | null>(() => {
     const listingId = this.routeListingId();
     if (!listingId) return null;
