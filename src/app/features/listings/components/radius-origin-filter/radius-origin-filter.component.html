@@ -1,0 +1,137 @@
+<div class="rof">
+
+  @switch (originState()) {
+    @case ('unset') {
+      <div class="rof__origin rof__origin--unset">
+        <div class="rof__origin-top">
+          <span class="rof__origin-icon"><i class="pi pi-compass" aria-hidden="true"></i></span>
+          <div class="rof__origin-copy">
+            <p class="rof__origin-title">{{ 'listings.filters.distance.originUnsetTitle' | translate }}</p>
+            <p class="rof__origin-sub">{{ 'listings.filters.distance.originUnsetSubtitle' | translate }}</p>
+          </div>
+        </div>
+        <button type="button" class="rof__btn rof__btn--primary rof__btn--block" (click)="requestGeolocation()">
+          <i class="pi pi-compass" aria-hidden="true"></i>
+          {{ 'listings.filters.distance.detectMyLocation' | translate }}
+        </button>
+        <div class="rof__origin-link-row">
+          <button type="button" class="rof__link" (click)="openPicker()">
+            {{ 'listings.filters.distance.pickOnMapLink' | translate }}
+          </button>
+        </div>
+      </div>
+    }
+    @case ('denied') {
+      <div class="rof__origin rof__origin--denied">
+        <div class="rof__origin-top">
+          <span class="rof__origin-icon rof__origin-icon--denied"><i class="pi pi-info-circle" aria-hidden="true"></i></span>
+          <div class="rof__origin-copy">
+            <p class="rof__origin-title">{{ 'listings.filters.distance.originDeniedTitle' | translate }}</p>
+            <p class="rof__origin-sub">{{ 'listings.filters.distance.originDeniedSubtitle' | translate }}</p>
+          </div>
+        </div>
+        <p class="rof__softmsg">
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+          {{ 'listings.filters.distance.originDeniedMessage' | translate }}
+        </p>
+        <button type="button" class="rof__btn rof__btn--ghost rof__btn--block" (click)="openPicker()">
+          <i class="pi pi-map-marker" aria-hidden="true"></i>
+          {{ 'listings.filters.distance.pickOnMapButton' | translate }}
+        </button>
+      </div>
+    }
+    @case ('geo') {
+      <div class="rof__origin rof__origin--set">
+        <div class="rof__origin-top">
+          <span class="rof__origin-icon rof__origin-icon--set"><i class="pi pi-compass" aria-hidden="true"></i></span>
+          <div class="rof__origin-copy">
+            <p class="rof__origin-title">{{ 'listings.filters.distance.originGeoTitle' | translate }}</p>
+            <p class="rof__origin-sub">{{ 'listings.filters.distance.originGeoSubtitle' | translate }}</p>
+          </div>
+          <button type="button" class="rof__edit" (click)="openPicker()">
+            {{ 'listings.filters.distance.change' | translate }}
+          </button>
+        </div>
+      </div>
+    }
+    @case ('manual') {
+      <div class="rof__origin rof__origin--set">
+        <div class="rof__origin-top">
+          <span class="rof__origin-icon rof__origin-icon--set"><i class="pi pi-map-marker" aria-hidden="true"></i></span>
+          <div class="rof__origin-copy">
+            <p class="rof__origin-title">{{ 'listings.filters.distance.originManualTitle' | translate }}</p>
+            <p class="rof__origin-sub">{{ 'listings.filters.distance.originManualSubtitle' | translate }}</p>
+          </div>
+          <button type="button" class="rof__edit" (click)="openPicker()">
+            {{ 'listings.filters.distance.change' | translate }}
+          </button>
+        </div>
+        @if (originCoords(); as coords) {
+          <div class="rof__preview">
+            <app-map [center]="coords" [pin]="coords" height="78px" [interactive]="false" />
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <div class="rof__radius" [class.rof__radius--locked]="locked()">
+    <div class="rof__radius-val">
+      <b class="rof__radius-num">{{ formattedRadius() }}</b>
+      <span class="rof__radius-caption">
+        @if (locked()) {
+          {{ 'listings.filters.distance.setPointFirst' | translate }}
+        } @else {
+          {{ 'listings.filters.distance.searchRadius' | translate }}
+        }
+      </span>
+    </div>
+    <input
+      type="range"
+      class="rof__slider"
+      [attr.min]="sliderMin"
+      [attr.max]="sliderMax"
+      [value]="effectiveSliderValue()"
+      [disabled]="locked()"
+      [style.--rof-fill.%]="(effectiveSliderValue() / sliderMax) * 100"
+      [attr.aria-valuemin]="sliderMin"
+      [attr.aria-valuemax]="sliderMax"
+      [attr.aria-valuenow]="effectiveSliderValue()"
+      [attr.aria-valuetext]="formattedRadius()"
+      [attr.aria-label]="'listings.filters.distance.searchRadius' | translate"
+      (input)="onSliderInput($event)"
+      (change)="onSliderCommit($event)"
+    />
+    <div class="rof__scale-axis" aria-hidden="true">
+      <span>{{ 'listings.filters.distance.scaleMin' | translate }}</span>
+      <span>{{ 'listings.filters.distance.scaleMax' | translate }}</span>
+    </div>
+    @if (!locked()) {
+      <div class="rof__presets">
+        @for (meters of presets; track meters) {
+          <button
+            type="button"
+            class="rof__preset"
+            [class.rof__preset--active]="isPresetActive(meters)"
+            (click)="selectPreset(meters)"
+          >{{ formatPreset(meters) }}</button>
+        }
+      </div>
+    }
+  </div>
+</div>
+
+<app-location-picker
+  [open]="pickerOpen()"
+  [initialCenter]="pickerInitialCenter()"
+  headerKey="listings.filters.locationPicker.title"
+  confirmLabelKey="listings.filters.locationPicker.done"
+  [hintTitleKey]="'listings.filters.locationPicker.title'"
+  [hintSubtitleMovedKey]="'listings.filters.locationPicker.hintMoved'"
+  [hintSubtitleIdleKey]="'listings.filters.locationPicker.hintIdle'"
+  [showMyLocationButton]="true"
+  [radiusPreviewMeters]="effectiveMeters()"
+  [confirmDisabledUntilMoved]="true"
+  (confirmed)="onPickerConfirmed($event)"
+  (cancelled)="onPickerCancelled()"
+/>

@@ -4,16 +4,19 @@ import {
   Component,
   computed,
   EventEmitter,
+  inject,
   input,
   Output,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
+import { LanguageService } from '../../../../shared/services/language.service';
 import { ImageContainerComponent } from '../../../../shared/ui/image-container/image-container.component';
 import { DramCurrencyPipe } from '../../../../shared/utils/dram-currency.pipe';
 import type { BookingStatus } from '../../../bookings/models/booking.model';
 import type { ListingPreview } from '../../models/listing.model';
+import { formatDistanceMeters, kmToMeters, localeTagForLanguage } from '../../models/radius-scale.util';
 
 interface BookingBadgeConfig {
   readonly labelKey: string;
@@ -112,12 +115,31 @@ function resolveAgeRangeDisplay(
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ListingCardComponent {
+  private readonly languageService = inject(LanguageService);
+  private readonly translate = inject(TranslateService);
+
   readonly listing = input.required<ListingPreview>();
   readonly isAuthenticated = input<boolean>(false);
   readonly bookingStatus = input<BookingStatus | null | undefined>(undefined);
   readonly isOwner = input<boolean>(false);
 
   @Output() readonly favoriteToggled = new EventEmitter<string>();
+
+  /**
+   * `.distbadge` pill (Maps P2 "location + radius" design) — only populated
+   * when `GET /api/listings` was called with `originLat`/`originLng`
+   * (`ListingPreview.distanceKm`'s own doc comment), so this is `null`/hidden
+   * everywhere else (favorites, my-listings, unfiltered browse). Distance is
+   * never recomputed client-side — always the backend's haversine value.
+   */
+  protected readonly distanceLabel = computed(() => {
+    const km = this.listing().distanceKm;
+    if (km == null) return null;
+    return formatDistanceMeters(kmToMeters(km), localeTagForLanguage(this.languageService.current().code), {
+      meters: this.translate.instant('listings.filters.distance.unitMeters'),
+      kilometers: this.translate.instant('listings.filters.distance.unitKilometers'),
+    });
+  });
 
   protected readonly cardLink = computed(() =>
     this.isOwner()

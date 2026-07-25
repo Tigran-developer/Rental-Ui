@@ -13,7 +13,6 @@ import { Store, createSelector } from '@ngrx/store';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
-import { MessageService } from 'primeng/api';
 import { catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
 
 import { LanguageService } from '../../../../shared/services/language.service';
@@ -28,10 +27,17 @@ import { selectMyBookings } from '../../../bookings/store/bookings.selectors';
 import { selectFavoriteIds } from '../../../favorites/store/favorites.selectors';
 import { ListingCardComponent } from '../../components/listing-card/listing-card.component';
 import { ListingsFiltersComponent } from '../../components/listings-filters/listings-filters.component';
+import { RadiusOriginFilterComponent } from '../../components/radius-origin-filter/radius-origin-filter.component';
 import { districtDisplayName } from '../../models/district-ui.util';
 import type { ListingDistrict } from '../../models/district.model';
-import { parseDistrictIdsParam, serializeDistrictIdsParam } from '../../models/listings-filter.model';
+import {
+  parseDistrictIdsParam,
+  parseRadiusKmParam,
+  serializeDistrictIdsParam,
+  serializeRadiusKmParam,
+} from '../../models/listings-filter.model';
 import type { ListingsFilter } from '../../models/listings-filter.model';
+import { formatDistanceMeters, kmToMeters, localeTagForLanguage, metersToKm } from '../../models/radius-scale.util';
 import type { ListingPreview } from '../../models/listing.model';
 import { ListingsApiService } from '../../services/listings-api.service';
 import * as ListingsActions from '../../store/listings.actions';
@@ -146,13 +152,6 @@ const AGE_GROUPS = [
   { value: '120+',   label: '10+ yr' },
 ] as const;
 
-const DISTANCES = [
-  { value: 1,    label: '< 1 km' },
-  { value: 3,    label: '< 3 km' },
-  { value: 5,    label: '< 5 km' },
-  { value: null, label: 'Any' },
-] as const;
-
 @Component({
   selector: 'app-listings-page',
   standalone: true,
@@ -164,6 +163,7 @@ const DISTANCES = [
     ListingsFiltersComponent,
     LoadingSkeletonComponent,
     MessageModule,
+    RadiusOriginFilterComponent,
     TranslatePipe,
   ],
   templateUrl: './listings-page.component.html',
@@ -175,7 +175,6 @@ export class ListingsPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly location = inject(Location);
-  private readonly messageService = inject(MessageService);
   private readonly translate = inject(TranslateService);
   private readonly listingsApi = inject(ListingsApiService);
   private readonly languageService = inject(LanguageService);
@@ -223,6 +222,13 @@ export class ListingsPageComponent {
   private readonly itemsSignal = this.store.selectSignal(selectListingItems);
   private readonly hasMoreSignal = this.store.selectSignal(selectListingsHasMore);
   private readonly filtersSignal = this.store.selectSignal(selectListingsFilters);
+  /**
+   * Read ONLY to decide whether the radius chip (below) is honest to show —
+   * `originCoords` is session-only and never round-trips through the URL
+   * (Maps P2-3), so a page reload with `?radiusKm=…` in the URL but no
+   * origin in memory yet is an expected, recoverable state (see
+   * `activeFilterChips` below), not an error.
+   */
   private readonly originCoordsSignal = this.store.selectSignal(selectListingsOriginCoords);
   protected readonly categoriesSignal = this.store.selectSignal(selectListingCategories);
 
@@ -247,13 +253,19 @@ export class ListingsPageComponent {
 
   protected readonly activeCategoryId = computed(() => this.filtersSignal().categoryId);
   protected readonly activeAgeGroup   = computed(() => this.filtersSignal().ageGroup);
-  protected readonly activeMaxDistance = computed(() => this.filtersSignal().maxDistance);
+  protected readonly activeRadiusKm = computed(() => this.filtersSignal().radiusKm);
+  /** `RadiusOriginFilterComponent` works in METRES (its slider math is
+   *  metre-based) — converts at this component's own boundary since
+   *  `ListingsFilter.radiusKm` stores fractional km. */
+  protected readonly activeRadiusMeters = computed(() => {
+    const km = this.activeRadiusKm();
+    return km != null ? kmToMeters(km) : null;
+  });
   protected readonly activeMinPrice   = computed(() => this.filtersSignal().minPrice);
   protected readonly activeMaxPrice   = computed(() => this.filtersSignal().maxPrice);
   protected readonly activeDistrictIds = computed(() => this.filtersSignal().districtIds);
 
   protected readonly ageGroups  = AGE_GROUPS;
-  protected readonly distances  = DISTANCES;
 
   protected readonly activeCategoryName = computed(() => {
     const id = this.filtersSignal().categoryId;
@@ -270,10 +282,12 @@ export class ListingsPageComponent {
       f.ageGroup ||
       f.minPrice != null ||
       f.maxPrice != null ||
-      f.maxDistance != null ||
+      f.radiusKm != null ||
       f.districtIds.length > 0
     );
   });
+
+  private readonly localeTag = computed(() => localeTagForLanguage(this.languageService.current().code));
 
   protected readonly activeFilterChips = computed(() => {
     const f = this.filtersSignal();
@@ -286,9 +300,24 @@ export class ListingsPageComponent {
       const ag = AGE_GROUPS.find((a) => a.value === f.ageGroup);
       chips.push({ key: 'ageGroup', label: ag?.label ?? f.ageGroup });
     }
-    if (f.maxDistance != null) {
-      const d = DISTANCES.find((dist) => dist.value === f.maxDistance);
-      chips.push({ key: 'maxDistance', label: d?.label ?? `< ${f.maxDistance} km` });
+    // Gated on `originCoordsSignal()`, not just `f.radiusKm` — see that
+    // field's own doc comment. Showing this chip with no origin in memory
+    // (e.g. right after a page reload) would claim a filter is narrowing
+    // results when the API request actually omitted it entirely
+    // (`ListingsApiService.buildListingsQueryParams` only sends `radiusKm`/
+    // `originLat`/`originLng` together). The radius VALUE itself is not
+    // lost — `RadiusOriginFilterComponent`'s slider still shows it, greyed
+    // out with "set a point first" — it just isn't presented as active
+    // until an origin exists again.
+    if (f.radiusKm != null && this.originCoordsSignal() !== null) {
+      const distanceLabel = formatDistanceMeters(kmToMeters(f.radiusKm), this.localeTag(), {
+        meters: this.translate.instant('listings.filters.distance.unitMeters'),
+        kilometers: this.translate.instant('listings.filters.distance.unitKilometers'),
+      });
+      chips.push({
+        key: 'radiusKm',
+        label: `${distanceLabel} · ${this.translate.instant('listings.filters.distance.chipSuffix')}`,
+      });
     }
     for (const districtId of f.districtIds) {
       const district = this.districtOptions().find((d) => d.id === districtId);
@@ -395,67 +424,20 @@ export class ListingsPageComponent {
     });
   }
 
-  protected selectDistance(value: number | null): void {
-    const current = this.filtersSignal().maxDistance;
-    const nextValue = current === value ? null : value;
-
-    if (nextValue === null) {
-      this.applyMaxDistance(null);
-      return;
-    }
-
-    if (this.originCoordsSignal() !== null) {
-      this.applyMaxDistance(nextValue);
-      return;
-    }
-
-    this.requestOriginCoords(nextValue);
-  }
-
-  private applyMaxDistance(value: number | null): void {
+  /**
+   * Handles `RadiusOriginFilterComponent`'s `radiusMetersChange` — the
+   * component owns the origin (geolocation/manual-pick/denied) UI and
+   * dispatch itself (identical on both surfaces), but leaves the RADIUS
+   * value's commit timing to the parent: the desktop sidebar applies
+   * immediately (merge-navigates, like every other sidebar control here),
+   * while the mobile sheet stages it in a draft instead (see
+   * `listings-filters.component.ts`).
+   */
+  protected onRadiusMetersChange(meters: number): void {
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { maxDistance: value },
+      queryParams: { radiusKm: serializeRadiusKmParam(metersToKm(meters)) },
       queryParamsHandling: 'merge',
-    });
-  }
-
-  /**
-   * Requests the renter's position once per session (cached in the store as
-   * `originCoords` — never persisted, never written to the URL, per Maps
-   * P2-3). Only activates the distance chip once the browser grants
-   * permission; on denial/error/unavailable, surfaces a toast and leaves the
-   * chip inactive so the UI never shows a filter it can't honor.
-   */
-  private requestOriginCoords(nextDistance: number): void {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      this.showGeolocationError();
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        this.store.dispatch(
-          ListingsActions.setOriginCoords({
-            coords: {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            },
-          }),
-        );
-        this.applyMaxDistance(nextDistance);
-      },
-      () => {
-        this.showGeolocationError();
-      },
-    );
-  }
-
-  private showGeolocationError(): void {
-    this.messageService.add({
-      severity: 'warn',
-      summary: this.translate.instant('listings.page.geolocationErrorTitle'),
-      detail: this.translate.instant('listings.page.geolocationErrorDetail'),
     });
   }
 
@@ -493,12 +475,12 @@ export class ListingsPageComponent {
     }
 
     const paramKey =
-      chip.key === 'categoryId'  ? 'categoryId'  :
-      chip.key === 'city'        ? 'city'        :
-      chip.key === 'minPrice'    ? 'minPrice'    :
-      chip.key === 'maxPrice'    ? 'maxPrice'    :
-      chip.key === 'ageGroup'    ? 'ageGroup'    :
-      chip.key === 'maxDistance' ? 'maxDistance' :
+      chip.key === 'categoryId' ? 'categoryId' :
+      chip.key === 'city'       ? 'city'       :
+      chip.key === 'minPrice'   ? 'minPrice'   :
+      chip.key === 'maxPrice'   ? 'maxPrice'   :
+      chip.key === 'ageGroup'   ? 'ageGroup'   :
+      chip.key === 'radiusKm'   ? 'radiusKm'   :
       null;
     if (!paramKey) return;
     void this.router.navigate([], {
@@ -539,7 +521,6 @@ export class ListingsPageComponent {
     const minPriceStr = params.get('minPrice');
     const maxPriceStr = params.get('maxPrice');
     const ageGroup = params.get('ageGroup');
-    const maxDistanceStr = params.get('maxDistance');
     return {
       query: q?.trim() || null,
       city: city?.trim() || null,
@@ -553,10 +534,7 @@ export class ListingsPageComponent {
           ? Number(maxPriceStr)
           : null,
       ageGroup: ageGroup?.trim() || null,
-      maxDistance:
-        maxDistanceStr != null && !Number.isNaN(Number(maxDistanceStr))
-          ? Number(maxDistanceStr)
-          : null,
+      radiusKm: parseRadiusKmParam(params.get('radiusKm')),
       districtIds: parseDistrictIdsParam(params.get('districtIds')),
     };
   }

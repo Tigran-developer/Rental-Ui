@@ -106,9 +106,18 @@ export const listingsReducer = createReducer(
   ),
   on(
     ListingsActions.setOriginCoords,
-    (state, { coords }): ListingsState => ({
+    (state, { coords, source }): ListingsState => ({
       ...state,
       originCoords: coords,
+      originSource: source,
+      originDenied: false,
+    }),
+  ),
+  on(
+    ListingsActions.setOriginDenied,
+    (state): ListingsState => ({
+      ...state,
+      originDenied: true,
     }),
   ),
   on(

@@ -16,7 +16,7 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { catchError, debounceTime, of, startWith } from 'rxjs';
@@ -32,12 +32,21 @@ import { districtDisplayName } from '../../models/district-ui.util';
 import type { ListingDistrict } from '../../models/district.model';
 import {
   parseDistrictIdsParam,
+  parseRadiusKmParam,
   serializeDistrictIdsParam,
+  serializeRadiusKmParam,
   type ListingsFilter,
 } from '../../models/listings-filter.model';
+import {
+  formatDistanceMeters,
+  kmToMeters,
+  localeTagForLanguage,
+  metersToKm,
+} from '../../models/radius-scale.util';
+import { RadiusOriginFilterComponent } from '../radius-origin-filter/radius-origin-filter.component';
 import { ListingsApiService } from '../../services/listings-api.service';
 import * as ListingsActions from '../../store/listings.actions';
-import { selectListingCategories } from '../../store/listings.selectors';
+import { selectListingCategories, selectListingsOriginCoords } from '../../store/listings.selectors';
 
 /** Options fed to `p-multiSelect`: id is the value, `label` is the district's
  *  display name already resolved for the active UI language (see
@@ -49,7 +58,7 @@ interface DistrictOption {
 }
 
 interface ActiveChip {
-  readonly key: 'city' | 'categoryId' | 'minPrice' | 'maxPrice' | 'districtId';
+  readonly key: 'city' | 'categoryId' | 'minPrice' | 'maxPrice' | 'districtId' | 'radiusKm';
   readonly label: string;
   /** Only set for `key: 'districtId'` — identifies which district this chip removes. */
   readonly districtId?: string;
@@ -62,6 +71,7 @@ interface ActiveChip {
     CategorySelectorComponent,
     InputNumberModule,
     MultiSelectModule,
+    RadiusOriginFilterComponent,
     ReactiveFormsModule,
     TranslatePipe,
     UiInputComponent,
@@ -79,6 +89,7 @@ export class ListingsFiltersComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly listingsApi = inject(ListingsApiService);
   private readonly languageService = inject(LanguageService);
+  private readonly translate = inject(TranslateService);
 
   @Output() readonly filtersChanged = new EventEmitter<ListingsFilter>();
 
@@ -110,12 +121,17 @@ export class ListingsFiltersComponent implements OnInit, OnDestroy {
     return this.districts().map((d) => ({ id: d.id, label: districtDisplayName(d, lang) }));
   });
 
+  /** Read ONLY to gate the radius chip's honesty — see `activeChips` below
+   *  and `ListingsPageComponent`'s identical `originCoordsSignal`. */
+  protected readonly originCoords = this.store.selectSignal(selectListingsOriginCoords);
+
   readonly filterForm = this.fb.group({
     query: this.fb.nonNullable.control(''),
     city: this.fb.nonNullable.control(''),
     categoryId: this.fb.nonNullable.control(''),
     minPrice: this.fb.control<number | null>(null),
     maxPrice: this.fb.control<number | null>(null),
+    radiusKm: this.fb.control<number | null>(null),
     districtIds: this.fb.nonNullable.control<string[]>([]),
   });
 
@@ -124,10 +140,41 @@ export class ListingsFiltersComponent implements OnInit, OnDestroy {
     categoryId: this.fb.nonNullable.control(''),
     minPrice: this.fb.control<number | null>(null),
     maxPrice: this.fb.control<number | null>(null),
+    radiusKm: this.fb.control<number | null>(null),
     districtIds: this.fb.nonNullable.control<string[]>([]),
   });
 
   private readonly formValues = signal(this.filterForm.getRawValue());
+
+  // Live mirror of `draftForm.controls.radiusKm` — a plain FormControl has no
+  // signal of its own, and `[radiusMeters]` (below) needs one to re-render
+  // the slider as the control changes (`openSheet()` snapshotting it in,
+  // the shared component's own output setting it, etc).
+  private readonly draftRadiusKmSignal = toSignal(this.draftForm.controls.radiusKm.valueChanges, {
+    initialValue: this.draftForm.controls.radiusKm.value,
+  });
+
+  /**
+   * `RadiusOriginFilterComponent` works in METRES (its slider math is
+   * metre-based) — `draftForm.controls.radiusKm` stores fractional km like
+   * every other filter field, so this class converts at its own boundary,
+   * same as `ListingsPageComponent.activeRadiusMeters`/`onRadiusMetersChange`.
+   * The shared component's own `[radiusMeters]`/`(radiusMetersChange)` API is
+   * plain input/output (not a `ControlValueAccessor`) because the desktop
+   * sidebar has no reactive form to bind a `formControlName` to at all.
+   */
+  protected readonly draftRadiusMeters = computed(() => {
+    const km = this.draftRadiusKmSignal();
+    return km != null ? kmToMeters(km) : null;
+  });
+
+  protected onDraftRadiusMetersChange(meters: number): void {
+    this.draftForm.controls.radiusKm.setValue(metersToKm(meters));
+  }
+
+  private readonly localeTag = computed(() =>
+    localeTagForLanguage(this.languageService.current().code),
+  );
 
   protected readonly activeChips = computed((): readonly ActiveChip[] => {
     const v = this.formValues();
@@ -141,6 +188,18 @@ export class ListingsFiltersComponent implements OnInit, OnDestroy {
     }
     if (v.maxPrice != null) {
       chips.push({ key: 'maxPrice', label: `Max ${v.maxPrice}` });
+    }
+    // Gated on `originCoords()`, not just `v.radiusKm` — see
+    // `ListingsPageComponent.activeFilterChips`'s identical reasoning.
+    if (v.radiusKm != null && this.originCoords() !== null) {
+      const distanceLabel = formatDistanceMeters(kmToMeters(v.radiusKm), this.localeTag(), {
+        meters: this.translate.instant('listings.filters.distance.unitMeters'),
+        kilometers: this.translate.instant('listings.filters.distance.unitKilometers'),
+      });
+      chips.push({
+        key: 'radiusKm',
+        label: `${distanceLabel} · ${this.translate.instant('listings.filters.distance.chipSuffix')}`,
+      });
     }
     for (const districtId of v.districtIds) {
       const district = this.districtOptions().find((d) => d.id === districtId);
@@ -156,6 +215,7 @@ export class ListingsFiltersComponent implements OnInit, OnDestroy {
       v.categoryId ||
       v.minPrice != null ||
       v.maxPrice != null ||
+      v.radiusKm != null ||
       v.districtIds.length > 0
     );
   });
@@ -171,12 +231,17 @@ export class ListingsFiltersComponent implements OnInit, OnDestroy {
         void this.router.navigate([], {
           relativeTo: this.route,
           // 'merge' (not 'replace'): this form only ever knows about its own
-          // six fields (see `toQueryParams` below). Sibling filters that live
-          // elsewhere — `ageGroup`/`maxDistance` in the desktop sidebar
-          // (`ListingsPageComponent`) — must survive a navigation triggered
-          // from here. Each of this form's own keys is still explicitly set
-          // to `null` when cleared, so 'merge' + explicit null still removes
-          // them; it only leaves keys this form never mentions untouched.
+          // OWNED fields (see `toQueryParams` below — M-021: a sibling filter
+          // this form has no concept of would be silently dropped under
+          // 'replace'). `ageGroup` still lives ONLY in the desktop sidebar
+          // (`ListingsPageComponent`) and must survive a navigation triggered
+          // from here — `radiusKm`, by contrast, IS one of this form's own
+          // fields (below), exactly like `districtIds`: both surfaces read
+          // and write the same URL param, so there is only ever one copy of
+          // this state to drift. Each of this form's own keys is still
+          // explicitly set to `null` when cleared, so 'merge' + explicit null
+          // still removes them; it only leaves keys this form never mentions
+          // untouched.
           queryParams: this.toQueryParams(filter),
           queryParamsHandling: 'merge',
         });
@@ -201,6 +266,7 @@ export class ListingsFiltersComponent implements OnInit, OnDestroy {
               maxPriceStr != null && !Number.isNaN(Number(maxPriceStr))
                 ? Number(maxPriceStr)
                 : null,
+            radiusKm: parseRadiusKmParam(params.get('radiusKm')),
             districtIds: parseDistrictIdsParam(params.get('districtIds')),
           },
           { emitEvent: false },
@@ -224,6 +290,7 @@ export class ListingsFiltersComponent implements OnInit, OnDestroy {
       categoryId: v.categoryId,
       minPrice: v.minPrice,
       maxPrice: v.maxPrice,
+      radiusKm: v.radiusKm,
       districtIds: v.districtIds,
     });
     this.sheetOpen.set(true);
@@ -242,6 +309,7 @@ export class ListingsFiltersComponent implements OnInit, OnDestroy {
       categoryId: draft.categoryId,
       minPrice: draft.minPrice,
       maxPrice: draft.maxPrice,
+      radiusKm: draft.radiusKm,
       districtIds: draft.districtIds,
     });
     this.closeSheet();
@@ -255,6 +323,7 @@ export class ListingsFiltersComponent implements OnInit, OnDestroy {
       categoryId: '',
       minPrice: null,
       maxPrice: null,
+      radiusKm: null,
       districtIds: [],
     });
     this.closeSheet();
@@ -273,6 +342,9 @@ export class ListingsFiltersComponent implements OnInit, OnDestroy {
         break;
       case 'maxPrice':
         this.filterForm.patchValue({ maxPrice: null });
+        break;
+      case 'radiusKm':
+        this.filterForm.patchValue({ radiusKm: null });
         break;
       case 'districtId': {
         const current = this.filterForm.getRawValue().districtIds;
@@ -293,7 +365,7 @@ export class ListingsFiltersComponent implements OnInit, OnDestroy {
       minPrice: raw.minPrice,
       maxPrice: raw.maxPrice,
       ageGroup: null,
-      maxDistance: null,
+      radiusKm: raw.radiusKm,
       districtIds: raw.districtIds,
     };
   }
@@ -305,6 +377,7 @@ export class ListingsFiltersComponent implements OnInit, OnDestroy {
       categoryId: filter.categoryId,
       minPrice: filter.minPrice != null ? String(filter.minPrice) : null,
       maxPrice: filter.maxPrice != null ? String(filter.maxPrice) : null,
+      radiusKm: serializeRadiusKmParam(filter.radiusKm),
       districtIds: serializeDistrictIdsParam(filter.districtIds),
     };
   }

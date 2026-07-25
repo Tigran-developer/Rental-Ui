@@ -304,6 +304,35 @@
       "filterSheet": {
         "cancel": "Cancel",
         "apply": "Apply Filters"
+      },
+      "distance": {
+        "originUnsetTitle": "Reference point not set",
+        "originUnsetSubtitle": "Radius is measured from it",
+        "detectMyLocation": "Detect my location",
+        "pickOnMapLink": "or pick a point on the map",
+        "pickOnMapButton": "Pick a point on the map",
+        "originGeoTitle": "From your location",
+        "originGeoSubtitle": "Detected via GPS",
+        "originManualTitle": "From the chosen point",
+        "originManualSubtitle": "Chosen point on the map",
+        "change": "change",
+        "originDeniedTitle": "Location unavailable",
+        "originDeniedSubtitle": "Access is off in the browser",
+        "originDeniedMessage": "No problem — set a point manually and the radius will work.",
+        "searchRadius": "search radius",
+        "setPointFirst": "set a point first",
+        "scaleMin": "200 m",
+        "scaleMax": "20 km",
+        "unitMeters": "m",
+        "unitKilometers": "km",
+        "chipSuffix": "from you"
+      },
+      "locationPicker": {
+        "title": "Measure distance from where?",
+        "hintMoved": "Move the map so the pin sits where you want",
+        "hintIdle": "Map hasn't moved yet — pin not placed",
+        "myLocation": "My location",
+        "done": "Done"
       }
     },
     "gallery": {
@@ -475,9 +504,33 @@
       "location": {
         "heading": "Location",
         "approximateChip": "Approximate area",
-        "mapUnavailable": "Map preview isn't available right now — see the district above.",
+        "approximateRadius": "~{{radius}} m",
         "mapRegionLabel": "Map showing the approximate location of this listing",
-        "privacyNote": "For privacy, only the general area is shown — not the exact address."
+        "privacyNote": "We show the district, not the exact address. The owner shares it after the booking is confirmed.",
+        "mapUnavailableTitle": "Map is temporarily unavailable",
+        "mapUnavailableDescription": "But the toy is in {{place}}. We'll show distance once the map loads.",
+        "myLocationButton": "My location",
+        "myLocationLocating": "Locating...",
+        "distanceFromYou": "≈ {{distance}} km away",
+        "distanceLegend": "Blue dot is you, orange is the toy area",
+        "geoDeniedMessage": "Location is turned off. No problem — pick a point on the map instead.",
+        "pickPointButton": "Pick a point on the map",
+        "scrollGateHint": "Hold Ctrl and scroll to zoom",
+        "touchGateHint": "Tap to move the map",
+        "expandLabel": "Expand map",
+        "zoomIn": "Zoom in",
+        "zoomOut": "Zoom out",
+        "pointPicker": {
+          "title": "Pick your point on the map",
+          "cancel": "Cancel",
+          "confirm": "Confirm point",
+          "privacyNote": "This point is only used to calculate distance on this device and is never sent anywhere."
+        },
+        "fullscreen": {
+          "closeLabel": "Close map",
+          "backToListing": "To listing",
+          "dialogLabel": "Full-screen map"
+        }
       }
     },
     "createPage": {

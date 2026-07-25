@@ -1,0 +1,294 @@
+// Maps P2 "location + radius" design, screens 3–5. Token mapping from the
+// approved static mockup's own CSS custom properties (documented per rule so
+// a future pass can audit it against the design):
+//   --primary       -> --ui-color-primary
+//   --primary-strong-> --ui-color-primary-strong
+//   --primary-soft  -> --ui-color-primary-soft
+//   --primary-wash  -> --ui-color-primary-wash
+//   --secondary     -> --ui-color-secondary
+//   --bg            -> --ui-color-background
+//   --surface       -> --ui-color-surface
+//   --surface-muted -> --ui-color-surface-muted
+//   --text/-2/-3    -> --ui-color-text-primary/-secondary/-muted
+//   --border        -> --ui-color-border
+//   --r (14px)      -> --ui-radius-md
+//   pill radius     -> --ui-radius-pill
+// The mockup's "denied" card colours (`#fff8f0` bg / `#ffe0c2` border) and the
+// "set" card's border (`#ffd9bd`) have no exact design-system token — no
+// --ui-color-warning-* variant reads as "soft orange" (warning-surface is a
+// yellow), so both are derived from --ui-color-primary via color-mix()
+// instead of a hardcoded hex, flagged here for a design-token audit.
+
+.rof {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-12);
+}
+
+.rof__origin {
+  background: var(--ui-color-background);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-12);
+  padding: var(--ui-space-12);
+}
+
+.rof__origin--set {
+  background: var(--ui-color-primary-wash);
+  border-color: color-mix(in srgb, var(--ui-color-primary) 35%, white);
+}
+
+.rof__origin--denied {
+  background: color-mix(in srgb, var(--ui-color-primary-wash) 55%, white);
+  border-color: color-mix(in srgb, var(--ui-color-primary) 20%, white);
+}
+
+.rof__origin-top {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-10);
+}
+
+.rof__origin-icon {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ui-radius-12);
+  display: grid;
+  place-items: center;
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border);
+  color: var(--ui-color-text-secondary);
+}
+
+.rof__origin-icon--set {
+  background: var(--ui-color-primary);
+  border-color: var(--ui-color-primary);
+  color: var(--ui-color-on-primary);
+}
+
+.rof__origin-icon--denied {
+  background: var(--ui-color-surface);
+  border-color: color-mix(in srgb, var(--ui-color-primary) 30%, white);
+  color: var(--ui-color-primary);
+}
+
+.rof__origin-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.rof__origin-title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: var(--ui-font-weight-bold);
+  line-height: 1.2;
+  color: var(--ui-color-text-primary);
+}
+
+.rof__origin-sub {
+  margin: 1px 0 0;
+  font-size: 0.71875rem;
+  font-weight: var(--ui-font-weight-medium);
+  color: var(--ui-color-text-secondary);
+  line-height: 1.3;
+}
+
+.rof__edit {
+  flex: none;
+  margin-left: auto;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 0.75rem;
+  font-weight: var(--ui-font-weight-bold);
+  color: var(--ui-color-primary);
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--ui-color-primary-strong);
+  }
+}
+
+.rof__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-space-8);
+  height: 2.25rem;
+  padding: 0 var(--ui-space-14);
+  border-radius: var(--ui-radius-pill);
+  font-size: 0.8125rem;
+  font-weight: var(--ui-font-weight-bold);
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+
+  &--block { width: 100%; }
+}
+
+.rof__btn--primary {
+  margin-top: var(--ui-space-10);
+  background: var(--ui-color-primary);
+  color: var(--ui-color-on-primary);
+
+  &:hover { background: var(--ui-color-primary-strong); }
+}
+
+.rof__btn--ghost {
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text-primary);
+  border: 1.5px solid var(--ui-color-border);
+
+  &:hover { filter: brightness(0.97); }
+}
+
+.rof__origin-link-row {
+  text-align: center;
+  margin-top: var(--ui-space-8);
+}
+
+.rof__link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 0.75rem;
+  font-weight: var(--ui-font-weight-bold);
+  color: var(--ui-color-primary);
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--ui-color-primary-strong);
+  }
+}
+
+.rof__softmsg {
+  display: flex;
+  gap: var(--ui-space-8);
+  align-items: flex-start;
+  margin: var(--ui-space-8) 0 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--ui-color-text-secondary);
+
+  .pi { color: var(--ui-color-primary); flex: none; margin-top: 1px; }
+}
+
+.rof__preview {
+  margin-top: var(--ui-space-10);
+  border-radius: var(--ui-radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--ui-color-border);
+}
+
+// ── Radius slider block ─────────────────────────────────────────────────
+.rof__radius--locked {
+  opacity: 0.55;
+  filter: grayscale(0.3);
+}
+
+.rof__radius-val {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ui-space-8);
+  margin-bottom: var(--ui-space-8);
+}
+
+.rof__radius-num {
+  font-size: 1.375rem;
+  font-weight: var(--ui-font-weight-extrabold);
+  letter-spacing: -0.02em;
+  color: var(--ui-color-text-primary);
+}
+
+.rof__radius-caption {
+  margin-left: auto;
+  font-size: 0.71875rem;
+  font-weight: var(--ui-font-weight-bold);
+  color: var(--ui-color-text-muted);
+  text-align: right;
+}
+
+.rof__slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: var(--ui-radius-pill);
+  background: linear-gradient(
+    90deg,
+    var(--ui-color-primary) var(--rof-fill, 0%),
+    var(--ui-color-border) var(--rof-fill, 0%)
+  );
+  outline: none;
+  margin: var(--ui-space-6) 0;
+  cursor: pointer;
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid var(--ui-color-primary);
+    box-shadow: 0 2px 6px rgba(255, 96, 8, 0.4);
+    cursor: pointer;
+  }
+
+  &::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid var(--ui-color-primary);
+    cursor: pointer;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+
+    &::-webkit-slider-thumb { border-color: var(--ui-color-text-muted); box-shadow: none; }
+    &::-moz-range-thumb { border-color: var(--ui-color-text-muted); }
+  }
+
+  &:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid var(--ui-color-primary-strong);
+    outline-offset: 2px;
+  }
+}
+
+.rof__scale-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65625rem;
+  font-weight: var(--ui-font-weight-medium);
+  color: var(--ui-color-text-muted);
+  margin: -2px 0 var(--ui-space-8);
+}
+
+.rof__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-6);
+}
+
+.rof__preset {
+  padding: 6px 12px;
+  border-radius: var(--ui-radius-pill);
+  font-size: 0.75rem;
+  font-weight: var(--ui-font-weight-bold);
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border);
+  color: var(--ui-color-text-primary);
+  cursor: pointer;
+  font-family: inherit;
+
+  &:hover { filter: brightness(0.97); }
+}
+
+.rof__preset--active {
+  background: var(--ui-color-secondary);
+  border-color: var(--ui-color-secondary);
+  color: #fff;
+}

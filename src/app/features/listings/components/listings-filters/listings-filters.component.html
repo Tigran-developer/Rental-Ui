@@ -129,6 +129,21 @@
         </div>
       </div>
 
+      <!-- Distance (radius + reference point) — Maps P2 "location + radius"
+           design: same shared control as the desktop sidebar
+           (`ListingsPageComponent`), staged in `draftForm` like every other
+           field in this sheet and only committed to the URL on "Apply" (see
+           `applySheet()`/`onDraftRadiusMetersChange()`). -->
+      <div class="lf-field">
+        <span class="lf-field__label">
+          {{ 'listings.filters.sidebar.distance' | translate }}
+        </span>
+        <app-radius-origin-filter
+          [radiusMeters]="draftRadiusMeters()"
+          (radiusMetersChange)="onDraftRadiusMetersChange($event)"
+        />
+      </div>
+
     </div>
 
     <div class="lf-sheet__footer">

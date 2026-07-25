@@ -109,16 +109,10 @@
       <!-- Distance -->
       <div class="lp-sidebar__section">
         <p class="lp-sidebar__section-label">{{ 'listings.filters.sidebar.distance' | translate }}</p>
-        <div class="lp-sidebar__pills">
-          @for (d of distances; track d.label) {
-            <button
-              type="button"
-              class="lp-sidebar__pill"
-              [class.lp-sidebar__pill--active]="activeMaxDistance() === d.value"
-              (click)="selectDistance(d.value)"
-            >{{ d.label }}</button>
-          }
-        </div>
+        <app-radius-origin-filter
+          [radiusMeters]="activeRadiusMeters()"
+          (radiusMetersChange)="onRadiusMetersChange($event)"
+        />
       </div>
 
     </aside>

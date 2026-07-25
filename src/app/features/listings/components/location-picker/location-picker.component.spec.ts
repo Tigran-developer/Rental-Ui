@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { TranslateModule } from '@ngx-translate/core';
 
+import { GeolocationService } from '../../../../shared/services/geolocation.service';
 import { LocationPickerComponent, YEREVAN_CENTER } from './location-picker.component';
 import type { MapLatLng } from '../../../../shared/ui/map/map.component';
 
@@ -28,23 +29,42 @@ vi.mock('leaflet', () => ({
 /** Narrow accessor for the protected members under test. */
 interface Testable {
   currentCenter(): MapLatLng;
+  hasMoved(): boolean;
+  mapCenter(): MapLatLng;
+  previewDiameterPx(): number | null;
   onCenterChange(center: MapLatLng): void;
   onVisibleChange(visible: boolean): void;
+  requestMyLocation(): void;
   confirm(): void;
   cancel(): void;
 }
 
-async function createPicker(open: boolean, initialCenter?: MapLatLng) {
+async function createPicker(
+  open: boolean,
+  initialCenter?: MapLatLng,
+  extraInputs?: Record<string, unknown>,
+) {
+  const geolocation = { getCurrentPosition: vi.fn() };
   TestBed.configureTestingModule({
     imports: [LocationPickerComponent, TranslateModule.forRoot()],
+    providers: [{ provide: GeolocationService, useValue: geolocation }],
   });
   const fixture = TestBed.createComponent(LocationPickerComponent);
   fixture.componentRef.setInput('open', open);
   if (initialCenter) fixture.componentRef.setInput('initialCenter', initialCenter);
+  if (extraInputs) {
+    for (const [key, value] of Object.entries(extraInputs)) {
+      fixture.componentRef.setInput(key, value);
+    }
+  }
   fixture.detectChanges();
   await vi.runAllTimersAsync();
   fixture.detectChanges();
-  return { fixture, component: fixture.componentInstance as unknown as Testable };
+  return {
+    fixture,
+    component: fixture.componentInstance as unknown as Testable,
+    geolocation,
+  };
 }
 
 describe('LocationPickerComponent', () => {
@@ -122,5 +142,114 @@ describe('LocationPickerComponent', () => {
     await vi.runAllTimersAsync();
 
     expect(component.currentCenter()).toEqual(second);
+  });
+
+  describe('confirmDisabledUntilMoved / hasMoved (screen 5 — reference-point picker)', () => {
+    it('has NOT moved yet right after opening — the crosshair mode\'s own "report the starting centre" emission is not a real pan', async () => {
+      const { component } = await createPicker(true, YEREVAN_CENTER);
+      expect(component.hasMoved()).toBe(false);
+    });
+
+    it('becomes "moved" after a SECOND centre report — the first ever report (real or, here, simulated) never counts as a pan', async () => {
+      const { component } = await createPicker(true, YEREVAN_CENTER);
+      expect(component.hasMoved()).toBe(false);
+
+      // This spec's mocked `leaflet.map()` never reaches `MapComponent`'s own
+      // crosshair "report the starting centre" call (its mocked `tileLayer()`
+      // doesn't return a real layer, so `init()` throws before getting there
+      // and falls back to `mapError` — a limitation of this lightweight mock,
+      // not of the real map). So the FIRST `onCenterChange` call here plays
+      // the part that real Leaflet's own initial report would in production;
+      // it must not count as a pan either way — only the second call should.
+      component.onCenterChange(YEREVAN_CENTER);
+      expect(component.hasMoved()).toBe(false);
+
+      component.onCenterChange({ lat: 40.2, lng: 44.49 });
+      expect(component.hasMoved()).toBe(true);
+    });
+
+    it('disables the confirm button in the DOM until the map has moved, when confirmDisabledUntilMoved is set', async () => {
+      const { fixture, component } = await createPicker(true, YEREVAN_CENTER, {
+        confirmDisabledUntilMoved: true,
+      });
+      // `p-dialog` portals its content to `document.body` (`appendTo="body"`),
+      // NOT `fixture.nativeElement` — same reasoning as `auth-dialog`'s own
+      // dialog usage elsewhere in this codebase.
+      const confirmBtn = () =>
+        document.body.querySelector<HTMLButtonElement>('.location-picker__btn--confirm');
+
+      expect(confirmBtn()?.disabled).toBe(true);
+
+      // Two reports needed in THIS spec's mock — see the previous test's
+      // comment for why the first one doesn't count as a pan.
+      component.onCenterChange(YEREVAN_CENTER);
+      component.onCenterChange({ lat: 40.2, lng: 44.49 });
+      fixture.detectChanges();
+
+      expect(confirmBtn()?.disabled).toBe(false);
+    });
+
+    it('never disables the confirm button when confirmDisabledUntilMoved is left at its default (the wizard\'s own behaviour, unaffected)', async () => {
+      await createPicker(true, YEREVAN_CENTER);
+      const confirmBtn = document.body.querySelector<HTMLButtonElement>(
+        '.location-picker__btn--confirm',
+      );
+      expect(confirmBtn?.disabled).toBe(false);
+    });
+  });
+
+  describe('showMyLocationButton / requestMyLocation', () => {
+    it('recentres the map once geolocation resolves', async () => {
+      const { component, geolocation } = await createPicker(true, YEREVAN_CENTER, {
+        showMyLocationButton: true,
+      });
+      geolocation.getCurrentPosition.mockResolvedValue({ lat: 40.25, lng: 44.55 });
+
+      component.requestMyLocation();
+      await Promise.resolve();
+
+      expect(component.mapCenter()).toEqual({ lat: 40.25, lng: 44.55 });
+    });
+
+    it('leaves the crosshair where it was if geolocation fails — a convenience shortcut, not a hard requirement', async () => {
+      const { component, geolocation } = await createPicker(true, YEREVAN_CENTER, {
+        showMyLocationButton: true,
+      });
+      geolocation.getCurrentPosition.mockRejectedValue(new Error('denied'));
+
+      component.requestMyLocation();
+      await Promise.resolve();
+
+      expect(component.mapCenter()).toEqual(YEREVAN_CENTER);
+    });
+  });
+
+  describe('radiusPreviewMeters (dashed preview circle)', () => {
+    it('renders no preview diameter when radiusPreviewMeters is null (default)', async () => {
+      const { component } = await createPicker(true, YEREVAN_CENTER);
+      expect(component.previewDiameterPx()).toBeNull();
+    });
+
+    it('computes a positive pixel diameter once a radius is supplied', async () => {
+      const { component } = await createPicker(true, YEREVAN_CENTER, {
+        radiusPreviewMeters: 2000,
+      });
+      const diameter = component.previewDiameterPx();
+      expect(diameter).not.toBeNull();
+      expect(diameter as number).toBeGreaterThan(0);
+    });
+
+    it('grows the on-screen diameter for a larger radius at the same zoom', async () => {
+      const { fixture, component } = await createPicker(true, YEREVAN_CENTER, {
+        radiusPreviewMeters: 500,
+      });
+      const smallDiameter = component.previewDiameterPx() as number;
+
+      fixture.componentRef.setInput('radiusPreviewMeters', 5000);
+      fixture.detectChanges();
+      const largeDiameter = component.previewDiameterPx() as number;
+
+      expect(largeDiameter).toBeGreaterThan(smallDiameter);
+    });
   });
 });

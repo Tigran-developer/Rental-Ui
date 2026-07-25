@@ -20,7 +20,7 @@ import type {
   ListingPreview,
 } from '../models/listing.model';
 import type { ListingsFilter, ListingsOriginCoords } from '../models/listings-filter.model';
-import { parseAgeGroupToMonths } from '../models/listings-filter.model';
+import { clampRadiusKm, parseAgeGroupToMonths } from '../models/listings-filter.model';
 import type { PagedResult } from '../models/paged-result.model';
 
 export function normalizeListingPreview(
@@ -51,6 +51,7 @@ export function normalizeListingPreview(
         ? item.reviewCount
         : 0,
     ownerId: normalizeNonEmptyString(item.ownerId),
+    distanceKm: normalizeFiniteNumber(item.distanceKm),
   };
 }
 
@@ -300,15 +301,18 @@ export class ListingsApiService {
     }
 
     // Distance is only meaningful once we know the renter's position; the
-    // component guarantees `originCoords` is set before dispatching a request
-    // with `maxDistance` (see ListingsPageComponent.selectDistance) — if
-    // coords aren't available, silently omit the distance params rather than
-    // send a radius with no origin.
-    if (filter.maxDistance !== null && originCoords !== null) {
+    // radius filter's own UI guarantees `originCoords` is set before a
+    // `radiusKm` value can even be chosen (design decision #4 — the slider is
+    // greyed out until then) — if coords aren't available for any reason,
+    // silently omit the distance params rather than send a radius with no
+    // origin. `clampRadiusKm` mirrors the backend's own [0.2, 20] clamp
+    // (`rental-api` commit `d0955e0`) so this never sends a value the API
+    // would silently reclamp anyway.
+    if (filter.radiusKm !== null && originCoords !== null) {
       params = params
         .set('originLat', String(originCoords.lat))
         .set('originLng', String(originCoords.lng))
-        .set('radiusKm', String(filter.maxDistance));
+        .set('radiusKm', String(clampRadiusKm(filter.radiusKm)));
     }
 
     return params;

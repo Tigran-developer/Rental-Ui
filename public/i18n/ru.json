@@ -304,6 +304,35 @@
       "filterSheet": {
         "cancel": "Отмена",
         "apply": "Применить фильтры"
+      },
+      "distance": {
+        "originUnsetTitle": "Точка отсчёта не задана",
+        "originUnsetSubtitle": "От неё считаем радиус",
+        "detectMyLocation": "Определить моё местоположение",
+        "pickOnMapLink": "или указать точку на карте",
+        "pickOnMapButton": "Указать точку на карте",
+        "originGeoTitle": "От вашего местоположения",
+        "originGeoSubtitle": "Определено по геолокации",
+        "originManualTitle": "От указанной точки",
+        "originManualSubtitle": "Точка выбрана на карте",
+        "change": "изменить",
+        "originDeniedTitle": "Геолокация недоступна",
+        "originDeniedSubtitle": "Доступ выключен в браузере",
+        "originDeniedMessage": "Не проблема — задайте точку вручную, и радиус заработает.",
+        "searchRadius": "радиус поиска",
+        "setPointFirst": "сначала задайте точку",
+        "scaleMin": "200 м",
+        "scaleMax": "20 км",
+        "unitMeters": "м",
+        "unitKilometers": "км",
+        "chipSuffix": "от вас"
+      },
+      "locationPicker": {
+        "title": "Откуда считать расстояние?",
+        "hintMoved": "Двигайте карту, чтобы прицел встал в нужное место",
+        "hintIdle": "Карта ещё не сдвинута — прицел не наведён",
+        "myLocation": "Моё местоположение",
+        "done": "Готово"
       }
     },
     "gallery": {
@@ -474,10 +503,34 @@
       },
       "location": {
         "heading": "Местоположение",
-        "approximateChip": "Приблизительная область",
-        "mapUnavailable": "Предпросмотр карты сейчас недоступен — район указан выше.",
+        "approximateChip": "Примерная зона",
+        "approximateRadius": "~{{radius}} м",
         "mapRegionLabel": "Карта с приблизительным местоположением этого объявления",
-        "privacyNote": "В целях конфиденциальности показывается только общая область, а не точный адрес."
+        "privacyNote": "Мы показываем район, а не точный адрес. Владелец получит адрес после подтверждения брони.",
+        "mapUnavailableTitle": "Карта временно недоступна",
+        "mapUnavailableDescription": "Но игрушка точно в районе {{place}}. Расстояние покажем, когда карта загрузится.",
+        "myLocationButton": "Моё местоположение",
+        "myLocationLocating": "Определяем...",
+        "distanceFromYou": "≈ {{distance}} км от вас",
+        "distanceLegend": "Синяя точка — вы, оранжевая — район игрушки",
+        "geoDeniedMessage": "Доступ к геолокации выключен. Ничего страшного — можно указать точку на карте.",
+        "pickPointButton": "Указать точку на карте",
+        "scrollGateHint": "Зажмите Ctrl и прокрутите, чтобы увеличить",
+        "touchGateHint": "Нажмите, чтобы двигать карту",
+        "expandLabel": "Развернуть карту",
+        "zoomIn": "Увеличить",
+        "zoomOut": "Уменьшить",
+        "pointPicker": {
+          "title": "Укажите вашу точку на карте",
+          "cancel": "Отмена",
+          "confirm": "Подтвердить точку",
+          "privacyNote": "Эта точка используется только для расчёта расстояния на этом устройстве и никуда не отправляется."
+        },
+        "fullscreen": {
+          "closeLabel": "Закрыть карту",
+          "backToListing": "К объявлению",
+          "dialogLabel": "Полноэкранная карта"
+        }
       }
     },
     "createPage": {

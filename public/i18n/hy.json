@@ -304,6 +304,35 @@
       "filterSheet": {
         "cancel": "Չեղարկել",
         "apply": "Կիրառել ֆիլտրները"
+      },
+      "distance": {
+        "originUnsetTitle": "Հաշվարկի կետը նշված չէ",
+        "originUnsetSubtitle": "Դրանից է հաշվարկվում շառավիղը",
+        "detectMyLocation": "Որոշել իմ գտնվելու վայրը",
+        "pickOnMapLink": "կամ նշել կետը քարտեզի վրա",
+        "pickOnMapButton": "Նշել կետը քարտեզի վրա",
+        "originGeoTitle": "Ձեր գտնվելու վայրից",
+        "originGeoSubtitle": "Որոշված է GPS-ով",
+        "originManualTitle": "Ընտրված կետից",
+        "originManualSubtitle": "Կետը նշված է քարտեզի վրա",
+        "change": "փոխել",
+        "originDeniedTitle": "Տեղորոշումն անհասանելի է",
+        "originDeniedSubtitle": "Մուտքն անջատված է դիտարկիչում",
+        "originDeniedMessage": "Ոչինչ — նշեք կետը ձեռքով, և շառավիղը կաշխատի։",
+        "searchRadius": "որոնման շառավիղ",
+        "setPointFirst": "նախ նշեք կետը",
+        "scaleMin": "200 մ",
+        "scaleMax": "20 կմ",
+        "unitMeters": "մ",
+        "unitKilometers": "կմ",
+        "chipSuffix": "ձեզանից"
+      },
+      "locationPicker": {
+        "title": "Որտեղից չափել հեռավորությունը",
+        "hintMoved": "Շարժեք քարտեզը, որ նշանը լինի ճիշտ տեղում",
+        "hintIdle": "Քարտեզը դեռ չի շարժվել",
+        "myLocation": "Իմ գտնվելու վայրը",
+        "done": "Պատրաստ է"
       }
     },
     "gallery": {
@@ -475,9 +504,33 @@
       "location": {
         "heading": "Գտնվելու վայր",
         "approximateChip": "Մոտավոր տարածք",
-        "mapUnavailable": "Քարտեզի նախադիտումն այժմ հասանելի չէ — տե՛ս թաղամասը վերևում։",
+        "approximateRadius": "~{{radius}} մ",
         "mapRegionLabel": "Այս հայտարարության մոտավոր գտնվելու վայրը ցույց տվող քարտեզ",
-        "privacyNote": "Գաղտնիության նպատակով ցուցադրվում է միայն ընդհանուր տարածքը, ոչ թե ճշգրիտ հասցեն։"
+        "privacyNote": "Ցույց ենք տալիս թաղամասը, ոչ ճշգրիտ հասցեն։ Սեփականատերը կկիսվի ամրագրումից հետո։",
+        "mapUnavailableTitle": "Քարտեզն այժմ հասանելի չէ",
+        "mapUnavailableDescription": "Բայց խաղալիքը գտնվում է {{place}} տարածքում։ Հեռավորությունը ցույց կտանք, երբ քարտեզը բեռնվի։",
+        "myLocationButton": "Իմ գտնվելու վայրը",
+        "myLocationLocating": "Որոշվում է…",
+        "distanceFromYou": "≈ {{distance}} կմ ձեզնից",
+        "distanceLegend": "Կապույտ կետը դուք եք, նարնջագույնը՝ խաղալիքի տարածքը",
+        "geoDeniedMessage": "Տեղորոշումն անջատված է։ Ոչինչ — կարող եք կետ նշել քարտեզի վրա։",
+        "pickPointButton": "Նշել կետը քարտեզի վրա",
+        "scrollGateHint": "Սեղմեք Ctrl և պտտեք՝ խոշորացնելու համար",
+        "touchGateHint": "Հպեք՝ քարտեզը շարժելու համար",
+        "expandLabel": "Ընդարձակել քարտեզը",
+        "zoomIn": "Խոշորացնել",
+        "zoomOut": "Փոքրացնել",
+        "pointPicker": {
+          "title": "Նշեք ձեր կետը քարտեզի վրա",
+          "cancel": "Չեղարկել",
+          "confirm": "Հաստատել կետը",
+          "privacyNote": "Այս կետն օգտագործվում է միայն այս սարքում հեռավորությունը հաշվարկելու համար և ոչ մի տեղ չի ուղարկվում։"
+        },
+        "fullscreen": {
+          "closeLabel": "Փակել քարտեզը",
+          "backToListing": "Դեպի հայտարարություն",
+          "dialogLabel": "Լիաէկրան քարտեզ"
+        }
       }
     },
     "createPage": {

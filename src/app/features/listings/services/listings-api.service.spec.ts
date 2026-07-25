@@ -20,7 +20,7 @@ const BASE_FILTER: ListingsFilter = {
   minPrice: null,
   maxPrice: null,
   ageGroup: null,
-  maxDistance: null,
+  radiusKm: null,
   districtIds: [],
 };
 
@@ -88,9 +88,9 @@ describe('ListingsApiService — buildListingsQueryParams', () => {
     req.flush({ items: [], totalCount: 0, page: 1, pageSize: 20, hasMore: false });
   });
 
-  it('sends originLat/originLng/radiusKm when maxDistance is set AND coords are available', () => {
+  it('sends originLat/originLng/radiusKm when radiusKm is set AND coords are available', () => {
     service
-      .getListings({ ...BASE_FILTER, maxDistance: 5 }, 1, 20, { lat: 40.1, lng: 44.5 })
+      .getListings({ ...BASE_FILTER, radiusKm: 5 }, 1, 20, { lat: 40.1, lng: 44.5 })
       .subscribe();
 
     const req = httpMock.expectOne(
@@ -102,8 +102,8 @@ describe('ListingsApiService — buildListingsQueryParams', () => {
     req.flush({ items: [], totalCount: 0, page: 1, pageSize: 20, hasMore: false });
   });
 
-  it('sends no distance params when maxDistance is set but coords are unavailable', () => {
-    service.getListings({ ...BASE_FILTER, maxDistance: 5 }, 1, 20, null).subscribe();
+  it('sends no distance params when radiusKm is set but coords are unavailable', () => {
+    service.getListings({ ...BASE_FILTER, radiusKm: 5 }, 1, 20, null).subscribe();
 
     const req = httpMock.expectOne(
       (r) => r.url === toApiUrl(ApiContract.listings.root),
@@ -114,9 +114,9 @@ describe('ListingsApiService — buildListingsQueryParams', () => {
     req.flush({ items: [], totalCount: 0, page: 1, pageSize: 20, hasMore: false });
   });
 
-  it('sends no distance params when coords are available but maxDistance is null', () => {
+  it('sends no distance params when coords are available but radiusKm is null', () => {
     service
-      .getListings({ ...BASE_FILTER, maxDistance: null }, 1, 20, { lat: 40.1, lng: 44.5 })
+      .getListings({ ...BASE_FILTER, radiusKm: null }, 1, 20, { lat: 40.1, lng: 44.5 })
       .subscribe();
 
     const req = httpMock.expectOne(

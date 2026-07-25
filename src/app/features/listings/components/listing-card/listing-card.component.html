@@ -32,6 +32,11 @@
           <span class="pi pi-pencil" aria-hidden="true"></span>
           {{ 'listings.card.yourListing' | translate }}
         </span>
+      } @else if (distanceLabel(); as label) {
+        <span class="listing-card__distance-badge">
+          <span class="pi pi-compass" aria-hidden="true"></span>
+          {{ label }}
+        </span>
       }
 
       @if (listing().listingStatus) {

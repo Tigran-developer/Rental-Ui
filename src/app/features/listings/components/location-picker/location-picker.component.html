@@ -6,20 +6,75 @@
   [dismissableMask]="false"
   [draggable]="false"
   [resizable]="false"
-  [header]="'listings.createForm.locationPicker.title' | translate"
+  [header]="headerKey() | translate"
   styleClass="location-picker-dialog"
   appendTo="body"
 >
   <div class="location-picker__map-wrap">
     @if (open()) {
       <app-map
-        [center]="initialCenter()"
+        [center]="mapCenter()"
         [zoom]="initialZoom()"
         [interactive]="true"
         [crosshair]="true"
         height="100%"
         (centerChange)="onCenterChange($event)"
-      />
+      >
+        @if (showMyLocationButton()) {
+          <button
+            type="button"
+            app-map-actions
+            class="app-map__btn"
+            [attr.aria-label]="'listings.filters.locationPicker.myLocation' | translate"
+            (click)="requestMyLocation()"
+          >
+            <i class="pi pi-compass" aria-hidden="true"></i>
+          </button>
+        }
+      </app-map>
+
+      <!-- Floating hint card (approved design's `.pickhint`) — a SIBLING of
+           `app-map`, not projected into it: `app-map` only exposes a
+           bottom-right `[app-map-actions]` dock (used above for "My
+           location"), it has no generic top-of-map slot. Absolutely
+           positioned here instead, same as the radius-preview circle below. -->
+      @if (hintTitleKey()) {
+        <div class="location-picker__hint" role="status">
+          <span class="location-picker__hint-icon" aria-hidden="true">
+            <i class="pi pi-map-marker"></i>
+          </span>
+          <span class="location-picker__hint-copy">
+            <b>{{ hintTitleKey() | translate }}</b>
+            @if (hasMoved()) {
+              @if (hintSubtitleMovedKey()) {
+                <small>{{ hintSubtitleMovedKey() | translate }}</small>
+              }
+            } @else {
+              @if (hintSubtitleIdleKey()) {
+                <small>{{ hintSubtitleIdleKey() | translate }}</small>
+              }
+            }
+          </span>
+        </div>
+      }
+
+      <!-- Opt-in dashed radius preview (screen 5) — see
+           `previewDiameterPx`'s doc comment for why this is a plain CSS
+           circle, not `app-map`'s `circleRadiusMeters`/`circleDashed` layer.
+           Centred exactly like the crosshair (both anchor at the map-wrap's
+           midpoint) so it visually reads as "the radius around the pin".
+           Hidden until the map has actually moved once — the approved
+           design hides the preview in the "not aimed yet" state too. -->
+      @if (previewDiameterPx(); as diameter) {
+        @if (hasMoved()) {
+          <div
+            class="location-picker__radius-preview"
+            aria-hidden="true"
+            [style.width.px]="diameter"
+            [style.height.px]="diameter"
+          ></div>
+        }
+      }
     }
   </div>
 
@@ -35,15 +90,16 @@
           class="location-picker__btn location-picker__btn--cancel"
           (click)="cancel()"
         >
-          {{ 'listings.createForm.locationPicker.cancel' | translate }}
+          {{ cancelLabelKey() | translate }}
         </button>
         <button
           type="button"
           class="location-picker__btn location-picker__btn--confirm"
+          [disabled]="confirmDisabledUntilMoved() && !hasMoved()"
           (click)="confirm()"
         >
           <i class="pi pi-check" aria-hidden="true"></i>
-          {{ 'listings.createForm.locationPicker.confirm' | translate }}
+          {{ confirmLabelKey() | translate }}
         </button>
       </div>
     </div>

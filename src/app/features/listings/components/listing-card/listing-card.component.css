@@ -174,6 +174,29 @@
   color: #fff;
 }
 
+/* ── Distance badge (image top-left, `.distbadge` in the approved Maps P2
+   "location + radius" design) — only rendered for non-owner cards, so it
+   never collides with `.listing-card__status-badge` (my-listings/user-listings
+   only) or `.listing-card__owner-badge` (top-centre, owner cards only). */
+.listing-card__distance-badge {
+  position: absolute;
+  top: var(--ui-space-8);
+  left: var(--ui-space-8);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: var(--ui-radius-pill);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.4;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--ui-color-primary-strong);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
 .listing-card__status-dot {
   width: 6px;
   height: 6px;
