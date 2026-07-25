@@ -37,11 +37,13 @@ export interface ListingDetails {
    * *shape* (nullable decimal pair) gives you no way to tell which meaning you got:
    *
    * - Listing owner and Admin callers: the EXACT point the owner set.
-   * - Every other caller (including anonymous): the CENTROID of the geohash-6 cell
-   *   containing that point (~0.93 x 0.61 km at Yerevan's latitude) — never the
-   *   real point. Treat this as an approximate area marker only; never render it
-   *   as "the address", never use it for anything precision-sensitive (routing,
-   *   distance-to-the-meter, etc).
+   * - Every other caller (including anonymous): the CENTROID of the geohash-**7**
+   *   cell containing that point (~117 x 153 m at Yerevan's latitude — bumped
+   *   from geohash-6's ~0.93 x 0.61 km on 2026-07-25, see `GeohashSnapper` in
+   *   rental-api and the `2026-07-25-geohash-precision-and-radius-circle`
+   *   feature note) — never the real point. Treat this as an approximate area
+   *   marker only; never render it as "the address", never use it for anything
+   *   precision-sensitive (routing, distance-to-the-meter, etc).
    *
    * `null` does NOT reliably mean "owner set no location" — it can also occur for
    * other reasons upstream (e.g. the snapping computation had nothing to snap).
