@@ -227,10 +227,20 @@ export function resolveTileSource(
  *     less reliable on touch). `centerChange` emits the map's centre whenever
  *     it settles.
  *
- * `circleRadiusMeters` (P1-8): when set alongside `pin` (and `crosshair` is
- * off), draws a translucent circle of that radius centred on the pin — used by
- * the detail-page map to show the honest uncertainty radius of a fuzzed
- * (geohash-6-snapped) coordinate. Its stroke/fill colour is read from the
+ * `circleRadiusMeters` (P1-8): when set, draws a translucent circle of that
+ * radius — used by the detail-page map to show the honest uncertainty radius
+ * of a fuzzed (geohash-7-snapped) coordinate, and by the full-screen
+ * reference-point picker to preview the chosen search radius live. Centred on
+ * `pin` normally; in `crosshair` mode (no `pin` exists there) it is instead
+ * centred on the map's own current centre — i.e. the crosshair's target,
+ * tracked imperatively via the same `moveend` source `centerChange` reports
+ * to the caller (see `crosshairCenter`/`syncCircle()`) — so the circle pans
+ * WITH the map and stays geographically accurate at any zoom, rather than a
+ * caller approximating its on-screen size in CSS for one fixed zoom level (a
+ * real `L.Circle` is defined in metres, so Leaflet itself keeps it the
+ * correct pixel size through every zoom change; only re-centring it on pan
+ * needs this component's own help, since the crosshair's coordinate has no
+ * Angular input to react to). Its stroke/fill colour is read from the
  * `--ui-color-primary` CSS custom property on this component's own host at
  * draw time (falling back to the design token's literal value if that ever
  * fails) rather than hardcoded, so it is impossible for Leaflet's SVG renderer
@@ -284,8 +294,10 @@ export function resolveTileSource(
  * below), the user dot is a `divIcon` (plain HTML Leaflet drops into its
  * marker pane), so it can reference the CSS custom property directly in
  * `map.component.scss` with no JS colour-reading step. Suppressed in
- * `crosshair` mode for the same reason `pin`/`circle` are: the crosshair
- * overlay has no fixed coordinate to anchor a second marker to either.
+ * `crosshair` mode for the same reason `pin` is: the crosshair overlay has no
+ * fixed coordinate to anchor a second marker to either. (`circleRadiusMeters`
+ * is NOT suppressed there — see its own doc comment above: unlike a marker, a
+ * circle can be re-centred on the map's own moving centre instead.)
  *
  * `fitPins`: when both `pin` and `userPin` are set (and `crosshair` is off),
  * frames both in view via Leaflet's `fitBounds()` instead of the plain
@@ -436,6 +448,12 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   private markerLayer: Leaflet.Marker | null = null;
   private userMarkerLayer: Leaflet.Marker | null = null;
   private circleLayer: Leaflet.Circle | null = null;
+  // The crosshair's current geo position (`crosshair` mode only) — kept as a
+  // plain field, not a signal: it is written and read entirely from the
+  // imperative `moveend`/initial `emitCenter()` calls in `init()` (mirroring
+  // how `centerChange` already reports the same value to the caller), never
+  // from Angular's own change detection, so a signal would add nothing here.
+  private crosshairCenter: MapLatLng | null = null;
   private resizeObserver: ResizeObserver | null = null;
   private destroyed = false;
   private anyTileLoaded = false;
@@ -609,7 +627,14 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       if (this.crosshair()) {
         const emitCenter = () => {
           const center = map.getCenter();
-          this.centerChange.emit({ lat: center.lat, lng: center.lng });
+          const latLng: MapLatLng = { lat: center.lat, lng: center.lng };
+          // Tracks the crosshair's current geo position for `syncCircle()`
+          // (below) — there is no `pin` input in this mode, so the circle
+          // must follow the SAME imperative moveend source `centerChange`
+          // reports to the caller, not an Angular input.
+          this.crosshairCenter = latLng;
+          this.syncCircle();
+          this.centerChange.emit(latLng);
         };
         map.on('moveend', emitCenter);
         // Report the starting centre immediately — a confirm without any pan
@@ -692,13 +717,22 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       this.circleLayer = null;
     }
 
-    const p = this.pin();
+    // In `crosshair` mode there is no fixed `pin` coordinate to anchor a
+    // circle to (that's still true, and why the marker/user-marker/fitBounds
+    // stay suppressed there — see `syncMarker()`/`syncUserMarker()`/
+    // `syncFitBounds()`) — but the crosshair IS a real, if constantly moving,
+    // geo point: the map's own current centre, tracked in `crosshairCenter`
+    // by `init()`'s `emitCenter()`. Centring the circle there instead lets it
+    // pan and re-scale with the map exactly like the `pin` circle already
+    // does — Leaflet's `L.Circle` is defined in real metres, so a zoom alone
+    // re-renders it correctly with no extra work; only re-centring on pan
+    // needs this component's own help, since the crosshair's coordinate has
+    // no Angular input to react to.
+    const center = this.crosshair() ? this.crosshairCenter : this.pin();
     const radius = this.circleRadiusMeters();
-    // Same reasoning as the marker: the crosshair mode has no fixed pin to
-    // circle, so never draw one there.
-    if (p && radius !== null && radius > 0 && !this.crosshair()) {
+    if (center && radius !== null && radius > 0) {
       const primary = this.readPrimaryColor();
-      this.circleLayer = L.circle([p.lat, p.lng], {
+      this.circleLayer = L.circle([center.lat, center.lng], {
         radius,
         color: primary,
         weight: 1.5,
@@ -720,7 +754,9 @@ export class MapComponent implements AfterViewInit, OnDestroy {
    *  marker (see `userIcon()`) rather than a variant of the same one, since a
    *  caller may show both `pin` and `userPin` at once (that is the whole
    *  point of `fitPins`). Suppressed in `crosshair` mode for the same reason
-   *  `pin`/the circle are: no fixed coordinate to anchor a second marker to. */
+   *  `pin` is: no fixed coordinate to anchor a second marker to (unlike
+   *  `circleRadiusMeters`'s circle, which re-centres on the crosshair
+   *  instead — see `syncCircle()`). */
   private syncUserMarker(): void {
     const L = this.leaflet;
     const map = this.map;

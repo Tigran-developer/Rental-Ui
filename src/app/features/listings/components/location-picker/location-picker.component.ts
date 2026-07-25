@@ -85,18 +85,16 @@ export class LocationPickerComponent {
   readonly showMyLocationButton = input<boolean>(false);
 
   /**
-   * Opt-in dashed radius-preview circle (screen 5) — CSS-only, sized from
-   * `radiusPreviewMeters`/`initialZoom`/the crosshair's current latitude via
-   * the standard Web Mercator metres-per-pixel formula, NOT Leaflet's own
-   * `circleRadiusMeters` geographic circle layer: that layer requires `pin`
-   * and is unconditionally suppressed in `crosshair` mode (see
-   * `map.component.ts`'s `syncCircle()` — crosshair mode has no fixed `pin`
-   * coordinate to anchor a circle to, by design), and `shared/ui/map/` is out
-   * of scope to modify for this feature. The formula uses the zoom the map
-   * OPENED at (`initialZoom`) for the whole session rather than tracking live
-   * zoom changes — `app-map` has no `zoomChange` output to react to a pinch
-   * zoom — so this is an approximation, acceptable for a preview aid rather
-   * than a precise measurement. `null` (default) renders no preview.
+   * Opt-in dashed radius-preview circle (screen 5) — a REAL geographic
+   * `app-map` layer (`circleRadiusMeters` + `circleDashed`, both dashed-solid
+   * variants of the same `L.Circle` the listing-detail map already draws
+   * around its fixed `pin`), centred on the map's own current centre since
+   * `crosshair` mode has no `pin`. Because it is defined in real metres, not
+   * an on-screen pixel size computed once for the zoom the picker opened at,
+   * it pans and re-scales with the map like any other Leaflet layer would —
+   * see `map.component.ts`'s `syncCircle()`. `null` (default) renders no
+   * preview; see `effectiveRadiusPreviewMeters` below for the "hidden until
+   * the crosshair has actually moved" gating this had before too.
    */
   readonly radiusPreviewMeters = input<number | null>(null);
 
@@ -195,22 +193,17 @@ export class LocationPickerComponent {
   }
 
   /**
-   * Pixel diameter for the opt-in dashed radius-preview circle — see
-   * `radiusPreviewMeters`'s own doc comment for why this is a CSS
-   * approximation rather than a real Leaflet geographic layer. Standard Web
-   * Mercator metres-per-pixel at 256px tiles: `156543.03392 * cos(lat) /
-   * 2^zoom`. Clamped to a sane pixel range so an extreme zoom/radius
-   * combination never renders something absurd relative to the dialog.
+   * `[circleRadiusMeters]` for `app-map`'s real geographic preview circle —
+   * `null` (no circle) unless BOTH a radius was supplied AND the crosshair
+   * has actually moved at least once (`hasMoved()`), matching this control's
+   * approved design exactly as the old CSS version did: the preview stays
+   * hidden in the "not aimed yet" state, only appearing once the visitor has
+   * started choosing a point.
    */
-  protected readonly previewDiameterPx = computed<number | null>(() => {
+  protected readonly effectiveRadiusPreviewMeters = computed<number | null>(() => {
     const meters = this.radiusPreviewMeters();
-    if (meters === null || meters <= 0) return null;
-    const latRad = (this.currentCenter().lat * Math.PI) / 180;
-    const metersPerPixel =
-      (156543.03392 * Math.cos(latRad)) / Math.pow(2, this.initialZoom());
-    if (!Number.isFinite(metersPerPixel) || metersPerPixel <= 0) return null;
-    const diameterPx = (2 * meters) / metersPerPixel;
-    return Math.min(560, Math.max(24, diameterPx));
+    if (meters === null || meters <= 0 || !this.hasMoved()) return null;
+    return meters;
   });
 
   /** Wired to `p-dialog`'s `(visibleChange)` — fires on Escape, the header's

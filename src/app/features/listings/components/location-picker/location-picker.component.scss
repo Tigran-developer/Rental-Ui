@@ -96,23 +96,6 @@
   }
 }
 
-// ── Opt-in dashed radius preview (`radiusPreviewMeters`) — centred exactly
-// like `app-map`'s own crosshair (see map.component.scss's
-// `.app-map__crosshair`), just a plain dashed circle rather than Leaflet's
-// SVG-rendered `circleRadiusMeters` layer — see `previewDiameterPx`'s own
-// doc comment in location-picker.component.ts for why.
-.location-picker__radius-preview {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 1000; // below the crosshair (1001) so the pin always reads on top.
-  border-radius: 50%;
-  border: 2px dashed var(--ui-color-primary);
-  background: color-mix(in srgb, var(--ui-color-primary) 14%, transparent);
-  pointer-events: none;
-}
-
 .location-picker__footer {
   display: flex;
   flex-direction: column;

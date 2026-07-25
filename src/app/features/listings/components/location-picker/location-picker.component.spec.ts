@@ -1,8 +1,10 @@
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { TranslateModule } from '@ngx-translate/core';
 
 import { GeolocationService } from '../../../../shared/services/geolocation.service';
 import { LocationPickerComponent, YEREVAN_CENTER } from './location-picker.component';
+import { MapComponent } from '../../../../shared/ui/map/map.component';
 import type { MapLatLng } from '../../../../shared/ui/map/map.component';
 
 /**
@@ -23,6 +25,12 @@ vi.mock('leaflet', () => ({
   })),
   tileLayer: vi.fn(() => ({ addTo: vi.fn() })),
   marker: vi.fn(() => ({ addTo: vi.fn() })),
+  // Needed since `MapComponent`'s `syncCircle()` now runs in `crosshair` mode
+  // too (this picker's `effectiveRadiusPreviewMeters`/`circleDashed` wiring
+  // below) — without this, `L.circle(...)` would be `undefined` and throw,
+  // which `map.component.ts`'s `init()` catch would swallow into a spurious
+  // `mapError` for every test in this file, not just the radius-preview ones.
+  circle: vi.fn(() => ({ addTo: vi.fn() })),
   divIcon: vi.fn((options: unknown) => options),
 }));
 
@@ -31,7 +39,7 @@ interface Testable {
   currentCenter(): MapLatLng;
   hasMoved(): boolean;
   mapCenter(): MapLatLng;
-  previewDiameterPx(): number | null;
+  effectiveRadiusPreviewMeters(): number | null;
   onCenterChange(center: MapLatLng): void;
   onVisibleChange(visible: boolean): void;
   requestMyLocation(): void;
@@ -224,32 +232,62 @@ describe('LocationPickerComponent', () => {
     });
   });
 
-  describe('radiusPreviewMeters (dashed preview circle)', () => {
-    it('renders no preview diameter when radiusPreviewMeters is null (default)', async () => {
-      const { component } = await createPicker(true, YEREVAN_CENTER);
-      expect(component.previewDiameterPx()).toBeNull();
+  // Regression for the defect this replaced: the preview used to be a CSS
+  // `div` sized once from the zoom the picker opened at (`previewDiameterPx`)
+  // — it drifted from the actual search radius as soon as the visitor zoomed.
+  // It's now `app-map`'s own real geographic `circleRadiusMeters` layer (see
+  // `map.component.ts`'s `syncCircle()`), which Leaflet itself keeps at the
+  // correct size through any zoom change — so this spec only needs to check
+  // the WIRING (the right value reaches `app-map`, gated by `hasMoved()`
+  // exactly like before), not any on-screen pixel math.
+  describe('radiusPreviewMeters (dashed preview circle, now a real app-map geographic layer)', () => {
+    function mapCircleRadiusMeters(fixture: ReturnType<typeof TestBed.createComponent>) {
+      const mapDebugEl = fixture.debugElement.query(By.directive(MapComponent));
+      return (mapDebugEl.componentInstance as MapComponent).circleRadiusMeters();
+    }
+
+    it('passes no circleRadiusMeters to app-map when radiusPreviewMeters is null (default)', async () => {
+      const { fixture } = await createPicker(true, YEREVAN_CENTER);
+      expect(mapCircleRadiusMeters(fixture)).toBeNull();
     });
 
-    it('computes a positive pixel diameter once a radius is supplied', async () => {
-      const { component } = await createPicker(true, YEREVAN_CENTER, {
+    it('still withholds circleRadiusMeters from app-map when a radius IS supplied but the crosshair has not moved yet', async () => {
+      const { fixture, component } = await createPicker(true, YEREVAN_CENTER, {
         radiusPreviewMeters: 2000,
       });
-      const diameter = component.previewDiameterPx();
-      expect(diameter).not.toBeNull();
-      expect(diameter as number).toBeGreaterThan(0);
+      expect(component.hasMoved()).toBe(false);
+      expect(mapCircleRadiusMeters(fixture)).toBeNull();
     });
 
-    it('grows the on-screen diameter for a larger radius at the same zoom', async () => {
+    it('passes the radius through to app-map, dashed, once the crosshair has moved', async () => {
+      const { fixture, component } = await createPicker(true, YEREVAN_CENTER, {
+        radiusPreviewMeters: 2000,
+      });
+      // Two reports needed in this spec's mock — see the `hasMoved` describe
+      // block above for why the first never counts as a real pan.
+      component.onCenterChange(YEREVAN_CENTER);
+      component.onCenterChange({ lat: 40.2, lng: 44.49 });
+      fixture.detectChanges();
+
+      expect(component.hasMoved()).toBe(true);
+      expect(mapCircleRadiusMeters(fixture)).toBe(2000);
+      const mapDebugEl = fixture.debugElement.query(By.directive(MapComponent));
+      expect((mapDebugEl.componentInstance as MapComponent).circleDashed()).toBe(true);
+    });
+
+    it('updates the radius app-map receives when radiusPreviewMeters changes (post-move)', async () => {
       const { fixture, component } = await createPicker(true, YEREVAN_CENTER, {
         radiusPreviewMeters: 500,
       });
-      const smallDiameter = component.previewDiameterPx() as number;
+      component.onCenterChange(YEREVAN_CENTER);
+      component.onCenterChange({ lat: 40.2, lng: 44.49 });
+      fixture.detectChanges();
+      expect(mapCircleRadiusMeters(fixture)).toBe(500);
 
       fixture.componentRef.setInput('radiusPreviewMeters', 5000);
       fixture.detectChanges();
-      const largeDiameter = component.previewDiameterPx() as number;
 
-      expect(largeDiameter).toBeGreaterThan(smallDiameter);
+      expect(mapCircleRadiusMeters(fixture)).toBe(5000);
     });
   });
 });

@@ -17,6 +17,8 @@
         [zoom]="initialZoom()"
         [interactive]="true"
         [crosshair]="true"
+        [circleRadiusMeters]="effectiveRadiusPreviewMeters()"
+        [circleDashed]="true"
         height="100%"
         (centerChange)="onCenterChange($event)"
       >
@@ -56,24 +58,6 @@
             }
           </span>
         </div>
-      }
-
-      <!-- Opt-in dashed radius preview (screen 5) — see
-           `previewDiameterPx`'s doc comment for why this is a plain CSS
-           circle, not `app-map`'s `circleRadiusMeters`/`circleDashed` layer.
-           Centred exactly like the crosshair (both anchor at the map-wrap's
-           midpoint) so it visually reads as "the radius around the pin".
-           Hidden until the map has actually moved once — the approved
-           design hides the preview in the "not aimed yet" state too. -->
-      @if (previewDiameterPx(); as diameter) {
-        @if (hasMoved()) {
-          <div
-            class="location-picker__radius-preview"
-            aria-hidden="true"
-            [style.width.px]="diameter"
-            [style.height.px]="diameter"
-          ></div>
-        }
       }
     }
   </div>

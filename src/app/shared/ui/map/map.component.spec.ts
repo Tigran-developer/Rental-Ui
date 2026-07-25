@@ -747,17 +747,85 @@ describe('MapComponent', () => {
     expect(state.circleCalls[0].options['dashArray']).toBe('6 6');
   });
 
-  it('does NOT draw a circle in crosshair mode even with a radius and pin set', async () => {
-    TestBed.configureTestingModule({ imports: [MapHostComponent] });
-    const fixture = TestBed.createComponent(MapHostComponent);
-    fixture.componentInstance.pin = { lat: 40.18, lng: 44.51 };
-    fixture.componentInstance.circleRadiusMeters = 600;
-    fixture.componentInstance.crosshair = true;
-    fixture.componentInstance.interactive = true;
-    fixture.detectChanges();
-    await vi.runAllTimersAsync();
+  // Regression for the defect this replaced: the crosshair picker's radius
+  // preview used to be a CSS-sized `div` (a fixed on-screen pixel diameter
+  // computed once for the zoom the picker opened at) because this component
+  // unconditionally suppressed its real geographic circle in `crosshair`
+  // mode. That meant zooming the map left the preview the same PIXEL size
+  // while the real search radius it was supposed to represent visually
+  // shrank/grew underneath it — the two silently disagreed. The fix: draw a
+  // real `L.Circle` (metres, not pixels) centred on the crosshair's current
+  // position instead, so it now pans and re-scales with the map exactly like
+  // the pin-anchored circle already did.
+  describe('circleRadiusMeters in crosshair mode (no fixed pin to anchor to)', () => {
+    it('draws no circle when circleRadiusMeters is left null (the default), same as pin mode', async () => {
+      TestBed.configureTestingModule({ imports: [MapHostComponent] });
+      const fixture = TestBed.createComponent(MapHostComponent);
+      fixture.componentInstance.crosshair = true;
+      fixture.componentInstance.interactive = true;
+      fixture.detectChanges();
+      await vi.runAllTimersAsync();
 
-    expect(state.circleCalls).toHaveLength(0);
+      expect(state.circleCalls).toHaveLength(0);
+    });
+
+    it('draws the circle centred on the MAP\'S OWN CENTRE, never on `pin`, even when a pin happens to be set too', async () => {
+      TestBed.configureTestingModule({ imports: [MapHostComponent] });
+      const fixture = TestBed.createComponent(MapHostComponent);
+      state.fakeCenter = { lat: 40.1776, lng: 44.5126 };
+      fixture.componentInstance.pin = { lat: 40.18, lng: 44.51 };
+      fixture.componentInstance.circleRadiusMeters = 600;
+      fixture.componentInstance.crosshair = true;
+      fixture.componentInstance.interactive = true;
+      fixture.detectChanges();
+      await vi.runAllTimersAsync();
+
+      expect(state.circleCalls.length).toBeGreaterThan(0);
+      const last = state.circleCalls[state.circleCalls.length - 1];
+      expect(last.coords).toEqual([40.1776, 44.5126]);
+      expect(last.options['radius']).toBe(600);
+    });
+
+    it('moves the circle to the new centre on every pan (moveend) — it must never stay at its opening position', async () => {
+      TestBed.configureTestingModule({ imports: [MapHostComponent] });
+      const fixture = TestBed.createComponent(MapHostComponent);
+      state.fakeCenter = { lat: 40.1776, lng: 44.5126 };
+      fixture.componentInstance.circleRadiusMeters = 600;
+      fixture.componentInstance.crosshair = true;
+      fixture.componentInstance.interactive = true;
+      fixture.detectChanges();
+      await vi.runAllTimersAsync();
+      fixture.detectChanges();
+
+      const initialCount = state.circleCalls.length;
+      expect(initialCount).toBeGreaterThan(0);
+      expect(state.circleCalls[initialCount - 1].coords).toEqual([40.1776, 44.5126]);
+
+      // Simulate the user panning the map — same mechanism the "emits the
+      // current centre on moveend" test above uses.
+      state.fakeCenter = { lat: 40.2, lng: 44.55 };
+      state.moveendHandlers.forEach((h) => h());
+      fixture.detectChanges();
+
+      const last = state.circleCalls[state.circleCalls.length - 1];
+      expect(last.coords).toEqual([40.2, 44.55]);
+      // Still the same radius — only the centre moved.
+      expect(last.options['radius']).toBe(600);
+    });
+
+    it('supports the dashed radius-preview variant in crosshair mode too', async () => {
+      TestBed.configureTestingModule({ imports: [MapHostComponent] });
+      const fixture = TestBed.createComponent(MapHostComponent);
+      fixture.componentInstance.circleRadiusMeters = 1000;
+      fixture.componentInstance.circleDashed = true;
+      fixture.componentInstance.crosshair = true;
+      fixture.componentInstance.interactive = true;
+      fixture.detectChanges();
+      await vi.runAllTimersAsync();
+
+      const last = state.circleCalls[state.circleCalls.length - 1];
+      expect(last.options['dashArray']).toBe('6 6');
+    });
   });
 
   it('emits mapError when the underlying Leaflet map construction throws', async () => {
