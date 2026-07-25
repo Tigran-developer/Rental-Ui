@@ -60,6 +60,13 @@
   --ui-color-danger-surface: #ffe8e5;
   --ui-color-info: #3d52cc;
   --ui-color-info-surface: #eaedff;
+  /* User-location marker on `app-map` (the pulsing blue dot distinguishing
+     "you" from an orange listing `pin`) — approved in the Maps P2
+     "location + radius" design at this exact value. No existing semantic
+     token fit (closest is `--ui-color-info`, a different hue/brightness), so
+     this is a dedicated token rather than a hardcoded hex in the component,
+     per this file's own "extend tokens here" rule. */
+  --ui-color-map-user: #2f6bff;
 
   /* —— Spacing (4px base unit) —— */
   --ui-space-4: 4px;

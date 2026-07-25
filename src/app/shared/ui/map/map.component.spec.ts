@@ -20,6 +20,9 @@ const state = vi.hoisted(() => ({
   }[],
   markerCalls: [] as { coords: [number, number]; options: Record<string, unknown> }[],
   circleCalls: [] as { coords: [number, number]; options: Record<string, unknown> }[],
+  divIconCalls: [] as Record<string, unknown>[],
+  latLngBoundsCalls: [] as unknown[],
+  fitBoundsCalls: [] as { bounds: unknown; options: Record<string, unknown> }[],
   removedLayers: [] as unknown[],
   moveendHandlers: [] as (() => void)[],
   fakeCenter: { lat: 40.1776, lng: 44.5126 },
@@ -29,12 +32,32 @@ const state = vi.hoisted(() => ({
   // lets tests assert the ResizeObserver wiring calls it without needing a
   // handle on the map instance itself (which `map.component.ts` never exposes).
   lastInvalidateSize: null as ReturnType<typeof vi.fn> | null,
+  // Drives the `matchMedia('(pointer: coarse)')` stub below — flips whether
+  // `map.component.ts`'s `isTouchCapable` (read once, at construction) comes
+  // out `true` or `false` for the NEXT component created.
+  pointerCoarse: false,
+  // Spies on the fake map's `dragging`/`touchZoom` handlers so tests can
+  // assert `dismissTouchGate()` actually re-enables them.
+  lastDraggingEnable: null as ReturnType<typeof vi.fn> | null,
+  lastTouchZoomEnable: null as ReturnType<typeof vi.fn> | null,
+  // Spies on the most recently created fake map's `zoomIn`/`zoomOut` — same
+  // "reassigned per instance" pattern as `lastInvalidateSize` above.
+  lastZoomIn: null as ReturnType<typeof vi.fn> | null,
+  lastZoomOut: null as ReturnType<typeof vi.fn> | null,
 }));
 
 function makeFakeMap(options: Record<string, unknown>) {
   state.mapOptions = options;
   const invalidateSize = vi.fn();
   state.lastInvalidateSize = invalidateSize;
+  const draggingEnable = vi.fn();
+  const touchZoomEnable = vi.fn();
+  const zoomIn = vi.fn();
+  const zoomOut = vi.fn();
+  state.lastDraggingEnable = draggingEnable;
+  state.lastTouchZoomEnable = touchZoomEnable;
+  state.lastZoomIn = zoomIn;
+  state.lastZoomOut = zoomOut;
   return {
     setView: vi.fn(),
     on: vi.fn((event: string, handler: () => void) => {
@@ -46,6 +69,13 @@ function makeFakeMap(options: Record<string, unknown>) {
     remove: vi.fn(() => {
       state.mapRemoved = true;
     }),
+    zoomIn,
+    zoomOut,
+    fitBounds: vi.fn((bounds: unknown, fitOptions: Record<string, unknown>) => {
+      state.fitBoundsCalls.push({ bounds, options: fitOptions });
+    }),
+    dragging: { enable: draggingEnable, disable: vi.fn(), enabled: vi.fn(() => false) },
+    touchZoom: { enable: touchZoomEnable, disable: vi.fn(), enabled: vi.fn(() => false) },
   };
 }
 
@@ -77,6 +107,30 @@ class FakeResizeObserver {
   }
 }
 vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+
+/**
+ * jsdom has no `matchMedia` either. `map.component.ts` reads
+ * `matchMedia('(pointer: coarse)')` exactly once per instance, at
+ * construction (`isTouchCapable`) — so `state.pointerCoarse` must be set
+ * BEFORE `TestBed.createComponent()` for a given test, not after. Every other
+ * media query (there are none today) falls back to `matches: false`.
+ */
+vi.stubGlobal(
+  'matchMedia',
+  vi.fn(
+    (query: string) =>
+      ({
+        matches: query === '(pointer: coarse)' && state.pointerCoarse,
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(() => true),
+        onchange: null,
+      }) as unknown as MediaQueryList,
+  ),
+);
 
 // Mocked as CJS-default-only — i.e. `{ default: { map, tileLayer, ... } }`
 // with NO flattened top-level named exports — because that is the exact
@@ -114,7 +168,14 @@ vi.mock('leaflet', () => ({
       state.circleCalls.push({ coords, options });
       return { addTo: vi.fn() };
     }),
-    divIcon: vi.fn((options: Record<string, unknown>) => ({ __divIcon: true, ...options })),
+    divIcon: vi.fn((options: Record<string, unknown>) => {
+      state.divIconCalls.push(options);
+      return { __divIcon: true, ...options };
+    }),
+    latLngBounds: vi.fn((latlngs: unknown) => {
+      state.latLngBoundsCalls.push(latlngs);
+      return { __bounds: true, latlngs };
+    }),
   },
 }));
 
@@ -129,9 +190,18 @@ vi.mock('leaflet', () => ({
       [interactive]="interactive"
       [crosshair]="crosshair"
       [circleRadiusMeters]="circleRadiusMeters"
+      [circleDashed]="circleDashed"
+      [userPin]="userPin"
+      [fitPins]="fitPins"
+      [scrollGate]="scrollGate"
+      [zoomInLabel]="zoomInLabel"
+      [zoomOutLabel]="zoomOutLabel"
       (centerChange)="onCenterChange($event)"
       (mapError)="onMapError()"
-    />
+    >
+      <div app-map-gate-hint>Tap to move the map</div>
+      <div app-map-scroll-hint>Hold Ctrl and scroll to zoom</div>
+    </app-map>
   `,
 })
 class MapHostComponent {
@@ -141,6 +211,12 @@ class MapHostComponent {
   interactive = false;
   crosshair = false;
   circleRadiusMeters: number | null = null;
+  circleDashed = false;
+  userPin: MapLatLng | null = null;
+  fitPins = false;
+  scrollGate = false;
+  zoomInLabel: string | null = null;
+  zoomOutLabel: string | null = null;
   received: MapLatLng[] = [];
   errorCount = 0;
   onCenterChange(c: MapLatLng): void {
@@ -167,12 +243,20 @@ describe('MapComponent', () => {
     state.tileLayerCalls = [];
     state.markerCalls = [];
     state.circleCalls = [];
+    state.divIconCalls = [];
+    state.latLngBoundsCalls = [];
+    state.fitBoundsCalls = [];
     state.removedLayers = [];
     state.moveendHandlers = [];
     state.fakeCenter = { lat: 40.1776, lng: 44.5126 };
     state.mapRemoved = false;
     state.mapThrows = false;
     state.lastInvalidateSize = null;
+    state.pointerCoarse = false;
+    state.lastDraggingEnable = null;
+    state.lastTouchZoomEnable = null;
+    state.lastZoomIn = null;
+    state.lastZoomOut = null;
     resizeObserverInstances = [];
   });
 
@@ -283,8 +367,94 @@ describe('MapComponent', () => {
     await vi.runAllTimersAsync();
 
     expect(state.mapOptions!['dragging']).toBe(true);
-    expect(state.mapOptions!['zoomControl']).toBe(true);
     expect(state.mapOptions!['scrollWheelZoom']).toBe(true);
+    expect(state.mapOptions!['touchZoom']).toBe(true);
+  });
+
+  // Regression: Leaflet's OWN zoom control must never be constructed, even
+  // when interactive — every interactive map gets this component's own
+  // `.app-map__zoom-stack` (below) instead. Was `true` when interactive
+  // before that control existed; asserted separately from the test above so
+  // a future revert of just this one option still fails clearly.
+  it('never constructs Leaflet\'s own zoomControl, interactive or not', async () => {
+    TestBed.configureTestingModule({ imports: [MapHostComponent] });
+    const fixture = TestBed.createComponent(MapHostComponent);
+    fixture.componentInstance.interactive = true;
+    fixture.detectChanges();
+    await vi.runAllTimersAsync();
+
+    expect(state.mapOptions!['zoomControl']).toBe(false);
+  });
+
+  it('does NOT render the zoom stack when non-interactive (the default)', async () => {
+    const fixture = await createHost(); // interactive=false by default
+    expect(fixture.nativeElement.querySelector('.app-map__zoom-stack')).toBeNull();
+  });
+
+  // Separate `it()` from the non-interactive check above rather than two
+  // fixtures in one test: each test gets its own fresh `TestBed`, reset
+  // automatically between tests — reusing one test's `TestBed` for a SECOND
+  // `configureTestingModule()` call throws ("test module has already been
+  // instantiated") the moment the first fixture is created.
+  it('renders a two-button zoom stack wired to Leaflet zoomIn()/zoomOut() when interactive', async () => {
+    TestBed.configureTestingModule({ imports: [MapHostComponent] });
+    const fixture = TestBed.createComponent(MapHostComponent);
+    fixture.componentInstance.interactive = true;
+    fixture.detectChanges();
+    await vi.runAllTimersAsync();
+    fixture.detectChanges();
+
+    const buttons: HTMLButtonElement[] = Array.from(
+      fixture.nativeElement.querySelectorAll('.app-map__zoom-btn'),
+    );
+    expect(buttons).toHaveLength(2);
+
+    buttons[0].click();
+    buttons[1].click();
+
+    expect(state.lastZoomIn).toHaveBeenCalledTimes(1);
+    expect(state.lastZoomOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves the zoom buttons unlabelled when zoomInLabel/zoomOutLabel are not provided (the default)', async () => {
+    TestBed.configureTestingModule({ imports: [MapHostComponent] });
+    const fixture = TestBed.createComponent(MapHostComponent);
+    fixture.componentInstance.interactive = true;
+    // zoomInLabel/zoomOutLabel left at MapHostComponent's default (`null`).
+    fixture.detectChanges();
+    await vi.runAllTimersAsync();
+    fixture.detectChanges();
+
+    const [zoomInBtn, zoomOutBtn]: HTMLButtonElement[] = Array.from(
+      fixture.nativeElement.querySelectorAll('.app-map__zoom-btn'),
+    );
+    expect(zoomInBtn.hasAttribute('aria-label')).toBe(false);
+    expect(zoomOutBtn.hasAttribute('aria-label')).toBe(false);
+  });
+
+  // Labels are set BEFORE the first `detectChanges()` (never mutated on an
+  // already-checked fixture and re-checked) — inputs are read once at
+  // map-creation time, the same rule `interactive`/`scrollGate` follow
+  // elsewhere in this file, and mutating a template-bound host field AFTER
+  // a fixture has already been checked risks Angular's `checkNoChanges`
+  // verification pass flagging it as a same-tick change (NG0100), not a
+  // real production defect — see the class doc comment for `zoomInLabel`/
+  // `zoomOutLabel` on why they exist as plain string inputs at all.
+  it('applies the given aria-labels to the zoom buttons when provided', async () => {
+    TestBed.configureTestingModule({ imports: [MapHostComponent] });
+    const fixture = TestBed.createComponent(MapHostComponent);
+    fixture.componentInstance.interactive = true;
+    fixture.componentInstance.zoomInLabel = 'Zoom in';
+    fixture.componentInstance.zoomOutLabel = 'Zoom out';
+    fixture.detectChanges();
+    await vi.runAllTimersAsync();
+    fixture.detectChanges();
+
+    const [zoomInBtn, zoomOutBtn]: HTMLButtonElement[] = Array.from(
+      fixture.nativeElement.querySelectorAll('.app-map__zoom-btn'),
+    );
+    expect(zoomInBtn.getAttribute('aria-label')).toBe('Zoom in');
+    expect(zoomOutBtn.getAttribute('aria-label')).toBe('Zoom out');
   });
 
   // Provides its own `TILE_PROVIDER_CONFIG` via `TestBed` instead of relying
@@ -382,6 +552,101 @@ describe('MapComponent', () => {
     expect(state.markerCalls).toHaveLength(0);
   });
 
+  it('renders a distinctly-styled user-location marker when userPin is set, alongside the pin marker', async () => {
+    TestBed.configureTestingModule({ imports: [MapHostComponent] });
+    const fixture = TestBed.createComponent(MapHostComponent);
+    fixture.componentInstance.pin = { lat: 40.18, lng: 44.51 };
+    fixture.componentInstance.userPin = { lat: 40.2, lng: 44.55 };
+    fixture.detectChanges();
+    await vi.runAllTimersAsync();
+
+    // Both markers exist — the pin (orange teardrop) and the user dot (blue).
+    expect(state.markerCalls).toHaveLength(2);
+    expect(state.markerCalls.map((m) => m.coords)).toEqual(
+      expect.arrayContaining([
+        [40.18, 44.51],
+        [40.2, 44.55],
+      ]),
+    );
+    // Distinct divIcon className — never the same marker style as `pin`.
+    const classNames = state.divIconCalls.map((o) => o['className']);
+    expect(classNames).toContain('app-map__marker');
+    expect(classNames).toContain('app-map__user-marker');
+  });
+
+  it('does NOT render the user marker when crosshair mode is on, even with userPin set', async () => {
+    TestBed.configureTestingModule({ imports: [MapHostComponent] });
+    const fixture = TestBed.createComponent(MapHostComponent);
+    fixture.componentInstance.userPin = { lat: 40.2, lng: 44.55 };
+    fixture.componentInstance.crosshair = true;
+    fixture.componentInstance.interactive = true;
+    fixture.detectChanges();
+    await vi.runAllTimersAsync();
+
+    expect(state.markerCalls).toHaveLength(0);
+  });
+
+  it('does NOT call fitBounds when fitPins is off (the default), even with both pin and userPin set', async () => {
+    TestBed.configureTestingModule({ imports: [MapHostComponent] });
+    const fixture = TestBed.createComponent(MapHostComponent);
+    fixture.componentInstance.pin = { lat: 40.18, lng: 44.51 };
+    fixture.componentInstance.userPin = { lat: 40.2, lng: 44.55 };
+    fixture.detectChanges();
+    await vi.runAllTimersAsync();
+
+    expect(state.fitBoundsCalls).toHaveLength(0);
+  });
+
+  it('frames both pin and userPin via fitBounds when fitPins is on', async () => {
+    TestBed.configureTestingModule({ imports: [MapHostComponent] });
+    const fixture = TestBed.createComponent(MapHostComponent);
+    fixture.componentInstance.interactive = true;
+    fixture.componentInstance.pin = { lat: 40.18, lng: 44.51 };
+    fixture.componentInstance.userPin = { lat: 40.2, lng: 44.55 };
+    fixture.componentInstance.fitPins = true;
+    fixture.detectChanges();
+    await vi.runAllTimersAsync();
+
+    expect(state.latLngBoundsCalls).toHaveLength(1);
+    expect(state.latLngBoundsCalls[0]).toEqual([
+      [40.18, 44.51],
+      [40.2, 44.55],
+    ]);
+    expect(state.fitBoundsCalls).toHaveLength(1);
+    // A capped maxZoom (so two close-together points don't zoom to the
+    // Leaflet max, which reads as "broken" rather than "precise") and some
+    // padding — the exact numbers are this component's own internal choice,
+    // not part of its public contract, so only their presence/shape is
+    // pinned here.
+    expect(typeof state.fitBoundsCalls[0].options['maxZoom']).toBe('number');
+    expect(state.fitBoundsCalls[0].options['padding']).toBeDefined();
+  });
+
+  it('does NOT call fitBounds when only one of pin/userPin is set, even with fitPins on', async () => {
+    TestBed.configureTestingModule({ imports: [MapHostComponent] });
+    const fixture = TestBed.createComponent(MapHostComponent);
+    fixture.componentInstance.pin = { lat: 40.18, lng: 44.51 };
+    fixture.componentInstance.fitPins = true;
+    fixture.detectChanges();
+    await vi.runAllTimersAsync();
+
+    expect(state.fitBoundsCalls).toHaveLength(0);
+  });
+
+  it('does NOT call fitBounds in crosshair mode even with fitPins on and both points set', async () => {
+    TestBed.configureTestingModule({ imports: [MapHostComponent] });
+    const fixture = TestBed.createComponent(MapHostComponent);
+    fixture.componentInstance.pin = { lat: 40.18, lng: 44.51 };
+    fixture.componentInstance.userPin = { lat: 40.2, lng: 44.55 };
+    fixture.componentInstance.fitPins = true;
+    fixture.componentInstance.crosshair = true;
+    fixture.componentInstance.interactive = true;
+    fixture.detectChanges();
+    await vi.runAllTimersAsync();
+
+    expect(state.fitBoundsCalls).toHaveLength(0);
+  });
+
   it('emits the current centre on moveend while crosshair mode is on, including an initial emit', async () => {
     TestBed.configureTestingModule({ imports: [MapHostComponent] });
     const fixture = TestBed.createComponent(MapHostComponent);
@@ -464,6 +729,22 @@ describe('MapComponent', () => {
     // Fill/stroke must actually resolve to a colour string (jsdom returns ''
     // for an undeclared custom property, so this also exercises the fallback).
     expect(state.circleCalls[0].options['fillColor']).toMatch(/^#[0-9a-f]{6}$/i);
+    // Solid by default — no `dashArray` at all (not merely falsy), matching
+    // pre-`circleDashed` behaviour exactly for every existing caller.
+    expect(state.circleCalls[0].options['dashArray']).toBeUndefined();
+  });
+
+  it('draws the uncertainty circle dashed when circleDashed is set (radius-preview mode)', async () => {
+    TestBed.configureTestingModule({ imports: [MapHostComponent] });
+    const fixture = TestBed.createComponent(MapHostComponent);
+    fixture.componentInstance.pin = { lat: 40.18, lng: 44.51 };
+    fixture.componentInstance.circleRadiusMeters = 600;
+    fixture.componentInstance.circleDashed = true;
+    fixture.detectChanges();
+    await vi.runAllTimersAsync();
+
+    expect(state.circleCalls).toHaveLength(1);
+    expect(state.circleCalls[0].options['dashArray']).toBe('6 6');
   });
 
   it('does NOT draw a circle in crosshair mode even with a radius and pin set', async () => {
@@ -521,5 +802,144 @@ describe('MapComponent', () => {
     state.tileLayerCalls[0].handlers['load']?.forEach((h) => h());
 
     expect(fixture.componentInstance.errorCount).toBe(0);
+  });
+
+  describe('scrollGate — desktop (non-touch)', () => {
+    // `state.pointerCoarse` stays `false` (the `beforeEach` default), so
+    // `isTouchCapable` is `false` for every map created in this block —
+    // exercising the desktop half of the gate, not the touch overlay.
+
+    async function createGatedHost() {
+      TestBed.configureTestingModule({ imports: [MapHostComponent] });
+      const fixture = TestBed.createComponent(MapHostComponent);
+      fixture.componentInstance.interactive = true;
+      fixture.componentInstance.scrollGate = true;
+      fixture.detectChanges();
+      await vi.runAllTimersAsync();
+      fixture.detectChanges();
+      return fixture;
+    }
+
+    it('does not render the touch gate overlay on a non-touch pointer', async () => {
+      const fixture = await createGatedHost();
+      expect(fixture.nativeElement.querySelector('.app-map__gate')).toBeNull();
+    });
+
+    it('shows the scroll hint and does not let an un-modified wheel through when scrollGate is on', async () => {
+      const fixture = await createGatedHost();
+      const wrapper: HTMLElement = fixture.nativeElement.querySelector('.app-map');
+      expect(fixture.nativeElement.querySelector('.app-map__scroll-hint')).toBeNull();
+
+      wrapper.dispatchEvent(new WheelEvent('wheel', { bubbles: true, cancelable: true }));
+      fixture.detectChanges();
+
+      const hint: HTMLElement | null = fixture.nativeElement.querySelector(
+        '.app-map__scroll-hint',
+      );
+      expect(hint).not.toBeNull();
+      expect(hint!.textContent).toContain('Hold Ctrl and scroll to zoom');
+
+      // Hides itself again after the debounce window.
+      await vi.advanceTimersByTimeAsync(1100);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.app-map__scroll-hint')).toBeNull();
+    });
+
+    it('does NOT show the scroll hint for a Ctrl/⌘-held wheel — that is the zoom gesture', async () => {
+      const fixture = await createGatedHost();
+      const wrapper: HTMLElement = fixture.nativeElement.querySelector('.app-map');
+
+      wrapper.dispatchEvent(
+        new WheelEvent('wheel', { bubbles: true, cancelable: true, ctrlKey: true }),
+      );
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.app-map__scroll-hint')).toBeNull();
+    });
+
+    it('does nothing when scrollGate is off (default) — no hint, wheel is left alone', async () => {
+      TestBed.configureTestingModule({ imports: [MapHostComponent] });
+      const fixture = TestBed.createComponent(MapHostComponent);
+      fixture.componentInstance.interactive = true;
+      // scrollGate left false (default).
+      fixture.detectChanges();
+      await vi.runAllTimersAsync();
+      fixture.detectChanges();
+
+      const wrapper: HTMLElement = fixture.nativeElement.querySelector('.app-map');
+      wrapper.dispatchEvent(new WheelEvent('wheel', { bubbles: true, cancelable: true }));
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.app-map__scroll-hint')).toBeNull();
+    });
+  });
+
+  describe('scrollGate — touch', () => {
+    it('starts non-draggable behind a translucent gate overlay on a touch-primary pointer', async () => {
+      state.pointerCoarse = true;
+      TestBed.configureTestingModule({ imports: [MapHostComponent] });
+      const fixture = TestBed.createComponent(MapHostComponent);
+      fixture.componentInstance.interactive = true;
+      fixture.componentInstance.scrollGate = true;
+      fixture.detectChanges();
+      await vi.runAllTimersAsync();
+      fixture.detectChanges();
+
+      expect(state.mapOptions!['dragging']).toBe(false);
+      expect(state.mapOptions!['touchZoom']).toBe(false);
+      const gate: HTMLElement | null = fixture.nativeElement.querySelector('.app-map__gate');
+      expect(gate).not.toBeNull();
+      expect(gate!.textContent).toContain('Tap to move the map');
+      // No scroll-hint mechanics on a touch pointer.
+      expect(fixture.nativeElement.querySelector('.app-map__scroll-hint')).toBeNull();
+    });
+
+    it('dismisses the gate on tap, enabling dragging/touchZoom on the live map', async () => {
+      state.pointerCoarse = true;
+      TestBed.configureTestingModule({ imports: [MapHostComponent] });
+      const fixture = TestBed.createComponent(MapHostComponent);
+      fixture.componentInstance.interactive = true;
+      fixture.componentInstance.scrollGate = true;
+      fixture.detectChanges();
+      await vi.runAllTimersAsync();
+      fixture.detectChanges();
+
+      const gate: HTMLElement = fixture.nativeElement.querySelector('.app-map__gate');
+      gate.click();
+      fixture.detectChanges();
+
+      expect(state.lastDraggingEnable).toHaveBeenCalledTimes(1);
+      expect(state.lastTouchZoomEnable).toHaveBeenCalledTimes(1);
+      expect(fixture.nativeElement.querySelector('.app-map__gate')).toBeNull();
+    });
+
+    it('does not gate a touch pointer when scrollGate is off (default)', async () => {
+      state.pointerCoarse = true;
+      TestBed.configureTestingModule({ imports: [MapHostComponent] });
+      const fixture = TestBed.createComponent(MapHostComponent);
+      fixture.componentInstance.interactive = true;
+      // scrollGate left false (default).
+      fixture.detectChanges();
+      await vi.runAllTimersAsync();
+      fixture.detectChanges();
+
+      expect(state.mapOptions!['dragging']).toBe(true);
+      expect(fixture.nativeElement.querySelector('.app-map__gate')).toBeNull();
+    });
+
+    it('never gates the crosshair picker even with scrollGate on and a touch pointer', async () => {
+      state.pointerCoarse = true;
+      TestBed.configureTestingModule({ imports: [MapHostComponent] });
+      const fixture = TestBed.createComponent(MapHostComponent);
+      fixture.componentInstance.interactive = true;
+      fixture.componentInstance.crosshair = true;
+      fixture.componentInstance.scrollGate = true;
+      fixture.detectChanges();
+      await vi.runAllTimersAsync();
+      fixture.detectChanges();
+
+      expect(state.mapOptions!['dragging']).toBe(true);
+      expect(fixture.nativeElement.querySelector('.app-map__gate')).toBeNull();
+    });
   });
 });

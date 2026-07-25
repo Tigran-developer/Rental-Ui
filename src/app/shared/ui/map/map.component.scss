@@ -95,15 +95,226 @@
   box-shadow: 0 3px 8px rgba(20, 15, 5, 0.35);
 }
 
+/* ── `userPin`'s marker — a `divIcon` (plain HTML in Leaflet's marker pane),
+   deliberately styled DIFFERENTLY from `.app-map__marker` above (blue dot,
+   not orange teardrop) so a caller showing both `pin` and `userPin` at once
+   never reads them as the same thing. Colour comes from the
+   `--ui-color-map-user` design token (see styles.css) rather than a
+   hardcoded hex — unlike `.circleRadiusMeters`'s circle (drawn by Leaflet's
+   SVG renderer, which needs a colour STRING resolved via `readPrimaryColor()`
+   in map.component.ts), this is plain DOM, so the CSS custom property just
+   cascades normally; no JS colour-reading step is needed here. */
+:host ::ng-deep .app-map__user-marker {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+:host ::ng-deep .app-map__user-dot {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--ui-color-map-user);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--ui-color-map-user) 25%, transparent),
+    0 0 0 2px #fff;
+}
+
+:host ::ng-deep .app-map__user-dot::before {
+  content: '';
+  position: absolute;
+  inset: -9px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ui-color-map-user) 18%, transparent);
+  /* Static halo by default — the pulse below only plays under
+     `prefers-reduced-motion: no-preference`, per DESIGN_RULES.md §17
+     ("motion that cannot be disabled"). */
+  opacity: 0.55;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :host ::ng-deep .app-map__user-dot::before {
+    opacity: 1;
+    animation: app-map-user-pulse 2.4s ease-out infinite;
+  }
+}
+
+@keyframes app-map-user-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* ── This component's own zoom control (`.app-map__zoom-stack`), replacing
+   Leaflet's built-in `zoomControl` — see map.component.ts's class doc
+   comment. Top-right, matching the approved Maps P2 "location + radius"
+   design (`.mstack` in the design mockup). Radius is the design's literal
+   `13px` — deliberately NOT `--ui-radius-md` (14px) or `--ui-radius-12`
+   (12px); no existing DESIGN_RULES.md radius token is 13px, and the approved
+   mockup value is treated as an exact requirement here, not rounded to the
+   nearest token. Template-created elements (not Leaflet-owned DOM), so a
+   plain selector reaches them — no `::ng-deep` needed, same as
+   `.app-map__crosshair` and `.app-map__maptiler-logo`. */
+.app-map__zoom-stack {
+  position: absolute;
+  top: var(--ui-space-12);
+  right: var(--ui-space-12);
+  /* Leaflet's own panes/controls top out at z-index 1000 (see the
+     `.app-map__crosshair` comment above). */
+  z-index: 1002;
+  display: flex;
+  flex-direction: column;
+  border-radius: 13px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px -3px rgba(20, 15, 5, 0.3);
+}
+
+/* Also exported for callers' own `[app-map-actions]`-projected buttons that
+   want the exact same visual treatment (see map.component.html's comment on
+   that slot) — a plain, undocked 44×44 pill-corner button, as opposed to
+   `.app-map__zoom-btn` below, which is one segment of the joined stack. */
+.app-map__btn,
+.app-map__zoom-btn {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(6px);
+  color: var(--ui-color-text-primary);
+  cursor: pointer;
+  transition: background-color 140ms ease;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--ui-color-surface);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-color-primary-strong);
+    outline-offset: -2px;
+  }
+}
+
+.app-map__btn {
+  border-radius: 13px;
+  box-shadow: 0 4px 12px -3px rgba(20, 15, 5, 0.3);
+}
+
+.app-map__zoom-stack .app-map__zoom-btn + .app-map__zoom-btn {
+  border-top: 1px solid var(--ui-color-border);
+}
+
+/* ── `[app-map-actions]` projection slot — bottom-right, raised clear of
+   Leaflet's attribution control (bottom-right, ~24-28px tall) so a caller's
+   "expand"/"my location" buttons never sit on top of it. */
+.app-map__actions {
+  position: absolute;
+  right: var(--ui-space-12);
+  bottom: 44px;
+  z-index: 1002;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-10);
+  /* Empty when nothing is projected — must not itself intercept clicks
+     meant for the map underneath. */
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
+}
+
+/* ── Scroll-gate overlays (`scrollGate`) — see map.component.ts's class doc
+   comment for the full desktop/touch mechanism. Both are deliberately
+   TRANSLUCENT (`color-mix()` over `--ui-color-secondary`, matching the
+   approved design's own `rgba(26,27,38,*)` scrims — `--ui-color-secondary`
+   is the same `#2a2c41`), never opaque: the MapTiler logo and attribution
+   control must stay visible (dimmed) underneath, a licence requirement, not
+   a style choice. */
+.app-map__scroll-hint {
+  position: absolute;
+  inset: 0;
+  z-index: 1004;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--ui-color-secondary) 42%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 250ms ease;
+}
+
+/* Rendered only while `showScrollHint()` is true (see the `@if` in
+   map.component.html) — no separate `.show` modifier class needed, unlike
+   the approved design's static HTML mockup. */
+.app-map__hint-card {
+  /* No DESIGN_RULES.md shadow token is this tight/small (`--ui-shadow-card`
+     is a heavier two-layer shadow meant for page-level cards); the approved
+     design's own compact "hint card" shadow value is used verbatim instead
+     of forcing an ill-fitting token. */
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: var(--ui-radius-md);
+  box-shadow: 0 2px 8px -2px rgba(20, 15, 5, 0.14);
+  font-size: 13.5px;
+  font-weight: var(--ui-font-weight-bold);
+  text-align: center;
+  color: var(--ui-color-text-primary);
+}
+
+.app-map__gate {
+  position: absolute;
+  inset: 0;
+  /* Above the zoom stack / actions slot (1002) — the design's own `.mapgate`
+     sits above its equivalents too, blocking ALL interaction (buttons
+     included) until tapped, not just the drag gesture. */
+  z-index: 1005;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--ui-color-secondary) 28%, transparent);
+  backdrop-filter: blur(1px);
+  cursor: pointer;
+  border: 0;
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-color-primary-strong);
+    outline-offset: -2px;
+  }
+}
+
+.app-map__gate-card {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-10);
+  padding: 12px 18px;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: var(--ui-radius-pill);
+  font-size: 13px;
+  font-weight: var(--ui-font-weight-bold);
+  color: var(--ui-color-text-primary);
+  box-shadow: 0 2px 8px -2px rgba(20, 15, 5, 0.14);
+}
+
 /* ── MapTiler free-plan logo requirement — see map.component.ts's class doc
    comment. Bottom-left mirrors MapTiler's own reference markup
    (https://docs.maptiler.com/guides/map-design/how-to-add-maptiler-attribution-to-a-map/),
-   which keeps it clear of Leaflet's zoom control (top-left, interactive maps
-   only) and its attribution control (bottom-right, always shown) — and of
-   whatever this component draws at centre (crosshair / pin / circle). A
-   template-created element (not Leaflet-owned DOM), so — like
-   `.app-map__crosshair` above — a plain selector reaches it; no `::ng-deep`
-   needed. */
+   which keeps it clear of this component's own zoom stack (top-right,
+   interactive maps only) and Leaflet's attribution control (bottom-right,
+   always shown) — and of whatever this component draws at centre (crosshair
+   / pin / circle). A template-created element (not Leaflet-owned DOM), so —
+   like `.app-map__crosshair` above — a plain selector reaches it; no
+   `::ng-deep` needed. */
 .app-map__maptiler-logo {
   position: absolute;
   left: 8px;

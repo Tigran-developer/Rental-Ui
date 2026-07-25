@@ -1,4 +1,4 @@
-<div class="app-map" [style.height]="height()">
+<div #wrapper class="app-map" [style.height]="height()">
   <div #container class="app-map__surface"></div>
 
   @if (crosshair()) {
@@ -8,13 +8,82 @@
     </div>
   }
 
+  @if (interactive()) {
+    <!-- This component's OWN zoom control (top-right) — Leaflet's built-in
+         one is always constructed disabled (`zoomControl: false` in
+         map.component.ts) so every interactive map gets this design-system
+         button pair instead. -->
+    <div class="app-map__zoom-stack">
+      <button
+        type="button"
+        class="app-map__zoom-btn"
+        [attr.aria-label]="zoomInLabel()"
+        (click)="zoomIn()"
+      >
+        <i class="pi pi-plus" aria-hidden="true"></i>
+      </button>
+      <button
+        type="button"
+        class="app-map__zoom-btn"
+        [attr.aria-label]="zoomOutLabel()"
+        (click)="zoomOut()"
+      >
+        <i class="pi pi-minus" aria-hidden="true"></i>
+      </button>
+    </div>
+  }
+
+  <!-- Projection slot for caller-owned buttons docked to the map (e.g.
+       "expand to full-screen", "my location") — bottom-right, clear of
+       Leaflet's attribution control below it. Callers wanting the same
+       visual treatment as the zoom stack can apply this component's own
+       `.app-map__btn` class (unscoped — see `ViewEncapsulation.None` in
+       map.component.ts) to their projected button; this component never
+       needs to know what the button DOES. -->
+  <div class="app-map__actions">
+    <ng-content select="[app-map-actions]" />
+  </div>
+
+  @if (showScrollHint()) {
+    <!-- Desktop half of the scroll gate (`scrollGate`) — flashes for
+         ~1.1s when a visitor scrolls the map without Ctrl/⌘, explaining how
+         to actually zoom. Translucent so the attribution control and
+         MapTiler logo stay visible (dimmed) underneath — see
+         map.component.ts's class doc comment. -->
+    <div class="app-map__scroll-hint" aria-live="polite">
+      <div class="app-map__hint-card">
+        <ng-content select="[app-map-scroll-hint]" />
+      </div>
+    </div>
+  }
+
+  @if (showTouchGate()) {
+    <!-- Touch half of the scroll gate (`scrollGate`) — the map starts
+         non-draggable on a touch-primary pointer; tapping this overlay
+         enables dragging/pinch-zoom on the live map and removes itself for
+         good. Translucent for the same licence reason as the scroll hint
+         above. -->
+    <div
+      class="app-map__gate"
+      role="button"
+      tabindex="0"
+      (click)="dismissTouchGate()"
+      (keydown.enter)="dismissTouchGate()"
+      (keydown.space)="$event.preventDefault(); dismissTouchGate()"
+    >
+      <div class="app-map__gate-card">
+        <ng-content select="[app-map-gate-hint]" />
+      </div>
+    </div>
+  }
+
   @if (showMapTilerLogo) {
     <!-- MapTiler free-plan attribution requirement — see the class doc
          comment in map.component.ts. This is the exact asset MapTiler serves
          at api.maptiler.com/resources/logo.svg, inlined so it never needs a
-         runtime fetch. Bottom-left, clear of the zoom control (top-left),
-         the attribution control (bottom-right), and the crosshair/pin/circle
-         (centre). -->
+         runtime fetch. Bottom-left, clear of this component's own zoom stack
+         (top-right), the attribution control (bottom-right), and the
+         crosshair/pin/circle (centre). -->
     <a
       class="app-map__maptiler-logo"
       href="https://www.maptiler.com"
