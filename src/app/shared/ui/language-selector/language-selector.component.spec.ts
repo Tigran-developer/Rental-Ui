@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideMockStore } from '@ngrx/store/testing';
 import { TranslateModule } from '@ngx-translate/core';
 
 import { LanguageSelectorComponent } from './language-selector.component';
@@ -43,13 +44,13 @@ if (typeof window.localStorage === 'undefined' || window.localStorage === null) 
   });
 }
 
-function createFixture(variant: 'dropdown' | 'sheet') {
+function createFixture() {
   TestBed.configureTestingModule({
     imports: [LanguageSelectorComponent, TranslateModule.forRoot()],
+    providers: [provideMockStore()],
   });
 
   const fixture = TestBed.createComponent(LanguageSelectorComponent);
-  fixture.componentRef.setInput('variant', variant);
   fixture.detectChanges();
   return fixture;
 }
@@ -64,19 +65,20 @@ afterEach(() => {
   window.localStorage.removeItem('stayfinder.lang');
 });
 
-describe('LanguageSelectorComponent — dropdown variant', () => {
-  it('renders a closed trigger with the current language code', () => {
-    const fixture = createFixture('dropdown');
+describe('LanguageSelectorComponent', () => {
+  it('renders a closed trigger with the current language code and a chevron', () => {
+    const fixture = createFixture();
     const host: HTMLElement = fixture.nativeElement;
     const trigger = host.querySelector('.lang-selector__trigger')!;
 
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
     expect(trigger.querySelector('.lang-selector__code')!.textContent?.trim()).toBe('en');
+    expect(trigger.querySelector('.lang-selector__chevron')).not.toBeNull();
     expect(host.querySelector('.lang-selector__panel')).toBeNull();
   });
 
   it('opens the panel with all three options, marking the active one', () => {
-    const fixture = createFixture('dropdown');
+    const fixture = createFixture();
     openPanel(fixture);
 
     const host: HTMLElement = fixture.nativeElement;
@@ -93,7 +95,7 @@ describe('LanguageSelectorComponent — dropdown variant', () => {
   });
 
   it('clicking an option switches the language, updates the service, and closes the panel', () => {
-    const fixture = createFixture('dropdown');
+    const fixture = createFixture();
     openPanel(fixture);
 
     const host: HTMLElement = fixture.nativeElement;
@@ -108,7 +110,7 @@ describe('LanguageSelectorComponent — dropdown variant', () => {
   });
 
   it('closes on an outside mousedown', () => {
-    const fixture = createFixture('dropdown');
+    const fixture = createFixture();
     openPanel(fixture);
 
     document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
@@ -119,7 +121,7 @@ describe('LanguageSelectorComponent — dropdown variant', () => {
   });
 
   it('closes on Escape and returns focus to the trigger', () => {
-    const fixture = createFixture('dropdown');
+    const fixture = createFixture();
     openPanel(fixture);
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
@@ -128,73 +130,5 @@ describe('LanguageSelectorComponent — dropdown variant', () => {
     const host: HTMLElement = fixture.nativeElement;
     expect(host.querySelector('.lang-selector__panel')).toBeNull();
     expect(document.activeElement).toBe(host.querySelector('.lang-selector__trigger'));
-  });
-});
-
-describe('LanguageSelectorComponent — sheet variant', () => {
-  it('renders a trigger with no chevron', () => {
-    const fixture = createFixture('sheet');
-    const host: HTMLElement = fixture.nativeElement;
-
-    expect(host.querySelector('.lang-selector__chevron')).toBeNull();
-  });
-
-  it('opens a fixed scrim + sheet with all three options', () => {
-    const fixture = createFixture('sheet');
-    openPanel(fixture);
-
-    const host: HTMLElement = fixture.nativeElement;
-    expect(host.querySelector('.lang-selector__scrim')).not.toBeNull();
-    const sheet = host.querySelector('.lang-selector__sheet')!;
-    expect(sheet.getAttribute('role')).toBe('menu');
-    expect(sheet.querySelectorAll('.lang-selector__card').length).toBe(3);
-  });
-
-  it('closes on scrim tap', () => {
-    const fixture = createFixture('sheet');
-    openPanel(fixture);
-
-    const host: HTMLElement = fixture.nativeElement;
-    (host.querySelector('.lang-selector__scrim') as HTMLElement).click();
-    fixture.detectChanges();
-
-    expect(host.querySelector('.lang-selector__sheet')).toBeNull();
-  });
-
-  it('closes on the close button', () => {
-    const fixture = createFixture('sheet');
-    openPanel(fixture);
-
-    const host: HTMLElement = fixture.nativeElement;
-    (host.querySelector('.lang-selector__close') as HTMLElement).click();
-    fixture.detectChanges();
-
-    expect(host.querySelector('.lang-selector__sheet')).toBeNull();
-  });
-
-  it('closes on Escape', () => {
-    const fixture = createFixture('sheet');
-    openPanel(fixture);
-
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-    fixture.detectChanges();
-
-    const host: HTMLElement = fixture.nativeElement;
-    expect(host.querySelector('.lang-selector__sheet')).toBeNull();
-  });
-
-  it('selecting a card switches the language and closes the sheet', () => {
-    const fixture = createFixture('sheet');
-    openPanel(fixture);
-
-    const host: HTMLElement = fixture.nativeElement;
-    const cards = Array.from(host.querySelectorAll<HTMLButtonElement>('.lang-selector__card'));
-    const armenian = cards.find((c) => c.textContent?.includes('Հայերեն'))!;
-    armenian.click();
-    fixture.detectChanges();
-
-    const languageService = TestBed.inject(LanguageService);
-    expect(languageService.current().code).toBe('hy');
-    expect(host.querySelector('.lang-selector__sheet')).toBeNull();
   });
 });

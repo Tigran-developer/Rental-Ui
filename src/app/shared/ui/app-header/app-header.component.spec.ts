@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { provideMockStore } from '@ngrx/store/testing';
 import { TranslateModule } from '@ngx-translate/core';
 
 import { AppHeaderComponent } from './app-header.component';
@@ -8,7 +9,7 @@ import { HeaderSearchVisibilityService } from './header-search-visibility.servic
 function createFixture() {
   TestBed.configureTestingModule({
     imports: [AppHeaderComponent, TranslateModule.forRoot()],
-    providers: [provideRouter([])],
+    providers: [provideRouter([]), provideMockStore()],
   });
 
   return TestBed.createComponent(AppHeaderComponent);

@@ -149,6 +149,30 @@ export async function releaseListingForRenter(
 }
 
 /**
+ * Determinism self-heal for `real/language-persistence.spec.ts`: sets an
+ * account's server-side `preferredLanguage` directly through the real PUT
+ * endpoint before a journey starts, so the test's starting state never
+ * depends on what a previous (possibly crashed) run left behind.
+ */
+export async function apiSetPreferredLanguage(
+  request: APIRequestContext,
+  account: Credentials,
+  preferredLanguage: string | null,
+): Promise<void> {
+  const token = await apiLogin(request, account);
+  const res = await request.put(`${API_URL}/api/auth/me/preferred-language`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: { preferredLanguage },
+  });
+  if (!res.ok()) {
+    throw new Error(
+      `Self-heal: PUT /api/auth/me/preferred-language for ${account.email} failed: ` +
+        `${res.status()} ${await res.text()}`,
+    );
+  }
+}
+
+/**
  * Logs in through the real auth dialog (header "Log in" button). Mirrors the
  * mocked-tier flow in auth.spec.ts, but against the real API.
  */

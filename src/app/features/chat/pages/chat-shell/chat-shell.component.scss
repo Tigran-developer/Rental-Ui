@@ -8,10 +8,29 @@
  * Scoped to the chat feature; the global background token is untouched.
  */
 :host {
+  /*
+   * Real rendered height of the sticky global header (`app-header`,
+   * `shared/ui/app-header`): `.nh__row { min-height: 3.75rem }` plus the
+   * host's own `border-bottom: 1px solid`. This used to be re-approximated at
+   * every breakpoint below as an independent magic number (3.5rem/4rem, plus
+   * a hand-tuned "+1px"/"+5px" fudge — see git history "widen the shell
+   * height offset from 1px to 5px: manual tuning... absorbs residual
+   * overflow") that only coincidentally summed to the right total and would
+   * silently drift the instant the header's own CSS changed. Single source
+   * of truth now — every fixed-viewport calc below reuses this instead of
+   * re-deriving the number. NOT the same thing as the `--ui-header-height`
+   * token in styles.css (that token is currently stale at 3.5rem and used by
+   * unrelated features' sticky offsets; fixing it is out of scope here).
+   */
+  --chat-header-h: calc(3.75rem + 1px);
   display: block;
   background: var(--ui-color-surface);
   /* Fill the viewport under the sticky header so short inboxes/threads don't
-     let cream peek below the white surface on mobile. */
+     let cream peek below the white surface on mobile. This min-height is
+     DELIBERATELY not --chat-header-h: on mobile the global header is
+     display:none and the fixed bottom nav takes its place instead, so this
+     models the bottom-nav's footprint, not the header's — see the ≤1023
+     block below. */
   min-height: calc(100dvh - 4rem);
 }
 
@@ -84,8 +103,8 @@
  * the composer / closed banner pins to the viewport bottom and only the
  * message list scrolls — mirroring the desktop pane. The height fills exactly
  * the space under whatever chrome sits above the chat surface:
- *   • 961–1023px → the global sticky header is visible (3.5rem row + 1px
- *     border — same expression as the desktop block below).
+ *   • 961–1023px → the global sticky header is visible (`--chat-header-h`,
+ *     same value the desktop block below uses).
  *   • ≤960px     → the global header is `display:none` (app-header), so the
  *     thread owns the full viewport height (overridden in the ≤960 block).
  * On an open thread below 1024px the app bottom nav is also hidden (app.ts
@@ -97,7 +116,7 @@
 @media (max-width: 1023px) {
   :host:has(.chat-shell--thread-open) {
     min-height: 0;
-    height: calc(100dvh - 3.5rem - 1px);
+    height: calc(100dvh - var(--chat-header-h));
     overflow: hidden;
   }
 
@@ -140,10 +159,10 @@
     margin-inline: auto;
     padding-inline: 70px;
     /* Fixed messenger viewport: fill exactly the space under the sticky app
-       header (3.5rem row + 1px border) so the composer is always on screen.
-       The page itself never scrolls — the rail list and the message pane
-       scroll internally. */
-    height: calc(100dvh - 3.5rem - 5px);
+       header (`--chat-header-h`) so the composer is always on screen. The
+       page itself never scrolls — the rail list and the message pane scroll
+       internally. */
+    height: calc(100dvh - var(--chat-header-h));
     min-height: 0;
     overflow: hidden;
   }

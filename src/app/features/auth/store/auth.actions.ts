@@ -80,3 +80,16 @@ export const authInitCompleted = createAction('[Auth] Init Completed');
 /** Clears a stale auth error without triggering any HTTP request (e.g., when switching
  *  between login and register modes inside the auth dialog). */
 export const clearAuthError = createAction('[Auth] Clear Error');
+
+/**
+ * User-initiated language switch, dispatched by `LanguageService.use()` on
+ * every switch regardless of auth state. `AuthEffects.persistPreferredLanguage$`
+ * gates on `selectIsAuthenticated` and persists to the backend only when
+ * signed in; the local UI/localStorage switch has already happened by the
+ * time this fires, so a failed persist is swallowed quietly (no revert, no
+ * disruptive error surfaced to the user).
+ */
+export const updatePreferredLanguage = createAction(
+  '[Auth] Update Preferred Language',
+  props<{ code: string }>(),
+);

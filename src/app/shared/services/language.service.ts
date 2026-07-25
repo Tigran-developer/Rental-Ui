@@ -1,5 +1,8 @@
 import { Injectable, inject, signal } from '@angular/core';
+import { Store } from '@ngrx/store';
 import { TranslateService } from '@ngx-translate/core';
+
+import * as AuthActions from '../../features/auth/store/auth.actions';
 
 export type LanguageCode = 'en' | 'hy' | 'ru';
 
@@ -32,6 +35,7 @@ const LANGUAGES: readonly LanguageOption[] = [
 @Injectable({ providedIn: 'root' })
 export class LanguageService {
   private readonly translate = inject(TranslateService);
+  private readonly store = inject(Store);
 
   readonly languages: readonly LanguageOption[] = LANGUAGES;
 
@@ -43,9 +47,36 @@ export class LanguageService {
     this.translate.use(this.current().code);
   }
 
-  /** Switches the active language: updates state, ngx-translate, and storage. */
+  /**
+   * Inbound path: applies the language a signed-in user has saved on the
+   * server (called from `AuthEffects` on `loadCurrentUserSuccess`, i.e. app
+   * boot with a token and post-login/register/external-auth).
+   *
+   * No-ops when `code` is null/undefined/unknown — a user with no saved
+   * preference keeps whatever is already active (localStorage/default).
+   * Never persists back to the backend; only the outbound `use()` does that,
+   * so applying a server value can never trigger a re-persist loop.
+   */
+  applyFromUser(code: string | null | undefined): void {
+    if (code === null || code === undefined) return;
+    const option = this.languages.find((l) => l.code === code);
+    if (option === undefined) return;
+    this.applyLocally(option);
+  }
+
+  /**
+   * Outbound path: user-initiated language switch. Updates state, ngx-translate,
+   * and localStorage, then dispatches `AuthActions.updatePreferredLanguage` so
+   * `AuthEffects` can persist it to the backend when the user is authenticated
+   * (a no-op while signed out — localStorage-only, same as before).
+   */
   use(code: LanguageCode): void {
     const option = this.languages.find((l) => l.code === code) ?? this.languages[0];
+    this.applyLocally(option);
+    this.store.dispatch(AuthActions.updatePreferredLanguage({ code: option.code }));
+  }
+
+  private applyLocally(option: LanguageOption): void {
     this.current.set(option);
     this.translate.use(option.code);
     try {

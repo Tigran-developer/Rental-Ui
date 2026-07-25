@@ -1,6 +1,8 @@
 import { TestBed } from '@angular/core/testing';
+import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
+import * as AuthActions from '../../features/auth/store/auth.actions';
 import { LanguageService } from './language.service';
 
 const STORAGE_KEY = 'stayfinder.lang';
@@ -46,7 +48,10 @@ if (typeof window.localStorage === 'undefined' || window.localStorage === null) 
 }
 
 function createService(): LanguageService {
-  TestBed.configureTestingModule({ imports: [TranslateModule.forRoot()] });
+  TestBed.configureTestingModule({
+    imports: [TranslateModule.forRoot()],
+    providers: [provideMockStore()],
+  });
   return TestBed.inject(LanguageService);
 }
 
@@ -114,11 +119,76 @@ describe('LanguageService', () => {
 
   it('use() does not throw when window.localStorage.setItem throws', () => {
     const service = createService();
-    vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
+    const setItemSpy = vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
       throw new Error('quota exceeded');
     });
 
     expect(() => service.use('hy')).not.toThrow();
     expect(service.current().code).toBe('hy');
+    setItemSpy.mockRestore();
+  });
+
+  it('use() dispatches updatePreferredLanguage so AuthEffects can persist it when authenticated', () => {
+    const service = createService();
+    const store = TestBed.inject(MockStore);
+    const dispatchSpy = vi.spyOn(store, 'dispatch');
+
+    service.use('ru');
+
+    expect(dispatchSpy).toHaveBeenCalledWith(AuthActions.updatePreferredLanguage({ code: 'ru' }));
+  });
+
+  describe('applyFromUser()', () => {
+    it('applies a valid server-saved code: updates current, ngx-translate, and storage', () => {
+      const service = createService();
+      const translate = TestBed.inject(TranslateService);
+      const useSpy = vi.spyOn(translate, 'use');
+
+      service.applyFromUser('hy');
+
+      expect(service.current().code).toBe('hy');
+      expect(useSpy).toHaveBeenCalledWith('hy');
+      expect(window.localStorage.getItem(STORAGE_KEY)).toBe('hy');
+    });
+
+    it('does not dispatch updatePreferredLanguage (never re-persists an inbound value)', () => {
+      const service = createService();
+      const store = TestBed.inject(MockStore);
+      const dispatchSpy = vi.spyOn(store, 'dispatch');
+
+      service.applyFromUser('hy');
+
+      expect(dispatchSpy).not.toHaveBeenCalled();
+    });
+
+    it('no-ops on null (keeps whatever language is currently active)', () => {
+      window.localStorage.setItem(STORAGE_KEY, 'ru');
+      const service = createService();
+      const translate = TestBed.inject(TranslateService);
+      const useSpy = vi.spyOn(translate, 'use');
+
+      service.applyFromUser(null);
+
+      expect(service.current().code).toBe('ru');
+      expect(useSpy).not.toHaveBeenCalled();
+    });
+
+    it('no-ops on undefined', () => {
+      const service = createService();
+      const before = service.current().code;
+
+      service.applyFromUser(undefined);
+
+      expect(service.current().code).toBe(before);
+    });
+
+    it('no-ops on an unknown/unsupported code', () => {
+      const service = createService();
+      const before = service.current().code;
+
+      service.applyFromUser('fr');
+
+      expect(service.current().code).toBe(before);
+    });
   });
 });

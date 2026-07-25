@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideMockStore } from '@ngrx/store/testing';
 import { TranslateModule } from '@ngx-translate/core';
 
 import { ListingLocationComponent } from './listing-location.component';
@@ -43,6 +44,7 @@ async function createComponent(inputs: {
 }) {
   TestBed.configureTestingModule({
     imports: [ListingLocationComponent, TranslateModule.forRoot()],
+    providers: [provideMockStore()],
   });
   const fixture = TestBed.createComponent(ListingLocationComponent);
   fixture.componentRef.setInput('city', inputs.city ?? 'Yerevan');

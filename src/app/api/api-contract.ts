@@ -13,6 +13,7 @@ export const ApiContract = {
     login: '/api/auth/login',
     register: '/api/auth/register',
     currentUser: '/api/auth/me',
+    updatePreferredLanguage: '/api/auth/me/preferred-language',
     external: '/api/auth/external',
   },
   listings: {

@@ -9,19 +9,22 @@
 >
   <i class="pi pi-globe lang-selector__icon" aria-hidden="true"></i>
   <span class="lang-selector__code">{{ current().code }}</span>
-  @if (variant() === 'dropdown') {
-    <i
-      class="pi pi-chevron-down lang-selector__chevron"
-      [class.lang-selector__chevron--open]="open()"
-      aria-hidden="true"
-    ></i>
-  }
+  <i
+    class="pi pi-chevron-down lang-selector__chevron"
+    [class.lang-selector__chevron--open]="open()"
+    aria-hidden="true"
+  ></i>
 </button>
 
-<!-- ── Dropdown (desktop) ─────────────────────────────────────────────── -->
-@if (open() && variant() === 'dropdown') {
-  <div class="lang-selector__panel" role="menu" [attr.aria-label]="'app.language.caption' | translate">
-    <p class="lang-selector__caption" aria-hidden="true">{{ 'app.language.caption' | translate }}</p>
+@if (open()) {
+  <div
+    class="lang-selector__panel"
+    role="menu"
+    [attr.aria-label]="'app.language.caption' | translate"
+  >
+    <p class="lang-selector__caption" aria-hidden="true">
+      {{ 'app.language.caption' | translate }}
+    </p>
     @for (option of languages; track option.code) {
       <button
         type="button"
@@ -41,45 +44,5 @@
         }
       </button>
     }
-  </div>
-}
-
-<!-- ── Sheet (mobile) ──────────────────────────────────────────────────── -->
-@if (open() && variant() === 'sheet') {
-  <div class="lang-selector__scrim" (click)="onScrimClick()"></div>
-  <div class="lang-selector__sheet" role="menu" [attr.aria-label]="'app.language.title' | translate">
-    <div class="lang-selector__grabber" aria-hidden="true"></div>
-    <div class="lang-selector__sheet-head">
-      <h2 class="lang-selector__sheet-title">{{ 'app.language.title' | translate }}</h2>
-      <button
-        type="button"
-        class="lang-selector__close"
-        [attr.aria-label]="'app.language.close' | translate"
-        (click)="onCloseButtonClick()"
-      >
-        <i class="pi pi-times" aria-hidden="true"></i>
-      </button>
-    </div>
-    <div class="lang-selector__cards">
-      @for (option of languages; track option.code) {
-        <button
-          type="button"
-          class="lang-selector__card"
-          [class.lang-selector__card--active]="option.code === current().code"
-          role="menuitemradio"
-          [attr.aria-checked]="option.code === current().code"
-          (click)="select(option)"
-        >
-          <span class="lang-selector__flag lang-selector__flag--lg" aria-hidden="true">{{ option.flag }}</span>
-          <span class="lang-selector__names">
-            <span class="lang-selector__native lang-selector__native--lg">{{ option.native }}</span>
-            <span class="lang-selector__label">{{ option.label }}</span>
-          </span>
-          @if (option.code === current().code) {
-            <i class="pi pi-check lang-selector__check" aria-hidden="true"></i>
-          }
-        </button>
-      }
-    </div>
   </div>
 }

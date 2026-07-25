@@ -3,15 +3,16 @@ import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
-import { catchError, filter, map, mergeMap, of, take, tap, withLatestFrom } from 'rxjs';
+import { EMPTY, catchError, filter, map, mergeMap, of, take, tap, withLatestFrom } from 'rxjs';
 
 import { toApiErrorMessage } from '../../../api/http-error-message.util';
+import { LanguageService } from '../../../shared/services/language.service';
 import { AuthRedirectService } from '../services/auth-redirect.service';
 import { AuthApiService } from '../services/auth-api.service';
 import { ExternalAuthProviderService } from '../services/external-auth-provider.service';
 import { AuthTokenService } from '../services/auth-token.service';
 import * as AuthActions from './auth.actions';
-import { selectAuthToken } from './auth.selectors';
+import { selectAuthToken, selectIsAuthenticated } from './auth.selectors';
 
 function toErrorMessage(error: unknown): string {
   return toApiErrorMessage(error, {
@@ -29,6 +30,7 @@ export class AuthEffects {
   private readonly externalAuthProvider = inject(ExternalAuthProviderService);
   private readonly tokenService = inject(AuthTokenService);
   private readonly authRedirect = inject(AuthRedirectService);
+  private readonly languageService = inject(LanguageService);
 
   readonly login$ = createEffect(() =>
     this.actions$.pipe(
@@ -208,6 +210,42 @@ export class AuthEffects {
             this.tokenService.removeToken();
           }
         }),
+      ),
+    { dispatch: false },
+  );
+
+  /**
+   * Inbound language sync: whenever a current user arrives (app boot with a
+   * token, or right after login/register/external auth), apply their saved
+   * server preference. `applyFromUser` no-ops on null/unknown, so a user
+   * without a saved preference simply keeps whatever is already active.
+   */
+  readonly applyServerLanguage$ = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(AuthActions.loadCurrentUserSuccess),
+        tap(({ user }) => {
+          this.languageService.applyFromUser(user.preferredLanguage);
+        }),
+      ),
+    { dispatch: false },
+  );
+
+  /**
+   * Outbound language persistence: only when the user is authenticated at
+   * the moment of the switch. The local UI/localStorage switch has already
+   * happened in `LanguageService.use()` by the time this runs, so a failed
+   * persist is swallowed quietly — no error surfaced, no revert.
+   */
+  readonly persistPreferredLanguage$ = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(AuthActions.updatePreferredLanguage),
+        withLatestFrom(this.store.select(selectIsAuthenticated)),
+        filter(([, isAuthenticated]) => isAuthenticated),
+        mergeMap(([{ code }]) =>
+          this.authApi.updatePreferredLanguage(code).pipe(catchError(() => EMPTY)),
+        ),
       ),
     { dispatch: false },
   );

@@ -26,7 +26,7 @@
             >Rent</span
           >
         </a>
-        <app-language-selector variant="sheet" />
+        <app-language-selector />
       </div>
     }
 
@@ -162,11 +162,7 @@
               [title]="'home.sections.errorTitle' | translate"
               [description]="vm.sectionsError"
             />
-            <button
-              type="button"
-              class="home__error-retry"
-              (click)="retryHomeSections()"
-            >
+            <button type="button" class="home__error-retry" (click)="retryHomeSections()">
               {{ 'listings.common.retry' | translate }}
             </button>
           </div>
@@ -174,10 +170,7 @@
       } @else {
         @for (section of vm.sections; track section.key) {
           @if (section.items.length > 0) {
-            <section
-              class="home__section"
-              [attr.aria-labelledby]="'home-section-' + section.key"
-            >
+            <section class="home__section" [attr.aria-labelledby]="'home-section-' + section.key">
               <app-ui-section-header
                 [title]="section.title"
                 [headingId]="'home-section-' + section.key"
@@ -195,10 +188,7 @@
                 >
                   <i class="pi pi-chevron-left" aria-hidden="true"></i>
                 </button>
-                <div
-                  #sectionCarousel
-                  class="home__carousel home__carousel--sections"
-                >
+                <div #sectionCarousel class="home__carousel home__carousel--sections">
                   @for (item of section.items; track item.id) {
                     <app-listing-card
                       class="home__carousel-item home__carousel-item--section"
@@ -279,16 +269,14 @@
               </div>
               <h3 class="home__process-step-title">
                 {{
-                  (processMode() === 'renting'
-                    ? step.titleKeyRenting
-                    : step.titleKeyLending) | translate
+                  (processMode() === 'renting' ? step.titleKeyRenting : step.titleKeyLending)
+                    | translate
                 }}
               </h3>
               <p class="home__process-step-text">
                 {{
-                  (processMode() === 'renting'
-                    ? step.descKeyRenting
-                    : step.descKeyLending) | translate
+                  (processMode() === 'renting' ? step.descKeyRenting : step.descKeyLending)
+                    | translate
                 }}
               </p>
             </li>
@@ -309,10 +297,7 @@
             <p class="home__faq-help-text">
               {{ 'home.faq.helpText' | translate }}
             </p>
-            <a
-              class="home__faq-help-cta"
-              [href]="'mailto:' + ('home.faq.helpEmail' | translate)"
-            >
+            <a class="home__faq-help-cta" [href]="'mailto:' + ('home.faq.helpEmail' | translate)">
               {{ 'home.faq.helpCta' | translate }}
             </a>
           </div>
@@ -320,10 +305,7 @@
 
         <div class="home__faq-right">
           @for (entry of faqEntries; track entry.id) {
-            <div
-              class="home__faq-item"
-              [class.home__faq-item--open]="expandedFaq() === entry.id"
-            >
+            <div class="home__faq-item" [class.home__faq-item--open]="expandedFaq() === entry.id">
               <button
                 type="button"
                 class="home__faq-item-header"
@@ -342,10 +324,7 @@
                 ></i>
               </button>
               @if (expandedFaq() === entry.id) {
-                <p
-                  class="home__faq-item-answer"
-                  [id]="'home-faq-panel-' + entry.id"
-                >
+                <p class="home__faq-item-answer" [id]="'home-faq-panel-' + entry.id">
                   {{ entry.answerKey | translate }}
                 </p>
               }
@@ -354,7 +333,6 @@
         </div>
       </section>
     </div>
-
   </div>
 }
 

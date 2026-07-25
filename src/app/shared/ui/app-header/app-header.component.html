@@ -1,6 +1,5 @@
 <div class="nh__inner">
   <div class="nh__row">
-
     <!-- ── Brand ─────────────────────────────────────────────────────── -->
     <a routerLink="/" class="nh__brand" aria-label="DoRent home">
       <span class="nh__brand-text" aria-hidden="true"
@@ -27,11 +26,7 @@
          away) the pill is faded out. `inert` removes it from the tab order
          and the a11y tree; the explicit tabindex="-1" is a belt-and-braces
          guard because `pointer-events: none` alone still leaves it tabbable. -->
-    <div
-      class="nh__search"
-      role="search"
-      [attr.inert]="searchHidden() ? '' : null"
-    >
+    <div class="nh__search" role="search" [attr.inert]="searchHidden() ? '' : null">
       <label class="nh__search-field" for="nh-search-input">
         <i class="pi pi-search nh__search-icon" aria-hidden="true"></i>
         <input
@@ -60,7 +55,6 @@
 
     <!-- ── Right controls ─────────────────────────────────────────────── -->
     <div class="nh__controls">
-
       <!-- Auth skeleton while hydrating -->
       @if (isAuthPending()) {
         <span class="nh__skeleton" aria-hidden="true"></span>
@@ -68,7 +62,7 @@
 
       <!-- Guest: language switcher + Log in + Sign up -->
       @if (!isAuthPending() && !isAuthenticated()) {
-        <app-language-selector variant="dropdown" />
+        <app-language-selector />
         <button type="button" class="nh__btn nh__btn--ghost" (click)="onOpenAuth('login')">
           Log in
         </button>
@@ -79,7 +73,6 @@
 
       <!-- Authenticated: bell + user pill ─────────────────────────── -->
       @if (isAuthenticated()) {
-
         <!-- Messages → chat inbox -->
         <div class="nh__notif">
           <a
@@ -179,7 +172,9 @@
                   <i class="pi pi-box nh__dd-icon" aria-hidden="true"></i>
                   <span class="nh__dd-label">My toys</span>
                   @if (myToysCount() > 0) {
-                    <span class="nh__dd-count" aria-label="{{ myToysCount() }} toys">{{ myToysCount() }}</span>
+                    <span class="nh__dd-count" aria-label="{{ myToysCount() }} toys">{{
+                      myToysCount()
+                    }}</span>
                   }
                 </a>
 
@@ -193,7 +188,9 @@
                   <i class="pi pi-calendar nh__dd-icon" aria-hidden="true"></i>
                   <span class="nh__dd-label">{{ 'profile.nav.myRentals' | translate }}</span>
                   @if (myRentalsCount() > 0) {
-                    <span class="nh__dd-count" aria-label="{{ myRentalsCount() }} bookings">{{ myRentalsCount() }}</span>
+                    <span class="nh__dd-count" aria-label="{{ myRentalsCount() }} bookings">{{
+                      myRentalsCount()
+                    }}</span>
                   }
                 </a>
 
@@ -207,7 +204,11 @@
                   <i class="pi pi-inbox nh__dd-icon" aria-hidden="true"></i>
                   <span class="nh__dd-label">Incoming requests</span>
                   @if (requestsCount() > 0) {
-                    <span class="nh__dd-count nh__dd-count--badge" aria-label="{{ requestsCount() }} requests">{{ requestsCount() }}</span>
+                    <span
+                      class="nh__dd-count nh__dd-count--badge"
+                      aria-label="{{ requestsCount() }} requests"
+                      >{{ requestsCount() }}</span
+                    >
                   }
                 </a>
 
@@ -221,7 +222,9 @@
                   <i class="pi pi-heart nh__dd-icon" aria-hidden="true"></i>
                   <span class="nh__dd-label">Saved toys</span>
                   @if (savedCount() > 0) {
-                    <span class="nh__dd-count" aria-label="{{ savedCount() }} saved">{{ savedCount() }}</span>
+                    <span class="nh__dd-count" aria-label="{{ savedCount() }} saved">{{
+                      savedCount()
+                    }}</span>
                   }
                 </a>
               </div>

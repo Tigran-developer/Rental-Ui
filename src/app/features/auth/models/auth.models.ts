@@ -23,6 +23,7 @@ export interface CurrentUser {
   email: string;
   firstName: string;
   lastName: string;
+  preferredLanguage?: string | null;
   roles: string[];
 }
 

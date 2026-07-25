@@ -69,12 +69,24 @@ export class AuthApiService {
       .pipe(map((raw) => this.normalizeCurrentUser(raw)));
   }
 
+  updatePreferredLanguage(code: string | null): Observable<CurrentUser> {
+    return this.http
+      .put<Record<string, unknown>>(toApiUrl(ApiContract.auth.updatePreferredLanguage), {
+        preferredLanguage: code,
+      })
+      .pipe(map((raw) => this.normalizeCurrentUser(raw)));
+  }
+
   private normalizeCurrentUser(raw: Record<string, unknown>): CurrentUser {
     return {
       id: typeof raw['id'] === 'string' ? raw['id'] : '',
       email: typeof raw['email'] === 'string' ? raw['email'] : '',
       firstName: typeof raw['firstName'] === 'string' ? raw['firstName'] : '',
       lastName: typeof raw['lastName'] === 'string' ? raw['lastName'] : '',
+      preferredLanguage:
+        typeof raw['preferredLanguage'] === 'string' && raw['preferredLanguage'].length > 0
+          ? raw['preferredLanguage']
+          : null,
       roles: resolveRoles(raw),
     };
   }

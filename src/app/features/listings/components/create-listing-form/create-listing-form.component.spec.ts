@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
+import { provideMockStore } from '@ngrx/store/testing';
 import { TranslateModule } from '@ngx-translate/core';
 
 import { CreateListingFormComponent } from './create-listing-form.component';
@@ -65,6 +66,7 @@ interface Submittable {
 function createComponent(mode: ListingFormMode = 'create') {
   TestBed.configureTestingModule({
     imports: [CreateListingFormComponent, TranslateModule.forRoot()],
+    providers: [provideMockStore()],
   });
   const fixture = TestBed.createComponent(CreateListingFormComponent);
   const component = fixture.componentInstance;
