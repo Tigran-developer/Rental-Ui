@@ -12,7 +12,7 @@ import {
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { ListingLocationMapComponent } from '../listing-location-map/listing-location-map.component';
-import { ListingLocationPointPickerComponent } from '../listing-location-point-picker/listing-location-point-picker.component';
+import { LocationPickerComponent } from '../location-picker/location-picker.component';
 import { GeolocationService } from '../../../../shared/services/geolocation.service';
 import { LanguageService } from '../../../../shared/services/language.service';
 import { haversineDistanceKm } from '../../../../shared/utils/haversine-distance.utils';
@@ -84,11 +84,17 @@ type GeoRequestState = 'idle' | 'locating' | 'granted' | 'denied';
  *   formula `ListingsQueryService` (rental-api) uses server-side so the two
  *   can never disagree;
  * - on ANY geolocation failure, a soft (non-error-styled) block offering
- *   "Pick a point on the map" instead — opens
- *   `ListingLocationPointPickerComponent`, a small dedicated full-screen
- *   crosshair picker owned by THIS feature (deliberately not a reuse of
- *   `LocationPickerComponent`, the create-listing wizard's own picker — see
- *   that new component's class doc comment for why);
+ *   "Pick a point on the map" instead — opens `LocationPickerComponent`
+ *   (`features/listings/components/location-picker`), the SAME full-screen
+ *   crosshair picker the create-listing wizard and the catalogue's radius
+ *   filter already use, configured here with this feature's own translate
+ *   keys (`listings.details.location.pointPicker.*`) via its `headerKey`/
+ *   `confirmLabelKey`/`cancelLabelKey`/`privacyNoteKey` inputs. A dedicated
+ *   near-duplicate (`ListingLocationPointPickerComponent`) existed here
+ *   briefly, solely so this feature and the radius-filter feature (developed
+ *   in parallel) never touched the same file at once — now that both have
+ *   landed, that reason is gone, so this uses the shared component like
+ *   every other caller;
  * - an "expand" button that opens `ListingLocationMapComponent` (Screen 2),
  *   a full-viewport version of the same map.
  *
@@ -112,7 +118,7 @@ type GeoRequestState = 'idle' | 'locating' | 'granted' | 'denied';
   imports: [
     MapComponent,
     ListingLocationMapComponent,
-    ListingLocationPointPickerComponent,
+    LocationPickerComponent,
     TranslatePipe,
   ],
   templateUrl: './listing-location.component.html',

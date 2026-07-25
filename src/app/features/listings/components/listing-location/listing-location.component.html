@@ -137,9 +137,13 @@
         <span>{{ 'listings.details.location.privacyNote' | translate }}</span>
       </p>
 
-      <app-listing-location-point-picker
+      <app-location-picker
         [open]="showPointPicker()"
         [initialCenter]="p"
+        headerKey="listings.details.location.pointPicker.title"
+        confirmLabelKey="listings.details.location.pointPicker.confirm"
+        cancelLabelKey="listings.details.location.pointPicker.cancel"
+        privacyNoteKey="listings.details.location.pointPicker.privacyNote"
         (confirmed)="onManualPickConfirmed($event)"
         (cancelled)="onManualPickCancelled()"
       />

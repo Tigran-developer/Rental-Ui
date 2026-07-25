@@ -66,6 +66,15 @@ export class LocationPickerComponent {
   readonly headerKey = input<string>('listings.createForm.locationPicker.title');
   readonly confirmLabelKey = input<string>('listings.createForm.locationPicker.confirm');
   readonly cancelLabelKey = input<string>('listings.createForm.locationPicker.cancel');
+  /** Footer privacy caption — same default-to-the-wizard's-own-copy pattern
+   *  as the three keys above. `ListingLocationComponent` (the listing-detail
+   *  page's "pick a point" fallback, formerly its own near-duplicate
+   *  `ListingLocationPointPickerComponent`) overrides this to its own
+   *  "never sent anywhere" copy, since that dialog's point is never
+   *  persisted anywhere (Maps P2-3) — a materially different privacy
+   *  guarantee from the wizard's "we only show the district" one, so the
+   *  two must never silently share one string. */
+  readonly privacyNoteKey = input<string>('listings.createForm.locationPicker.privacyNote');
 
   /**
    * Opt-in floating hint card (`.location-picker__hint` — the approved

@@ -7,7 +7,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { APPROXIMATE_AREA_RADIUS_METERS, ListingLocationComponent } from './listing-location.component';
 import type { ListingDistrict } from '../../models/district.model';
 import { ListingLocationMapComponent } from '../listing-location-map/listing-location-map.component';
-import { ListingLocationPointPickerComponent } from '../listing-location-point-picker/listing-location-point-picker.component';
+import { LocationPickerComponent } from '../location-picker/location-picker.component';
 import { GeolocationService } from '../../../../shared/services/geolocation.service';
 import { LanguageService } from '../../../../shared/services/language.service';
 import type { GeoPoint } from '../../../../shared/utils/haversine-distance.utils';
@@ -275,12 +275,12 @@ describe('ListingLocationComponent', () => {
       el.querySelector<HTMLButtonElement>('.listing-location__pick-btn')?.click();
       fixture.detectChanges();
 
-      const picker = fixture.debugElement.query(By.directive(ListingLocationPointPickerComponent));
+      const picker = fixture.debugElement.query(By.directive(LocationPickerComponent));
       expect(picker).not.toBeNull();
       expect(picker.componentInstance.open()).toBe(true);
 
       const picked: GeoPoint = { lat: 40.2, lng: 44.53 };
-      (picker.componentInstance as ListingLocationPointPickerComponent).confirmed.emit(picked);
+      (picker.componentInstance as LocationPickerComponent).confirmed.emit(picked);
       fixture.detectChanges();
       await fixture.whenStable();
 
@@ -298,8 +298,8 @@ describe('ListingLocationComponent', () => {
       el.querySelector<HTMLButtonElement>('.listing-location__pick-btn')?.click();
       fixture.detectChanges();
 
-      const picker = fixture.debugElement.query(By.directive(ListingLocationPointPickerComponent));
-      (picker.componentInstance as ListingLocationPointPickerComponent).cancelled.emit();
+      const picker = fixture.debugElement.query(By.directive(LocationPickerComponent));
+      (picker.componentInstance as LocationPickerComponent).cancelled.emit();
       fixture.detectChanges();
 
       expect(picker.componentInstance.open()).toBe(false);

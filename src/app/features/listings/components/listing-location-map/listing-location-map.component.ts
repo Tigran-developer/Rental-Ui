@@ -30,8 +30,9 @@ import type { MapLatLng } from '../../../../shared/ui/map/map.component';
  * maps independently racing `navigator.geolocation`.
  *
  * Built on PrimeNG's `p-dialog` (`modal`, default `focusTrap`/`closeOnEscape`),
- * the same primitive `LocationPickerComponent`/`ListingLocationPointPickerComponent`
- * use, but with `showHeader=false` (this screen has no header bar — a custom
+ * the same primitive `LocationPickerComponent` (this feature's own "pick a
+ * point" fallback dialog uses the very same shared component too) uses, but
+ * with `showHeader=false` (this screen has no header bar — a custom
  * top-left close button and the zone pill sit directly over the map instead)
  * and `closable=false` (no default header close icon to suppress). Because
  * there is no visible header, `role="dialog"`'s accessible name comes from a
@@ -65,7 +66,7 @@ import type { MapLatLng } from '../../../../shared/ui/map/map.component';
   // always renders — see the template) portals the dialog outside this
   // component's own DOM subtree, so Angular's emulated `_ngcontent` scoping
   // attribute never reaches it — same reasoning as
-  // `location-picker.component.ts`/`listing-location-point-picker.component.ts`.
+  // `location-picker.component.ts`.
   encapsulation: ViewEncapsulation.None,
 })
 export class ListingLocationMapComponent {
