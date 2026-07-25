@@ -511,7 +511,7 @@
         "mapUnavailableDescription": "But the toy is in {{place}}. We'll show distance once the map loads.",
         "myLocationButton": "My location",
         "myLocationLocating": "Locating...",
-        "distanceFromYou": "≈ {{distance}} km away",
+        "distanceFromYou": "≈ {{distance}} away",
         "distanceLegend": "Blue dot is you, orange is the toy area",
         "geoDeniedMessage": "Location is turned off. No problem — pick a point on the map instead.",
         "pickPointButton": "Pick a point on the map",

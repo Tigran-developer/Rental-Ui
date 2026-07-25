@@ -46,7 +46,7 @@ async function createComponent(inputs: {
       listings: {
         details: {
           location: {
-            distanceFromYou: '≈ {{distance}} km away',
+            distanceFromYou: '≈ {{distance}} away',
             mapUnavailableDescription: 'But the toy is in {{place}}.',
           },
         },

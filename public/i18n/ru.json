@@ -511,7 +511,7 @@
         "mapUnavailableDescription": "Но игрушка точно в районе {{place}}. Расстояние покажем, когда карта загрузится.",
         "myLocationButton": "Моё местоположение",
         "myLocationLocating": "Определяем...",
-        "distanceFromYou": "≈ {{distance}} км от вас",
+        "distanceFromYou": "≈ {{distance}} от вас",
         "distanceLegend": "Синяя точка — вы, оранжевая — район игрушки",
         "geoDeniedMessage": "Доступ к геолокации выключен. Ничего страшного — можно указать точку на карте.",
         "pickPointButton": "Указать точку на карте",

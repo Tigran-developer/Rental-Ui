@@ -511,7 +511,7 @@
         "mapUnavailableDescription": "Բայց խաղալիքը գտնվում է {{place}} տարածքում։ Հեռավորությունը ցույց կտանք, երբ քարտեզը բեռնվի։",
         "myLocationButton": "Իմ գտնվելու վայրը",
         "myLocationLocating": "Որոշվում է…",
-        "distanceFromYou": "≈ {{distance}} կմ ձեզնից",
+        "distanceFromYou": "≈ {{distance}} ձեզնից",
         "distanceLegend": "Կապույտ կետը դուք եք, նարնջագույնը՝ խաղալիքի տարածքը",
         "geoDeniedMessage": "Տեղորոշումն անջատված է։ Ոչինչ — կարող եք կետ նշել քարտեզի վրա։",
         "pickPointButton": "Նշել կետը քարտեզի վրա",

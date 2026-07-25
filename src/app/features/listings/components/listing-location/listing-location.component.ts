@@ -1,4 +1,3 @@
-import { formatNumber } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -10,7 +9,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { ListingLocationMapComponent } from '../listing-location-map/listing-location-map.component';
 import { ListingLocationPointPickerComponent } from '../listing-location-point-picker/listing-location-point-picker.component';
@@ -21,6 +20,11 @@ import { MapComponent } from '../../../../shared/ui/map/map.component';
 import type { MapLatLng } from '../../../../shared/ui/map/map.component';
 import { districtDisplayName } from '../../models/district-ui.util';
 import type { ListingDistrict } from '../../models/district.model';
+import {
+  formatDistanceMeters,
+  kmToMeters,
+  localeTagForLanguage,
+} from '../../models/radius-scale.util';
 
 /**
  * Honest uncertainty radius (metres) drawn around a fuzzed listing pin.
@@ -52,11 +56,6 @@ export const APPROXIMATE_AREA_RADIUS_METERS = 150;
  *  full-screen map so the two views feel like the same place, not two
  *  different zoom levels of it. */
 const DETAIL_MAP_ZOOM = 15;
-
-/** Distances under this many km show one decimal place ("2.4 km"); at or
- *  above it, a whole number ("12 km") — finer precision stops being useful
- *  (and starts reading as false precision) past single digits. */
-const DISTANCE_DECIMAL_THRESHOLD_KM = 10;
 
 /**
  * The "My location" affordance's state machine. `denied` covers every
@@ -123,6 +122,7 @@ type GeoRequestState = 'idle' | 'locating' | 'granted' | 'denied';
 export class ListingLocationComponent {
   private readonly languageService = inject(LanguageService);
   private readonly geolocationService = inject(GeolocationService);
+  private readonly translate = inject(TranslateService);
 
   readonly city = input.required<string>();
   readonly district = input<ListingDistrict | null>(null);
@@ -198,16 +198,26 @@ export class ListingLocationComponent {
     return p && u ? haversineDistanceKm(p, u) : null;
   });
 
-  /** Formatted for interpolation into `distanceFromYou` — 'en-US' grouping
-   *  (not locale-specific comma/period switching) for the same consistency
-   *  reason `DramCurrencyPipe` gives: one numeric convention app-wide,
-   *  regardless of display language. One decimal under 10 km, whole km at or
-   *  above it — finer precision stops being meaningful past single digits. */
+  /** Formatted (unit included) for interpolation into `distanceFromYou` —
+   *  reuses the SAME locale-aware formatter the radius filter and the
+   *  catalogue card's distance badge use (`formatDistanceMeters` in
+   *  `radius-scale.util.ts`), so the app has exactly one distance-display
+   *  convention ("2,5 км" in `ru`, comma decimal) rather than a second,
+   *  en-US-only one living here. Unlike prices (`DramCurrencyPipe`, which is
+   *  deliberately locale-INDEPENDENT for cross-language consistency), the
+   *  approved design calls for locale-aware distance formatting throughout
+   *  this feature — this component is not an exception to that. */
   protected readonly distanceDisplay = computed<string | null>(() => {
     const km = this.distanceKm();
     if (km === null) return null;
-    const digitsInfo = km < DISTANCE_DECIMAL_THRESHOLD_KM ? '1.1-1' : '1.0-0';
-    return formatNumber(km, 'en-US', digitsInfo);
+    return formatDistanceMeters(
+      kmToMeters(km),
+      localeTagForLanguage(this.languageService.current().code),
+      {
+        meters: this.translate.instant('listings.filters.distance.unitMeters'),
+        kilometers: this.translate.instant('listings.filters.distance.unitKilometers'),
+      },
+    );
   });
 
   constructor() {

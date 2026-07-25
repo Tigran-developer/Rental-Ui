@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { provideMockStore } from '@ngrx/store/testing';
@@ -8,6 +9,7 @@ import type { ListingDistrict } from '../../models/district.model';
 import { ListingLocationMapComponent } from '../listing-location-map/listing-location-map.component';
 import { ListingLocationPointPickerComponent } from '../listing-location-point-picker/listing-location-point-picker.component';
 import { GeolocationService } from '../../../../shared/services/geolocation.service';
+import { LanguageService } from '../../../../shared/services/language.service';
 import type { GeoPoint } from '../../../../shared/utils/haversine-distance.utils';
 
 /**
@@ -61,11 +63,36 @@ async function createComponent(inputs: {
   longitude?: number | null;
   title?: string;
   imageUrl?: string | null;
+  /** Overrides `LanguageService.current()` — used to assert the distance
+   *  line is locale-aware (`formatDistanceMeters`, `radius-scale.util.ts`)
+   *  rather than the old hardcoded-`en-US` formatting this component used
+   *  to do on its own. Defaults to whatever `LanguageService`'s real
+   *  `resolveInitial()` picks (english in this jsdom test environment). */
+  languageCode?: 'en' | 'hy' | 'ru';
 }) {
   const fakeGeo = new FakeGeolocationService();
+  const providers = [
+    provideMockStore(),
+    { provide: GeolocationService, useValue: fakeGeo },
+    ...(inputs.languageCode
+      ? [
+          {
+            provide: LanguageService,
+            useValue: {
+              current: signal({
+                code: inputs.languageCode,
+                flag: '',
+                native: '',
+                label: '',
+              }),
+            },
+          },
+        ]
+      : []),
+  ];
   TestBed.configureTestingModule({
     imports: [ListingLocationComponent, TranslateModule.forRoot()],
-    providers: [provideMockStore(), { provide: GeolocationService, useValue: fakeGeo }],
+    providers,
   });
   // Load just the interpolated strings this spec asserts on — the real
   // bundle (public/i18n/*.json) isn't wired into unit tests, so ngx-translate
@@ -79,7 +106,13 @@ async function createComponent(inputs: {
         details: {
           location: {
             approximateRadius: '~{{radius}} m',
-            distanceFromYou: '≈ {{distance}} km away',
+            distanceFromYou: '≈ {{distance}} away',
+          },
+        },
+        filters: {
+          distance: {
+            unitMeters: 'm',
+            unitKilometers: 'km',
           },
         },
       },
@@ -176,6 +209,46 @@ describe('ListingLocationComponent', () => {
       const distance = el.querySelector('.listing-location__distance');
       expect(distance).not.toBeNull();
       expect(distance?.textContent?.trim().length).toBeGreaterThan(0);
+    });
+
+    // Same two points in both: ≈1.4 km apart, a fractional (non-whole) km
+    // value so the decimal separator is actually present in the output —
+    // asserts the distance line goes through the SAME locale-aware
+    // formatter as the radius filter (`formatDistanceMeters`,
+    // `radius-scale.util.ts`) instead of the hardcoded `en-US`-only
+    // formatting this component used to do on its own.
+    it('shows a period decimal separator in `en` ("1.4")', async () => {
+      const { fixture, el, fakeGeo } = await createComponent({
+        latitude: 40.18,
+        longitude: 44.51,
+        languageCode: 'en',
+      });
+      fakeGeo.nextResult = 'success';
+      fakeGeo.nextPoint = { lat: 40.19, lng: 44.52 };
+      el.querySelector<HTMLButtonElement>('.listing-location__locate-btn')?.click();
+      await vi.runAllTimersAsync();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      const distance = el.querySelector('.listing-location__distance')?.textContent ?? '';
+      expect(distance).toContain('1.4');
+      expect(distance).not.toContain('1,4');
+    });
+
+    it('shows a comma decimal separator in `ru` ("1,4") — locale-aware, matching `radius-scale.util.ts` and the approved design, never `en-US`', async () => {
+      const { fixture, el, fakeGeo } = await createComponent({
+        latitude: 40.18,
+        longitude: 44.51,
+        languageCode: 'ru',
+      });
+      fakeGeo.nextResult = 'success';
+      fakeGeo.nextPoint = { lat: 40.19, lng: 44.52 };
+      el.querySelector<HTMLButtonElement>('.listing-location__locate-btn')?.click();
+      await vi.runAllTimersAsync();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      const distance = el.querySelector('.listing-location__distance')?.textContent ?? '';
+      expect(distance).toContain('1,4');
+      expect(distance).not.toContain('1.4');
     });
 
     it('on failure: shows the soft (non-error) denied block with a "pick a point" button, never the raw button again', async () => {
