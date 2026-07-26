@@ -50,12 +50,39 @@
 
 // ── Opt-in floating hint card (`hintTitleKey`) — mirrors the approved
 // design's `.pickhint`: a card near the top of the map, above the crosshair.
+//
+// Split into two layers (M-defect fix — see location-picker.component.html's
+// comment on the same markup): the OLD single-element version set its
+// background/padding/shadow directly on this `left:14/right:14` box, which
+// made the visible white card stretch edge-to-edge across the whole map.
+// That's unnoticeable on a narrow phone frame, but on a desktop-width map it
+// physically covered app-map's top-right zoom stack (z-index 1002 vs. this
+// element's 1003) — `elementFromPoint()` on the zoom buttons resolved to
+// this div, so neither a mouse click nor a touch tap could reach them, and a
+// `mousedown` in that top strip hit the hint instead of starting a map drag.
+// Lowering z-index alone wouldn't have fixed the drag case (the transparent
+// area still would've intercepted `mousedown`), so this element now stays a
+// hollow, `pointer-events: none` positioning box — the actual visible/
+// clickable card lives in `.location-picker__hint-card` below.
 .location-picker__hint {
   position: absolute;
   top: var(--ui-space-14);
   left: var(--ui-space-14);
   right: var(--ui-space-14);
   z-index: 1003; // above app-map's own zoom stack (1002), below its scroll-gate overlays.
+  display: flex;
+  pointer-events: none;
+}
+
+.location-picker__hint-card {
+  // Shrink-wraps to its own content instead of stretching with the hollow
+  // positioning parent above — restores the approved design's compact
+  // "card near the top of the map" look and keeps it physically clear of
+  // the zoom stack on wide viewports. `max-width` is a defensive cap only
+  // (e.g. an unusually long translated string): ordinary flex sizing already
+  // never grows this past its content's natural width.
+  max-width: min(420px, 100%);
+  pointer-events: auto;
   display: flex;
   gap: var(--ui-space-10);
   align-items: flex-start;

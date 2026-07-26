@@ -41,22 +41,32 @@
            location"), it has no generic top-of-map slot. Absolutely
            positioned here instead, same as the radius-preview circle below. -->
       @if (hintTitleKey()) {
-        <div class="location-picker__hint" role="status">
-          <span class="location-picker__hint-icon" aria-hidden="true">
-            <i class="pi pi-map-marker"></i>
-          </span>
-          <span class="location-picker__hint-copy">
-            <b>{{ hintTitleKey() | translate }}</b>
-            @if (hasMoved()) {
-              @if (hintSubtitleMovedKey()) {
-                <small>{{ hintSubtitleMovedKey() | translate }}</small>
+        <!-- Outer `.location-picker__hint` is a hollow positioning box only —
+             it spans left14→right14 so the card below can sit flush against
+             the left edge on any viewport, but must never itself catch a
+             click/drag (`pointer-events: none`): the visible card is the
+             inner `.location-picker__hint-card`, which shrink-wraps to its
+             own content and is the only part with `pointer-events: auto`.
+             Same hollow-wrapper pattern as app-map's own `[app-map-actions]`
+             slot (map.component.scss's `.app-map__actions`). -->
+        <div class="location-picker__hint">
+          <div class="location-picker__hint-card" role="status">
+            <span class="location-picker__hint-icon" aria-hidden="true">
+              <i class="pi pi-map-marker"></i>
+            </span>
+            <span class="location-picker__hint-copy">
+              <b>{{ hintTitleKey() | translate }}</b>
+              @if (hasMoved()) {
+                @if (hintSubtitleMovedKey()) {
+                  <small>{{ hintSubtitleMovedKey() | translate }}</small>
+                }
+              } @else {
+                @if (hintSubtitleIdleKey()) {
+                  <small>{{ hintSubtitleIdleKey() | translate }}</small>
+                }
               }
-            } @else {
-              @if (hintSubtitleIdleKey()) {
-                <small>{{ hintSubtitleIdleKey() | translate }}</small>
-              }
-            }
-          </span>
+            </span>
+          </div>
         </div>
       }
     }

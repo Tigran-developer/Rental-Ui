@@ -290,4 +290,53 @@ describe('LocationPickerComponent', () => {
       expect(mapCircleRadiusMeters(fixture)).toBe(5000);
     });
   });
+
+  // Regression for a confirmed live-verification defect: the hint card used
+  // to be ONE element (`.location-picker__hint`) that was both the visible
+  // white card AND its own `left:14/right:14` positioning box, so its
+  // background stretched edge-to-edge across the map on desktop widths —
+  // physically covering app-map's top-right zoom stack (z-index 1002 vs.
+  // this element's 1003), so neither a mouse click nor a touch tap could
+  // reach the zoom buttons, and a `mousedown` anywhere in that top strip hit
+  // the hint instead of starting a map drag.
+  //
+  // jsdom cannot lay out real pixel geometry (no bounding-box overlap check
+  // is possible here — that part is only verifiable in a real browser; see
+  // this PR's report), so this checks the two things jsdom *can* see and
+  // that together fully describe the fix: (1) the hollow positioning box and
+  // the visible card are now separate elements, not one merged node, and
+  // (2) the stylesheet gives the hollow box `pointer-events: none` and the
+  // visible card `pointer-events: auto` — the split that stops the
+  // full-width box from swallowing clicks/drags meant for whatever is
+  // beneath it, independent of z-index. A test that only checked for the
+  // `.location-picker__hint` class's continued presence would have passed
+  // on the original single-element, click-swallowing markup too — this one
+  // fails on it, because that markup had no separate `.location-picker__
+  // hint-card` element and no `pointer-events` split at all.
+  describe('hint card must not intercept clicks/drags meant for the map (zoom-button overlap regression)', () => {
+    it('renders the visible card as a NESTED element, separate from the full-width positioning box', async () => {
+      await createPicker(true, YEREVAN_CENTER, { hintTitleKey: 'some.key' });
+      const hintBox = document.body.querySelector('.location-picker__hint');
+      const hintCard = document.body.querySelector('.location-picker__hint-card');
+
+      expect(hintBox).toBeTruthy();
+      expect(hintCard).toBeTruthy();
+      // Must be two distinct elements, one containing the other — NOT the
+      // same node wearing two classes (that would put the visible card's
+      // own background back on the full-width box).
+      expect(hintBox).not.toBe(hintCard);
+      expect(hintBox?.contains(hintCard)).toBe(true);
+    });
+
+    it('gives the full-width positioning box pointer-events: none and the visible card pointer-events: auto', async () => {
+      await createPicker(true, YEREVAN_CENTER, { hintTitleKey: 'some.key' });
+      const hintBox = document.body.querySelector<HTMLElement>('.location-picker__hint');
+      const hintCard = document.body.querySelector<HTMLElement>('.location-picker__hint-card');
+
+      expect(hintBox).toBeTruthy();
+      expect(hintCard).toBeTruthy();
+      expect(getComputedStyle(hintBox as HTMLElement).pointerEvents).toBe('none');
+      expect(getComputedStyle(hintCard as HTMLElement).pointerEvents).toBe('auto');
+    });
+  });
 });
