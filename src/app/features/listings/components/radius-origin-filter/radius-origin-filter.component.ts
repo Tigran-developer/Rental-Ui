@@ -10,7 +10,6 @@ import {
 } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { MessageService } from 'primeng/api';
 
 import { GeolocationService } from '../../../../shared/services/geolocation.service';
 import { LanguageService } from '../../../../shared/services/language.service';
@@ -77,7 +76,6 @@ export type RadiusOriginState = 'unset' | 'geo' | 'manual' | 'denied';
 })
 export class RadiusOriginFilterComponent {
   private readonly store = inject(Store);
-  private readonly messageService = inject(MessageService);
   private readonly translate = inject(TranslateService);
   private readonly languageService = inject(LanguageService);
   private readonly geolocation = inject(GeolocationService);
@@ -200,8 +198,13 @@ export class RadiusOriginFilterComponent {
         this.store.dispatch(ListingsActions.setOriginCoords({ coords, source: 'geo' }));
       },
       () => {
+        // No toast here (product decision, 2026-07-26): a denial already
+        // reaches the UI via `originDenied` → `originState() === 'denied'`,
+        // which renders this same component's own soft "denied" card
+        // (design decision #5's calm, non-alarming treatment). A PrimeNG
+        // warn toast on top of that card duplicated the same message in a
+        // visually louder register, contradicting #5's intent.
         this.store.dispatch(ListingsActions.setOriginDenied());
-        this.showGeolocationError();
       },
     );
   }
@@ -221,11 +224,4 @@ export class RadiusOriginFilterComponent {
     );
   }
 
-  private showGeolocationError(): void {
-    this.messageService.add({
-      severity: 'warn',
-      summary: this.translate.instant('listings.page.geolocationErrorTitle'),
-      detail: this.translate.instant('listings.page.geolocationErrorDetail'),
-    });
-  }
 }

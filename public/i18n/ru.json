@@ -402,9 +402,7 @@
       "sortNewest": "Сначала новые",
       "sortNearest": "Ближайшие",
       "sortBy": "Сортировка",
-      "inYerevan": "в Ереване",
-      "geolocationErrorTitle": "Геолокация недоступна",
-      "geolocationErrorDetail": "Не удалось определить ваше местоположение, поэтому фильтр по расстоянию не применён."
+      "inYerevan": "в Ереване"
     },
     "details": {
       "back": "Назад к каталогу",

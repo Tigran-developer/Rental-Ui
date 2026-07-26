@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { TranslateModule } from '@ngx-translate/core';
-import { MessageService } from 'primeng/api';
 
 import { GeolocationService } from '../../../../shared/services/geolocation.service';
 import * as ListingsActions from '../../store/listings.actions';
@@ -48,7 +47,6 @@ interface Testable {
 
 async function createHarness(radiusMeters: number | null = null) {
   const geolocation = { getCurrentPosition: vi.fn() };
-  const messageService = { add: vi.fn() };
 
   TestBed.configureTestingModule({
     imports: [RadiusOriginFilterComponent, TranslateModule.forRoot()],
@@ -61,7 +59,6 @@ async function createHarness(radiusMeters: number | null = null) {
         ],
       }),
       { provide: GeolocationService, useValue: geolocation },
-      { provide: MessageService, useValue: messageService },
     ],
   });
 
@@ -77,7 +74,6 @@ async function createHarness(radiusMeters: number | null = null) {
     component: fixture.componentInstance as unknown as Testable,
     store,
     geolocation,
-    messageService,
   };
 }
 
@@ -136,8 +132,8 @@ describe('RadiusOriginFilterComponent', () => {
     );
   });
 
-  it('dispatches setOriginDenied and shows a toast when geolocation fails — a soft state, never a thrown error', async () => {
-    const { component, store, geolocation, messageService } = await createHarness();
+  it('dispatches setOriginDenied when geolocation fails — a soft state, never a thrown error, and no toast (design decision #5: the denied card is the only feedback)', async () => {
+    const { fixture, component, store, geolocation } = await createHarness();
     geolocation.getCurrentPosition.mockRejectedValue(new Error('denied'));
 
     component.requestGeolocation();
@@ -145,7 +141,15 @@ describe('RadiusOriginFilterComponent', () => {
     await Promise.resolve();
 
     expect(store.dispatch).toHaveBeenCalledWith(ListingsActions.setOriginDenied());
-    expect(messageService.add).toHaveBeenCalled();
+
+    // The dispatch above is what a real reducer turns into `originDenied`;
+    // simulate that round-trip here so this test proves the denial actually
+    // reaches the UI (the "denied" card), not just that an action was fired
+    // into the void.
+    store.overrideSelector(selectListingsOriginDenied, true);
+    store.refreshState();
+    fixture.detectChanges();
+    expect(component.originState()).toBe('denied');
   });
 
   it('dispatches setOriginCoords with source "manual" when the location picker confirms a point', async () => {

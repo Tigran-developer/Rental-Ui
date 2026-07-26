@@ -402,9 +402,7 @@
       "sortNewest": "Ամենանոր",
       "sortNearest": "Ամենամոտ",
       "sortBy": "Դասավորել",
-      "inYerevan": "Երևանում",
-      "geolocationErrorTitle": "Տեղադրությունը հասանելի չէ",
-      "geolocationErrorDetail": "Չհաջողվեց որոշել ձեր գտնվելու վայրը, ուստի հեռավորության ֆիլտրը չկիրառվեց։"
+      "inYerevan": "Երևանում"
     },
     "details": {
       "back": "Վերադառնալ խաղալիքների ցանկ",

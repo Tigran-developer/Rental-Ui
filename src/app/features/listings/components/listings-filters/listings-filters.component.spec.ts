@@ -3,7 +3,6 @@ import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideMockStore } from '@ngrx/store/testing';
 import { TranslateModule } from '@ngx-translate/core';
-import { MessageService } from 'primeng/api';
 import { of } from 'rxjs';
 
 import { ListingsApiService } from '../../services/listings-api.service';
@@ -70,7 +69,6 @@ async function navigateToListings(url: string): Promise<{
         ],
       }),
       { provide: ListingsApiService, useValue: { getDistricts: () => of([]) } },
-      { provide: MessageService, useValue: { add: vi.fn() } },
     ],
     teardown: { destroyAfterEach: true },
   });
