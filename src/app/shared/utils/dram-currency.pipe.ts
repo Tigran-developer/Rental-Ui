@@ -5,6 +5,15 @@ import { Pipe, type PipeTransform } from '@angular/core';
 const DRAM_DIGITS_INFO = '1.0-0';
 
 /**
+ * The single source of the dram currency symbol. DoRent is AMD-only (see the
+ * currency ADR in `knowledge/decisions.md`) — any UI that needs to show the
+ * symbol on its own (e.g. an input prefix, where wrapping the whole value in
+ * `DramCurrencyPipe` isn't appropriate) should import this constant instead
+ * of hardcoding the glyph, so there's exactly one place to change it.
+ */
+export const DRAM_SYMBOL = '֏';
+
+/**
  * Formats an amount as Armenian dram: thousands-grouped whole number followed
  * by the ֏ symbol, e.g. `2500 | dram` -> "2,500 ֏".
  *
@@ -32,6 +41,6 @@ export class DramCurrencyPipe implements PipeTransform {
     if (!Number.isFinite(num)) {
       return null;
     }
-    return `${formatNumber(num, 'en-US', DRAM_DIGITS_INFO)} ֏`;
+    return `${formatNumber(num, 'en-US', DRAM_DIGITS_INFO)} ${DRAM_SYMBOL}`;
   }
 }

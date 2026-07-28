@@ -1,11 +1,18 @@
-import { DramCurrencyPipe } from './dram-currency.pipe';
+import { DRAM_SYMBOL, DramCurrencyPipe } from './dram-currency.pipe';
 
 describe('DramCurrencyPipe', () => {
   const pipe = new DramCurrencyPipe();
 
+  it('exposes the dram symbol as a shared constant, not a bare literal', () => {
+    // Guards against a stray hardcoded currency symbol (e.g. ₽) creeping back
+    // in anywhere that needs to render the symbol on its own — those sites
+    // should import DRAM_SYMBOL instead of hardcoding the glyph.
+    expect(DRAM_SYMBOL).toBe('֏');
+  });
+
   it('formats a whole number with grouping and a trailing dram symbol', () => {
-    expect(pipe.transform(2500)).toBe('2,500 ֏');
-    expect(pipe.transform(12500)).toBe('12,500 ֏');
+    expect(pipe.transform(2500)).toBe(`2,500 ${DRAM_SYMBOL}`);
+    expect(pipe.transform(12500)).toBe(`12,500 ${DRAM_SYMBOL}`);
   });
 
   it('rounds fractional amounts — dram has no minor unit', () => {

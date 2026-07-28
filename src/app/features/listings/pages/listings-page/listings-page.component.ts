@@ -18,6 +18,7 @@ import { catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
 import { LanguageService } from '../../../../shared/services/language.service';
 import { EmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { LoadingSkeletonComponent } from '../../../../shared/ui/loading-skeleton/loading-skeleton.component';
+import { DRAM_SYMBOL } from '../../../../shared/utils/dram-currency.pipe';
 import { AuthDialogComponent } from '../../../auth/components/auth-dialog/auth-dialog.component';
 import { selectIsAuthenticated } from '../../../auth/store/auth.selectors';
 import { MyListingsApiService } from '../../../my-listings/services/my-listings-api.service';
@@ -171,6 +172,9 @@ const AGE_GROUPS = [
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ListingsPageComponent {
+  /** Price-input prefix in the sidebar — same source `DramCurrencyPipe` formats with. */
+  protected readonly dramSymbol = DRAM_SYMBOL;
+
   private readonly store = inject(Store);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
