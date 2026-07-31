@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="hy">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex, nofollow" />
+<title>DoRent</title>
+<style>
+  /* Self-contained stopgap page — no external requests of any kind.
+     Palette lifted from Rental-Ui/src/styles.css design tokens (kept as
+     literal hex here since this file ships alone, outside the Angular build). */
+  :root {
+    --bg: #faf8f4;
+    --surface: #ffffff;
+    --border: #e8e5de;
+    --text-primary: #1a1b26;
+    --text-secondary: #6b6a75;
+    --text-hint: #908f9c;
+    --primary: #ff6008;
+    --primary-strong: #e5530a;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161e;
+      --surface: #1c1e29;
+      --border: #2c2f3d;
+      --text-primary: #f3f2f7;
+      --text-secondary: #a9a8b5;
+      --text-hint: #7c7b88;
+      --primary: #ff7a2e;
+      --primary-strong: #ff8f4d;
+    }
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family:
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      Roboto,
+      Arial,
+      sans-serif;
+    line-height: 1.5;
+    padding: 24px 16px;
+  }
+
+  /* ── Language switcher ─────────────────────────────────────────────── */
+  .langs {
+    display: flex;
+    gap: 4px;
+    align-self: flex-end;
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+  }
+
+  .lang-btn {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 6px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition:
+      background-color 140ms ease,
+      color 140ms ease;
+  }
+
+  .lang-btn:hover {
+    color: var(--text-primary);
+  }
+
+  .lang-btn[aria-current='true'] {
+    background: var(--primary);
+    color: #fff;
+  }
+
+  /* ── Main content ───────────────────────────────────────────────────── */
+  .main {
+    flex: 1;
+    width: 100%;
+    max-width: 30rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 20px;
+    padding: 32px 0;
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 1.625rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+  }
+
+  .brand-ball {
+    width: 22px;
+    height: 18px;
+    display: block;
+    flex-shrink: 0;
+    margin-inline: 1px -1px;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(1.375rem, 5vw, 1.875rem);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+  }
+
+  .subheading {
+    margin: 0;
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    max-width: 26rem;
+  }
+
+  /* ── Footer / developer link ──────────────────────────────────────── */
+  .footer {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding-top: 24px;
+  }
+
+  .dev-link {
+    color: var(--text-hint);
+    font-size: 0.8125rem;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition:
+      color 140ms ease,
+      border-color 140ms ease;
+  }
+
+  .dev-link:hover {
+    color: var(--text-secondary);
+    border-bottom-color: var(--text-hint);
+  }
+
+  @media (max-width: 380px) {
+    .brand {
+      font-size: 1.375rem;
+    }
+  }
+</style>
+</head>
+<body>
+  <nav class="langs" aria-label="Language">
+    <button type="button" class="lang-btn" data-lang="hy" aria-current="true">ՀԱՅ</button>
+    <button type="button" class="lang-btn" data-lang="ru">РУС</button>
+    <button type="button" class="lang-btn" data-lang="en">ENG</button>
+  </nav>
+
+  <main class="main">
+    <span class="brand" aria-hidden="false">
+      <span>D</span>
+      <svg class="brand-ball" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="50" cy="50" r="48" style="fill: var(--primary)" />
+        <clipPath id="cs-ball-clip">
+          <circle cx="50" cy="50" r="48" />
+        </clipPath>
+        <path
+          d="M 0,39 Q 50,67.5 100,39 L 100,48 Q 50,76.5 0,48 Z"
+          fill="#fff"
+          clip-path="url(#cs-ball-clip)"
+        />
+      </svg>
+      <span>Rent</span>
+    </span>
+
+    <h1 data-i18n="heading">Կայքը շուտով հասանելի կլինի</h1>
+    <p class="subheading" data-i18n="subheading">Մենք դեռ պատրաստվում ենք։ Շուտով կվերադառնանք։</p>
+  </main>
+
+  <footer class="footer">
+    <a class="dev-link" href="https://app.dorent.am" rel="noopener" data-i18n="devLink">Ես մշակող եմ</a>
+  </footer>
+
+  <script>
+    (function () {
+      var translations = {
+        hy: {
+          heading: 'Կայքը շուտով հասանելի կլինի',
+          subheading: 'Մենք դեռ պատրաստվում ենք։ Շուտով կվերադառնանք։',
+          devLink: 'Ես մշակող եմ',
+        },
+        ru: {
+          heading: 'Сайт будет доступен очень скоро',
+          subheading: 'Мы всё ещё готовимся. Скоро вернёмся.',
+          devLink: 'Я разработчик',
+        },
+        en: {
+          heading: 'The site will be available very soon',
+          subheading: "We're still getting ready. Back shortly.",
+          devLink: "I'm a developer",
+        },
+      };
+
+      function applyLang(lang) {
+        var dict = translations[lang] || translations.hy;
+        document.documentElement.setAttribute('lang', lang);
+        document.querySelectorAll('[data-i18n]').forEach(function (el) {
+          var key = el.getAttribute('data-i18n');
+          if (dict[key]) {
+            el.textContent = dict[key];
+          }
+        });
+        document.querySelectorAll('.lang-btn').forEach(function (btn) {
+          btn.setAttribute('aria-current', String(btn.getAttribute('data-lang') === lang));
+        });
+      }
+
+      document.querySelectorAll('.lang-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          applyLang(btn.getAttribute('data-lang'));
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -23,6 +23,13 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Angular's application builder emits the browser bundle here
 COPY --from=build /app/dist/angular-app/browser /usr/share/nginx/html
 
+# Static "coming soon" placeholder page — NOT part of the Angular SPA build
+# (lives outside src/, so `npm run build` never touches it). Served by nginx
+# from a path outside the SPA doc root; platform-engineer wires nginx.conf to
+# hand this out at dorent.am/www.dorent.am while the real app moves to
+# app.dorent.am behind Cloudflare Access.
+COPY coming-soon/index.html /usr/share/nginx/coming-soon/index.html
+
 EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]
