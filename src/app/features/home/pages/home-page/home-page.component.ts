@@ -45,6 +45,7 @@ import { SectionHeaderComponent } from '../../../../shared/ui/section-header/sec
 import { UiInputComponent } from '../../../../shared/ui/input/ui-input.component';
 import { HeaderSearchVisibilityService } from '../../../../shared/ui/app-header/header-search-visibility.service';
 import { LanguageSelectorComponent } from '../../../../shared/ui/language-selector/language-selector.component';
+import { DorentSymbolComponent } from '../../../../shared/ui/dorent-symbol/dorent-symbol.component';
 
 type ProcessMode = 'renting' | 'lending';
 
@@ -255,6 +256,7 @@ const selectHomeSource = createSelector(
     SectionHeaderComponent,
     UiInputComponent,
     LanguageSelectorComponent,
+    DorentSymbolComponent,
   ],
   templateUrl: './home-page.component.html',
   styleUrl: './home-page.component.scss',

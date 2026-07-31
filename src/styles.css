@@ -139,6 +139,10 @@
   --ui-z-dropdown: 200;
   --ui-z-modal: 1000;
   --ui-z-toast: 1100;
+  /* Mobile app-open boot screen (`app-ui-boot-screen`) — above everything,
+     including toasts and the hardcoded Leaflet band (1010) in
+     listing-location-map.component.scss. */
+  --ui-z-boot: 1200;
 
   /* —— Animation —— */
   --ui-duration-fast: 120ms;

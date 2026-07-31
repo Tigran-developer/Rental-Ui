@@ -89,12 +89,12 @@
   color: var(--ui-color-text-primary);
 }
 
-.home__mobile-brand-ball {
-  width: 25px;
-  height: 20px;
-  display: block;
-  flex-shrink: 0;
-  margin-inline: -2px;
+/* Optical kerning — see app-header.component.css for the full rationale:
+   the mark's SVG ink fills its host box edge to edge with no built-in clear
+   space, so this margin is the only source of the ~2px gap against "D" /
+   "Rent" on each side (17 + 2 + 2 = 21px total horizontal advance). */
+app-ui-dorent-symbol {
+  margin-inline: 2px;
 }
 
 /* ==============================

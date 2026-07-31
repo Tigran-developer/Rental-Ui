@@ -120,37 +120,14 @@
   color: var(--ui-color-text-primary);
 }
 
-/* Sized in px, NOT em: at 0.73em of a 21px wordmark the mark rendered ~15px,
-   far too small for the header. The mark is the logo's focal point, so it is
-   sized independently of the wordmark. */
-.nh__brand-ball {
-  width: 25px;
-  height: 20px;
-  display: block;
-  flex-shrink: 0;
-  /* Optical kerning — the mark stands in for the "o", so it must not push
-     D / Rent apart the way a 38px inline box otherwise would. */
-  margin-inline: -2px;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .nh__brand-ball {
-    transition: transform 180ms ease;
-  }
-
-  .nh__brand:hover .nh__brand-ball {
-    animation: nh-brand-bounce 0.7s ease-in-out infinite;
-  }
-
-  @keyframes nh-brand-bounce {
-    0%,
-    100% {
-      transform: translateY(-1px);
-    }
-    50% {
-      transform: translateY(-10px);
-    }
-  }
+/* Optical kerning — the mark's SVG ink fills its host box edge to edge (see
+   dorent-symbol.component.html), with no built-in clear space, so this
+   margin is the ONLY source of the ~2px gap against "D" / "Rent" on each
+   side. At size 17 that's 17 + 2 + 2 = 21px total horizontal advance. Rest
+   state, motion and reduced-motion handling live in the component itself —
+   see dorent-symbol.component.scss/.ts. */
+app-ui-dorent-symbol {
+  margin-inline: 2px;
 }
 
 /* ── Search bar ──────────────────────────────────────────────────────────── */

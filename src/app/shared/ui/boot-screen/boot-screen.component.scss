@@ -1,0 +1,34 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Mobile app-open boot screen — full-viewport overlay, animated brand mark
+   Prefix: dr-boot
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:host {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ui-z-boot);
+  display: grid;
+  place-items: center;
+  /* Same colour as the `index.html` anti-flash rule — no seam between
+     pre-boot paint and this overlay. */
+  background: var(--ui-color-background);
+  opacity: 1;
+  transition: opacity 200ms ease;
+}
+
+:host(.dr-boot--hidden) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dr-boot__sr-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

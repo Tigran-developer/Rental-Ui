@@ -7,12 +7,12 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Toast } from 'primeng/toast';
-import { combineLatest, distinctUntilChanged, filter, map } from 'rxjs';
+import { combineLatest, distinctUntilChanged, filter, map, timer } from 'rxjs';
 
 import * as AuthActions from './features/auth/store/auth.actions';
 import {
@@ -27,6 +27,7 @@ import { NotificationBadgeService } from './features/notifications/services/noti
 import { LanguageService } from './shared/services/language.service';
 import { AppHeaderComponent } from './shared/ui/app-header/app-header.component';
 import { HeaderSearchVisibilityService } from './shared/ui/app-header/header-search-visibility.service';
+import { BootScreenComponent } from './shared/ui/boot-screen/boot-screen.component';
 
 interface NavItem {
   readonly path: string;
@@ -35,6 +36,16 @@ interface NavItem {
 }
 
 const SCROLL_SHRINK_THRESHOLD = 8;
+
+/** Same breakpoint the header/Home already use to switch to mobile chrome
+ *  (see home-page.component.scss:63 / app-header.component.css:752). The
+ *  boot screen only ever runs on mobile — evaluated once, see App's
+ *  `isMobileAtBoot`. */
+const MOBILE_BOOT_MEDIA_QUERY = '(max-width: 960px)';
+
+/** Minimum time the boot screen stays visible even if auth resolves faster,
+ *  so a warm boot doesn't strobe the overlay for a single frame. */
+const MIN_BOOT_DISPLAY_MS = 600;
 
 interface AppShellViewModel {
   readonly primaryNav: NavItem[];
@@ -103,6 +114,7 @@ function isChatThreadUrl(url: string): boolean {
     AsyncPipe,
     AppHeaderComponent,
     AuthDialogComponent,
+    BootScreenComponent,
     RouterLink,
     RouterLinkActive,
     RouterOutlet,
@@ -121,6 +133,13 @@ export class App {
   private readonly chatBadge = inject(ChatBadgeService);
   private readonly chatRealtime = inject(ChatRealtimeService);
   private readonly headerSearchVisibility = inject(HeaderSearchVisibilityService);
+
+  // Decided ONCE, at construction — a resize mid-boot must not flash the
+  // overlay (see the "Mounting" section of the brand-symbol plan). Guarded
+  // the same way `map.component.ts`'s `isTouchCapable` is: `matchMedia` may
+  // be absent in a test host or an unusually old runtime.
+  private readonly isMobileAtBoot: boolean =
+    typeof matchMedia === 'function' && matchMedia(MOBILE_BOOT_MEDIA_QUERY).matches;
 
   // Global unread badge, kept in sync from a single source: the badge service
   // polls the unread-count endpoint while authenticated (there is no realtime
@@ -146,6 +165,29 @@ export class App {
   // search permanently visible even if Home fails to reset the flag.
   protected readonly headerSearchHidden = computed(
     () => this.isHomePage() && this.headerSearchVisibility.hidden(),
+  );
+
+  // ── Mobile app-open boot screen ──────────────────────────────────────
+  // Reuses the existing `selectAuthInitializing` selector — no new NgRx
+  // state. `isInitializing` in the auth reducer is set true only once, at
+  // bootstrap, and never re-entered by login/logout/register (verified
+  // against auth.reducer.ts / auth.state.ts — see the doc comment on
+  // `AuthState.isInitializing`), so this can never re-show mid-session and
+  // needs no "first time only" latch.
+  protected readonly isAuthInitializing = this.store.selectSignal(selectAuthInitializing);
+
+  // Minimum boot-screen display time so a warm/fast boot doesn't strobe the
+  // overlay for a single frame — flips true once, MIN_BOOT_DISPLAY_MS after
+  // construction, independent of how quickly auth resolves.
+  protected readonly minBootDisplayElapsed = toSignal(
+    timer(MIN_BOOT_DISPLAY_MS).pipe(map(() => true)),
+    { initialValue: false },
+  );
+
+  // Visible while still initializing OR while the minimum display time
+  // hasn't elapsed yet (whichever finishes later) — and only ever on mobile.
+  protected readonly showBootScreen = computed(
+    () => this.isMobileAtBoot && (this.isAuthInitializing() || !this.minBootDisplayElapsed()),
   );
 
   protected readonly vm$ = combineLatest({

@@ -16,6 +16,7 @@
       "menuToggleAria": "Open menu",
       "bottomNavAria": "Mobile navigation",
       "userMenuToggleAria": "Account menu",
+      "loading": "Loading DoRent…",
       "language": {
         "switchAria": "Change language"
       },

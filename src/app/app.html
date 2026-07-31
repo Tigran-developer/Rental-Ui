@@ -1,4 +1,10 @@
 <div class="app-shell" [class.app-shell--browse]="isBrowsePage()" [class.app-shell--details]="isDetailsPage()" [class.app-shell--profile-child]="isProfileChildPage()" [class.app-shell--create]="isListingWizardPage()" [class.app-shell--booking]="isBookingPage()">
+  <!-- Mobile app-open boot screen: mounted as a sibling BEFORE the `vm$` @if
+       so it covers the shell during its own first render. Fades out (not
+       cut) once auth is done initializing and the min-display time has
+       elapsed — see `showBootScreen` in app.ts. -->
+  <app-ui-boot-screen [visible]="showBootScreen()" />
+
   @if (vm$ | async; as vm) {
     <app-header
       [scrolled]="scrolled()"

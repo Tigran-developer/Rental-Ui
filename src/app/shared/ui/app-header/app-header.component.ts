@@ -10,12 +10,19 @@ import {
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
+import { DorentSymbolComponent } from '../dorent-symbol/dorent-symbol.component';
 import { LanguageSelectorComponent } from '../language-selector/language-selector.component';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [LanguageSelectorComponent, RouterLink, RouterLinkActive, TranslatePipe],
+  imports: [
+    DorentSymbolComponent,
+    LanguageSelectorComponent,
+    RouterLink,
+    RouterLinkActive,
+    TranslatePipe,
+  ],
   templateUrl: './app-header.component.html',
   styleUrl: './app-header.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -50,6 +57,9 @@ export class AppHeaderComponent {
 
   protected readonly profileOpen  = signal(false);
   protected readonly searchQuery  = signal('');
+  /** Drives the brand mark's bounce loop — hover OR keyboard focus, so the
+   *  animation has focus parity for free (see dorent-symbol.component.ts). */
+  protected readonly brandHovered = signal(false);
 
   protected readonly userFirstName = computed(
     () => (this.userDisplayName() ?? '').split(' ')[0] || ''
@@ -95,5 +105,9 @@ export class AppHeaderComponent {
 
   protected closeProfile(): void {
     this.profileOpen.set(false);
+  }
+
+  protected onBrandHoverChange(hovered: boolean): void {
+    this.brandHovered.set(hovered);
   }
 }

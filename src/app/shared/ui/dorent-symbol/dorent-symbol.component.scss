@@ -1,0 +1,99 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   DoRent brand symbol — orange ball + white wave (the "o" in "DoRent")
+   Prefix: dr-symbol
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:host {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--dr-symbol-size, 20px);
+  height: var(--dr-symbol-size, 20px);
+  flex-shrink: 0;
+}
+
+.dr-symbol__svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* SVG clips its own bounds by default — the bounce and the shadow both
+     paint outside `viewBox="0 0 100 100"`, so this must be explicit. */
+  overflow: visible;
+}
+
+/* ── Ball (rest state) ────────────────────────────────────────────────────
+   Rest === the animation's 0%/100% keyframe exactly, so starting the loop
+   never pops and — once the loop has eased back through 0% — removing the
+   animation class (see onBallAnimationIteration in the .ts) never snaps. */
+.dr-symbol__ball {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  transform: translateY(0) scale(1, 1);
+}
+
+.dr-symbol__ball-fill {
+  fill: var(--ui-color-primary);
+}
+
+.dr-symbol__wave {
+  fill: #fff;
+}
+
+/* ── Shadow (rest state) — invisible until the loop starts ─────────────── */
+.dr-symbol__shadow-fade {
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+:host(.is-animating) .dr-symbol__shadow-fade {
+  opacity: 1;
+}
+
+.dr-symbol__shadow {
+  fill: rgba(0, 0, 0, 0.12);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* ── Motion — opt-in only, matches the app-header/map pattern ──────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .dr-symbol__ball {
+    transition: transform 180ms ease;
+  }
+
+  :host(.is-animating) .dr-symbol__ball {
+    animation: dr-symbol-ball-bounce 0.9s cubic-bezier(0.28, 0.84, 0.42, 1) infinite;
+  }
+
+  :host(.is-animating) .dr-symbol__shadow {
+    animation: dr-symbol-shadow-loop 0.9s cubic-bezier(0.28, 0.84, 0.42, 1) infinite;
+  }
+
+  @keyframes dr-symbol-ball-bounce {
+    0%,
+    100% {
+      transform: translateY(0) scale(1, 1);
+    }
+    10% {
+      transform: translateY(0) scale(1.05, 0.95);
+    }
+    45% {
+      transform: translateY(-70px) scale(0.9, 1.1);
+    }
+    90% {
+      transform: translateY(0) scale(1.05, 0.95);
+    }
+  }
+
+  /* Counterpoint to the ball: darkest/largest while the ball is on the
+     ground (0%/10%/90%/100%), smallest at the apex (45%). */
+  @keyframes dr-symbol-shadow-loop {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    45% {
+      transform: scale(0.5);
+    }
+  }
+}

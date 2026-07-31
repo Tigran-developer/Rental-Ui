@@ -1,0 +1,27 @@
+<svg class="dr-symbol__svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <!-- Shadow: outer <g> fades opacity in/out (masks the loop starting/stopping
+       invisibly); inner <ellipse> runs the infinite counterpoint scale loop. -->
+  <g class="dr-symbol__shadow-fade">
+    <ellipse class="dr-symbol__shadow" cx="50" cy="106" rx="35" ry="5" />
+  </g>
+
+  <!-- Ball: circle + wave move together as one unit. r="50" fills the 0-100
+       viewBox edge to edge on purpose — ink diameter == host box size at any
+       `size` (the 17px header/topbar instance and the 72px boot-screen
+       instance both need the ball to exactly fill its box; the ~2px of
+       optical kerning against the surrounding "D"/"Rent" text is added by
+       the CONSUMER via `margin-inline`, not baked into this SVG). Do not
+       shrink this to "add breathing room" without also re-deriving every
+       consumer's margin-inline. -->
+  <g class="dr-symbol__ball" (animationiteration)="onBallAnimationIteration()">
+    <circle class="dr-symbol__ball-fill" cx="50" cy="50" r="50" />
+    <clipPath [attr.id]="clipId">
+      <circle cx="50" cy="50" r="50" />
+    </clipPath>
+    <path
+      class="dr-symbol__wave"
+      d="M 0,39 Q 50,67.5 100,39 L 100,48 Q 50,76.5 0,48 Z"
+      [attr.clip-path]="'url(#' + clipId + ')'"
+    />
+  </g>
+</svg>

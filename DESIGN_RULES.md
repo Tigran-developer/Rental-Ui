@@ -623,7 +623,12 @@ Use `app-ui-empty-state` wrapped in `.ui-card-surface` pattern.
 
 ### Prohibited
 
-- Bounce, spring overshoot, parallax
+- Bounce, spring overshoot, parallax — **except** the DoRent brand symbol
+  (`app-ui-dorent-symbol`, `shared/ui/dorent-symbol/`): its squash-and-stretch
+  bounce is the approved brand mark motion, scoped to exactly two places —
+  the header brand on hover/focus, and the mobile app-open boot screen. This
+  carve-out does not extend to UI chrome, cards, or content; those stay
+  bounce-free.
 - Auto-playing carousels with no user control
 - Loading spinners longer than 300ms without skeleton
 - Motion that cannot be disabled (respect `prefers-reduced-motion` when adding global motion)
