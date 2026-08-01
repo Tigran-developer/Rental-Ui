@@ -195,7 +195,20 @@ export class RadiusOriginFilterComponent {
   protected requestGeolocation(): void {
     this.geolocation.getCurrentPosition().then(
       (coords) => {
-        this.store.dispatch(ListingsActions.setOriginCoords({ coords, source: 'geo' }));
+        // Explicitly narrowed to `{ lat, lng }` — `coords` is a
+        // `GeolocatedPoint` (`GeolocationService`) and also carries
+        // `accuracyMeters`, which has no business in NgRx state: it isn't
+        // part of `ListingsOriginCoords`, and letting it ride along on the
+        // object itself (rather than being dropped here) would be dead
+        // weight riding a state tree that's otherwise a plain serializable
+        // shape. The radius filter has no accuracy-aware UI of its own —
+        // only the listing-detail page (`ListingLocationComponent`) does.
+        this.store.dispatch(
+          ListingsActions.setOriginCoords({
+            coords: { lat: coords.lat, lng: coords.lng },
+            source: 'geo',
+          }),
+        );
       },
       () => {
         // No toast here (product decision, 2026-07-26): a denial already

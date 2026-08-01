@@ -17,6 +17,7 @@ import {
   selectListingsPage,
   selectListingsPageSize,
 } from './listings.selectors';
+import { initialListingsState } from './listings.state';
 
 function setup(api: Partial<ListingsApiService> = {}) {
   const harness = actionsHarness();
@@ -213,7 +214,7 @@ describe('ListingsEffects', () => {
       const { harness, effects } = setup({ getMapPins });
 
       const collected = collect(effects.loadMapPins$);
-      harness.send(ListingsActions.loadMapPins({ bounds: null }));
+      harness.send(ListingsActions.loadMapPins({ bounds: null, scope: 'filtered' }));
       harness.complete();
 
       expect(await collected).toEqual([ListingsActions.loadMapPinsSuccess({ result })]);
@@ -225,7 +226,7 @@ describe('ListingsEffects', () => {
       const { harness, effects } = setup({ getMapPins });
 
       const collected = collect(effects.loadMapPins$);
-      harness.send(ListingsActions.loadMapPins({ bounds: null }));
+      harness.send(ListingsActions.loadMapPins({ bounds: null, scope: 'filtered' }));
       harness.complete();
 
       expect(await collected).toEqual([
@@ -246,10 +247,11 @@ describe('ListingsEffects', () => {
       const { harness, effects } = setup({ getMapPins });
 
       const collected = collect(effects.loadMapPins$);
-      harness.send(ListingsActions.loadMapPins({ bounds: null }));
+      harness.send(ListingsActions.loadMapPins({ bounds: null, scope: 'filtered' }));
       harness.send(
         ListingsActions.loadMapPins({
           bounds: { minLat: 1, maxLat: 2, minLng: 3, maxLng: 4 },
+          scope: 'filtered',
         }),
       );
       harness.complete();
@@ -263,6 +265,28 @@ describe('ListingsEffects', () => {
         ListingsActions.loadMapPinsSuccess({ result: secondResult }),
       ]);
       expect(getMapPins).toHaveBeenCalledTimes(2);
+    });
+
+    it('scope: "all" ignores the store\'s current filters/originCoords, fetching with the reducer\'s empty filter and no origin', async () => {
+      const result: ListingMapPinsResult = { items: [makeListingMapPin()], isTruncated: false };
+      const getMapPins = vi.fn().mockReturnValue(of(result));
+      const { harness, store, effects } = setup({ getMapPins });
+      // A non-empty filter/origin currently in the store — must NOT reach
+      // `getMapPins` for a `scope: 'all'` request, which is the whole point
+      // of the scope: a listing-detail page must show every toy regardless
+      // of whatever the visitor last searched on `/listings`.
+      store.overrideSelector(selectListingsFilters, {
+        query: 'lego',
+      } as unknown as ListingsFilter);
+      store.overrideSelector(selectListingsOriginCoords, { lat: 40.1, lng: 44.5 });
+      store.refreshState();
+
+      const collected = collect(effects.loadMapPins$);
+      harness.send(ListingsActions.loadMapPins({ bounds: null, scope: 'all' }));
+      harness.complete();
+
+      expect(await collected).toEqual([ListingsActions.loadMapPinsSuccess({ result })]);
+      expect(getMapPins).toHaveBeenCalledWith(initialListingsState.filters, null, null);
     });
   });
 

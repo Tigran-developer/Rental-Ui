@@ -19,17 +19,18 @@
 
   <div class="listing-location-map__surface">
     @if (open()) {
-      <app-map
+      <app-listings-map
+        [scope]="'all'"
+        [activeListingId]="listingId()"
         [center]="center()"
-        [pin]="center()"
-        [userPin]="userPin()"
-        [fitPins]="hasUserPin()"
+        [anchorPin]="center()"
         [zoom]="zoom()"
-        [interactive]="true"
+        [userPin]="userPin()"
+        [userAccuracyMeters]="userAccuracyMeters()"
+        [autoFit]="false"
         [scrollGate]="false"
-        [circleRadiusMeters]="circleRadiusMeters()"
-        [zoomInLabel]="'listings.details.location.zoomIn' | translate"
-        [zoomOutLabel]="'listings.details.location.zoomOut' | translate"
+        [showEmptyBanner]="false"
+        [showTruncatedBanner]="false"
         height="100%"
         (mapError)="onMapError()"
       >
@@ -43,7 +44,7 @@
         >
           <i class="pi pi-compass" aria-hidden="true"></i>
         </button>
-      </app-map>
+      </app-listings-map>
     }
 
     <div class="listing-location-map__topbar">

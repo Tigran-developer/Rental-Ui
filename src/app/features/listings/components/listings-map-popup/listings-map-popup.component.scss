@@ -1,9 +1,20 @@
 :host {
   display: block;
   /* Compact hover card, not a catalogue card — see the class doc comment in
-     listings-map-popup.component.ts. Width is fixed so a stack of these
-     (`ListingsMapComponent`, sub-step 3) lines up as a clean column. */
-  width: 220px;
+     listings-map-popup.component.ts. Width is FLUID (100%), not fixed —
+     `ListingsMapComponent` owns the actual pixel width via a fixed-width
+     wrapper (`.listings-map__popup-anchor`, 264px — see
+     listings-map.component.scss), which this card fills whether it's
+     rendered alone or as one of several inside `.listings-map__popup-stack`.
+     This used to be a fixed `220px` `:host` — that overflowed a multi-pin
+     stack's narrower (~204px) content box and got clipped by its
+     `overflow: hidden`, cutting off the "View listing" button and the
+     card's right edge. `box-sizing: border-box` (the app's global
+     `*,*::before,*::after` reset in styles.css already sets this; kept
+     explicit here since this rule's correctness genuinely depends on it). */
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .listings-map-popup {
@@ -35,7 +46,9 @@
   color: var(--ui-color-text-secondary);
   cursor: pointer;
   padding: 0;
-  transition: background-color 140ms ease, color 140ms ease;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
 
   &:hover {
     background: rgba(255, 255, 255, 0.98);

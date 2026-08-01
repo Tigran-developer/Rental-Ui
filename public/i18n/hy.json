@@ -540,6 +540,8 @@
         "myLocationLocating": "Որոշվում է…",
         "distanceFromYou": "≈ {{distance}} ձեզնից",
         "distanceLegend": "Կապույտ կետը դուք եք, նարնջագույնը՝ խաղալիքի տարածքը",
+        "accuracyLabel": "± {{accuracy}}",
+        "lowAccuracyMessage": "Ձեր գտնվելու վայրը որոշված է մոտավորապես։ Ավելի ճշգրիտ հեռավորության համար նշեք կետը քարտեզի վրա։",
         "geoDeniedMessage": "Տեղորոշումն անջատված է։ Ոչինչ — կարող եք կետ նշել քարտեզի վրա։",
         "pickPointButton": "Նշել կետը քարտեզի վրա",
         "scrollGateHint": "Սեղմեք Ctrl և պտտեք՝ խոշորացնելու համար",

@@ -387,11 +387,15 @@
 /* Halo ring for the group whose popup the PARENT currently has open
    (`activeMarkerKey`). This plumbing step only needs SOME visible
    distinction for `.is-active` to be testable/usable — the popup-UI step
-   (Maps P2-2, later) may want to revisit the exact treatment. */
+   (Maps P2-2, later) may want to revisit the exact treatment.
+   `inset: -3px` (was `-4px`) — scaled down alongside `PIN_ICON_SIZE`
+   32px -> 24px (map.component.ts) so the ring keeps roughly the same
+   proportion of the ball's own size (both ~12.5% of the icon box) instead of
+   reading proportionally larger against the smaller ball. */
 .app-map__pin.is-active::after {
   content: '';
   position: absolute;
-  inset: -4px;
+  inset: -3px;
   border-radius: 50%;
   border: 2px solid #fff;
   box-shadow: 0 0 0 2px var(--ui-color-primary);
@@ -401,19 +405,22 @@
 /* Listing-count badge, shown only when `MapMarkerGroup.count > 1` — see
    `map.component.ts`'s `updateMarkerEntry()` for why this is added/removed
    in place rather than the whole marker being recreated when a group's
-   count changes between refetches. */
+   count changes between refetches. Sized down alongside `PIN_ICON_SIZE`
+   32px -> 24px (map.component.ts) — at the old 16px/10px/-4px sizing the
+   badge visually dominated the smaller 24px ball; scaled roughly
+   proportionally to the icon-size change instead. */
 .app-map__pin-badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 16px;
-  height: 16px;
+  top: -3px;
+  right: -3px;
+  min-width: 14px;
+  height: 14px;
   padding: 0 4px;
   border-radius: var(--ui-radius-pill);
   background: var(--ui-color-secondary);
   color: #fff;
-  font-size: 10px;
-  line-height: 16px;
+  font-size: 9px;
+  line-height: 14px;
   font-weight: var(--ui-font-weight-bold);
   text-align: center;
   box-shadow: 0 1px 3px rgba(20, 15, 5, 0.35);

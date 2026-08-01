@@ -143,13 +143,10 @@ interface TileProviderConfig {
  * "key configured" vs "no key" scenarios deterministically, regardless of
  * whatever happens to be in `environment.ts` at test time.
  */
-export const TILE_PROVIDER_CONFIG = new InjectionToken<TileProviderConfig>(
-  'TILE_PROVIDER_CONFIG',
-  {
-    providedIn: 'root',
-    factory: () => environment.tileProvider,
-  },
-);
+export const TILE_PROVIDER_CONFIG = new InjectionToken<TileProviderConfig>('TILE_PROVIDER_CONFIG', {
+  providedIn: 'root',
+  factory: () => environment.tileProvider,
+});
 
 // Used only when `environment.tileProvider.apiKey` is empty (no vendor
 // account configured yet) — never delete this without also removing the
@@ -217,18 +214,27 @@ export function resolveTileSource(
  * (`Leaflet.Marker.getElement()`), used to imperatively toggle
  * `.is-animating`/`.is-active` and read `aria-label` updates without
  * recreating the marker (see `markers`' doc comment for why an unchanged
- * `key` must never be torn down). `desiredAnimating` is the ADR-011/M-024
- * falling-edge latch: `onBallAnimationIteration`-equivalent below only clears
- * `.is-animating` once the loop has eased back to rest AND this is still
- * `false` — mirroring `DorentSymbolComponent`'s own `animating` signal, just
- * expressed imperatively since this DOM is raw Leaflet `divIcon` HTML, never
- * an Angular template.
+ * `key` must never be torn down).
+ *
+ * `hovered` is the raw pointer state (`true` between `onMarkerHoverStart`/
+ * `onMarkerHoverEnd`). `desiredAnimating` — the ADR-011/M-024 falling-edge
+ * latch — is `hovered OR (this group is currently `highlightedMarkerKey`)`,
+ * recomputed by `updateDesiredAnimating()` any time EITHER half changes: the
+ * two are kept as separate fields precisely so leaving a HIGHLIGHTED
+ * marker's hover does not fall through to "stop animating" (the group must
+ * keep bouncing because it's highlighted, even though the pointer left it).
+ * The `animationiteration` listener below only clears `.is-animating` once
+ * the loop has eased back to rest AND `desiredAnimating` is still `false` —
+ * mirroring `DorentSymbolComponent`'s own `animating` signal, just expressed
+ * imperatively since this DOM is raw Leaflet `divIcon` HTML, never an
+ * Angular template.
  */
 interface MarkerEntry {
   readonly marker: Leaflet.Marker;
   readonly group: MapMarkerGroup;
   readonly el: HTMLElement | null;
   readonly ballEl: HTMLElement | null;
+  hovered: boolean;
   desiredAnimating: boolean;
 }
 
@@ -373,6 +379,19 @@ function sanitizeForClipId(raw: string): string {
  * is NOT suppressed there — see its own doc comment above: unlike a marker, a
  * circle can be re-centred on the map's own moving centre instead.)
  *
+ * `userAccuracyMeters`: a translucent circle around `userPin`, drawn by
+ * `syncUserAccuracyCircle()` the same way `circleRadiusMeters` draws one
+ * around `pin` (a real `L.Circle`, defined in metres — via `readUserColor()`
+ * rather than `readPrimaryColor()`, since this MUST read as a different
+ * colour from the listing's own orange uncertainty ring: the two answer
+ * different questions — how fuzzed the listing's public coordinate is vs. how
+ * confident the visitor's own device fix is — and both can be on screen
+ * together. `null` (default, and whenever `GeolocationService` couldn't
+ * report a confidence radius) draws no circle. Same suppression rules as
+ * `userPin`'s own marker: nothing is drawn without a `userPin`, and nothing is
+ * drawn in `crosshair` mode (no fixed `userPin` coordinate to anchor to
+ * there).
+ *
  * `fitPins`: when both `pin` and `userPin` are set (and `crosshair` is off),
  * frames both in view via Leaflet's `fitBounds()` instead of the plain
  * `center`/`zoom` the map was constructed with. This deliberately does NOT
@@ -457,8 +476,7 @@ function sanitizeForClipId(raw: string): string {
   encapsulation: ViewEncapsulation.None,
 })
 export class MapComponent implements AfterViewInit, OnDestroy {
-  private readonly containerRef =
-    viewChild.required<ElementRef<HTMLDivElement>>('container');
+  private readonly containerRef = viewChild.required<ElementRef<HTMLDivElement>>('container');
   // The `.app-map` wrapper — an ANCESTOR of `containerRef` (Leaflet's own
   // container). The scroll-gate wheel listener attaches here rather than on
   // `containerRef` — see the class doc comment's "Desktop" bullet for why
@@ -469,6 +487,16 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   readonly center = input.required<MapLatLng>();
   readonly zoom = input<number>(13);
   readonly pin = input<MapLatLng | null>(null);
+  /** When `false`, `pin` is not rendered as its own marker (`syncMarker()`)
+   *  — it still anchors `syncCircle()`/`syncFitBounds()` exactly as before.
+   *  Default `true` keeps every existing caller (`location-picker`,
+   *  `listing-location`, `create-listing-form`, the catalogue map) byte-for-
+   *  byte unchanged. Used by the listing-detail maps: the current listing is
+   *  drawn as one of `markers()`' catalogue-style groups instead (so it can
+   *  bounce/highlight exactly like every other listing — see
+   *  `highlightedMarkerKey`), and a second orange teardrop `pin` at the SAME
+   *  coordinate would just be a duplicate marker on top of it. */
+  readonly showPin = input<boolean>(true);
   readonly height = input<string>('280px');
   readonly interactive = input<boolean>(false);
   readonly crosshair = input<boolean>(false);
@@ -478,8 +506,20 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   readonly circleDashed = input<boolean>(false);
   /** A second, blue pulsing marker (the visitor's own location) — see the class doc comment. */
   readonly userPin = input<MapLatLng | null>(null);
+  /** Radius (metres) of the translucent accuracy circle drawn around `userPin`
+   *  — see the class doc comment. `null` (default) draws no circle. */
+  readonly userAccuracyMeters = input<number | null>(null);
   /** When both `pin` and `userPin` are set, frame both via `fitBounds()` instead of `center`/`zoom`. */
   readonly fitPins = input<boolean>(false);
+  /** When `fitPins` is on, whether `syncFitBounds()` also includes `markers()`
+   *  groups in the frame. Default `true` keeps the catalogue map (which has
+   *  no `pin`/`userPin` of its own, so this was already the only source of
+   *  points there) byte-for-byte unchanged. `false` restricts the frame to
+   *  `pin`/`userPin` only — used by the listing-detail map, which draws
+   *  every OTHER listing as a `markers()` group too and must never let
+   *  "frame me and the toy" stretch out to fit every other listing on the
+   *  map as well. */
+  readonly fitIncludesMarkers = input<boolean>(true);
   /** Opts an `interactive` (non-`crosshair`) map into the scroll/touch capture gate — see the class doc comment. */
   readonly scrollGate = input<boolean>(false);
   /** Translated `aria-label` for the `+` zoom button. `null` (default) leaves it unlabelled. */
@@ -502,6 +542,24 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   /** The group whose popup the PARENT currently has open — drives a
    *  `.is-active` class on that group's marker. `null` (default): none. */
   readonly activeMarkerKey = input<string | null>(null);
+  /** The group PERMANENTLY highlighted (not merely while hovered or
+   *  popped-open) — gets `activeMarkerKey`'s `.is-active` ring PLUS a
+   *  CONTINUOUS bounce (`.is-animating`), independent of hover/popup state.
+   *  `null` (default): none. Deliberately a SEPARATE signal from
+   *  `activeMarkerKey`, not a variant of it: the listing-detail map needs
+   *  BOTH roles live at once, and potentially on two DIFFERENT groups at the
+   *  same time — the current listing bounces forever (this input), while a
+   *  NEIGHBOURING group's popup can be open simultaneously
+   *  (`activeMarkerKey`). See `MarkerEntry.desiredAnimating` and
+   *  `updateDesiredAnimating()` for how hover and this combine into one
+   *  animation state per marker, and `applyActiveClass()` for how this and
+   *  `activeMarkerKey` combine into one `.is-active` state — both combine
+   *  rather than each effect setting the class/state off its own single
+   *  condition, so the two effects driving them can never fight over the
+   *  same marker. The falling edge (this input changing to no longer match
+   *  a group) goes through the exact same ADR-011/M-024
+   *  immediate-vs-`animationiteration` branch a hover ending does. */
+  readonly highlightedMarkerKey = input<string | null>(null);
   /** Translated `aria-label` for a single-listing marker (`count === 1`).
    *  Opaque to this file, exactly like `zoomInLabel`/`zoomOutLabel` — no
    *  ngx-translate import here. */
@@ -577,12 +635,13 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   // bottom edge) sits on the geo coordinate, not its vertical centre; the
   // shadow ellipse paints below that via `overflow: visible`, never shifting
   // the anchor itself.
-  private static readonly PIN_ICON_SIZE = 32;
+  private static readonly PIN_ICON_SIZE = 24;
 
   private map: Leaflet.Map | null = null;
   private leaflet: typeof Leaflet | null = null;
   private markerLayer: Leaflet.Marker | null = null;
   private userMarkerLayer: Leaflet.Marker | null = null;
+  private userAccuracyCircleLayer: Leaflet.Circle | null = null;
   private circleLayer: Leaflet.Circle | null = null;
   // Catalog pins (Maps P2-2), keyed by `MapMarkerGroup.key` — diffed rather
   // than torn down and rebuilt on every input change, see `markers`' doc
@@ -658,8 +717,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   // first hover — exactly M-024's second defect, reproduced here for the map
   // pin instead of the header ball.
   private readonly prefersReducedMotionForMarkers: boolean =
-    typeof matchMedia === 'function' &&
-    matchMedia('(prefers-reduced-motion: reduce)').matches;
+    typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /** `true` while the touch scroll-gate overlay (`.app-map__gate`) should be
    *  showing: opted in via `scrollGate`, only meaningful for an `interactive`,
@@ -718,14 +776,18 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     // race that creation).
     effect(() => {
       this.pin();
+      this.showPin();
       this.userPin();
+      this.userAccuracyMeters();
       this.crosshair();
       this.circleRadiusMeters();
       this.circleDashed();
       this.fitPins();
+      this.fitIncludesMarkers();
       this.markers();
       this.syncMarker();
       this.syncUserMarker();
+      this.syncUserAccuracyCircle();
       this.syncCircle();
       this.syncFitBounds();
     });
@@ -748,11 +810,28 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     // ALREADY exist — never a reason to touch marker creation/removal, so it
     // gets its own effect rather than folding into the one above (which
     // would otherwise re-diff every marker whenever the parent merely opens
-    // a different popup).
+    // a different popup). `applyActiveClass()` re-derives the FULL `.is-active`
+    // truth from BOTH `activeMarkerKey` and `highlightedMarkerKey` (see that
+    // method's doc comment) rather than toggling off this signal alone, so
+    // this effect and the next one can never fight over the same class.
     effect(() => {
-      const active = this.activeMarkerKey();
+      this.activeMarkerKey();
       for (const entry of this.markerGroupLayers.values()) {
-        entry.el?.classList.toggle('is-active', entry.group.key === active);
+        this.applyActiveClass(entry);
+      }
+    });
+
+    // `highlightedMarkerKey` — the listing-detail map's "this is MY toy"
+    // marker. A separate effect from the one above for the exact same
+    // reason `activeMarkerKey`'s is separate from the marker-diffing effect:
+    // this only ever needs to toggle state on markers that ALREADY exist.
+    // Also drives the continuous-bounce half (`updateDesiredAnimating()`),
+    // not just the ring — see `highlightedMarkerKey`'s own doc comment.
+    effect(() => {
+      this.highlightedMarkerKey();
+      for (const entry of this.markerGroupLayers.values()) {
+        this.applyActiveClass(entry);
+        this.updateDesiredAnimating(entry);
       }
     });
   }
@@ -866,6 +945,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       } else {
         this.syncMarker();
         this.syncUserMarker();
+        this.syncUserAccuracyCircle();
         this.syncCircle();
         this.syncFitBounds();
       }
@@ -965,8 +1045,11 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     }
 
     const p = this.pin();
-    // The crosshair overlay IS the pin in that mode — never show both.
-    if (p && !this.crosshair()) {
+    // The crosshair overlay IS the pin in that mode — never show both. Also
+    // suppressed when `showPin` is off — see that input's doc comment: `pin`
+    // still anchors `syncCircle()`/`syncFitBounds()` below, it just never
+    // becomes its OWN rendered marker.
+    if (p && !this.crosshair() && this.showPin()) {
       this.markerLayer = L.marker([p.lat, p.lng], {
         icon: this.pinIcon(L),
         interactive: false,
@@ -1045,6 +1128,41 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  /** Mirrors `syncCircle()`, for the visitor's OWN confidence radius instead
+   *  of the listing's fuzzed-coordinate uncertainty — see `userAccuracyMeters`'
+   *  doc comment on the class for why this circle must read in a DIFFERENT
+   *  colour (`readUserColor()` / `--ui-color-map-user`, not
+   *  `readPrimaryColor()` / `--ui-color-primary`) from `syncCircle()`'s own.
+   *  Drawn only when `userPin`, a positive `userAccuracyMeters`, AND
+   *  non-`crosshair` all hold — the same three-way gate `syncUserMarker()`
+   *  uses for the marker itself (no fixed `userPin` coordinate exists in
+   *  `crosshair` mode to anchor a circle to either). */
+  private syncUserAccuracyCircle(): void {
+    const L = this.leaflet;
+    const map = this.map;
+    if (!L || !map) return;
+
+    if (this.userAccuracyCircleLayer) {
+      map.removeLayer(this.userAccuracyCircleLayer);
+      this.userAccuracyCircleLayer = null;
+    }
+
+    const u = this.userPin();
+    const radius = this.userAccuracyMeters();
+    if (u && radius !== null && radius > 0 && !this.crosshair()) {
+      const userColor = this.readUserColor();
+      this.userAccuracyCircleLayer = L.circle([u.lat, u.lng], {
+        radius,
+        color: userColor,
+        weight: 1.5,
+        opacity: 0.55,
+        fillColor: userColor,
+        fillOpacity: 0.16,
+        interactive: false,
+      }).addTo(map);
+    }
+  }
+
   /** Imperative, one-shot `fitBounds()` call — see the class doc comment for
    *  why this must never write back into the `center` input (NG0103). A
    *  no-op unless `fitPins` is on, both `pin` and `userPin` are set, and
@@ -1065,8 +1183,10 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     const u = this.userPin();
     if (p) points.push([p.lat, p.lng]);
     if (u) points.push([u.lat, u.lng]);
-    for (const group of this.markers()) {
-      points.push([group.position.lat, group.position.lng]);
+    if (this.fitIncludesMarkers()) {
+      for (const group of this.markers()) {
+        points.push([group.position.lat, group.position.lng]);
+      }
     }
     // Fitting a single point isn't really "fitting" anything — same
     // threshold the pre-`markers` `pin`+`userPin` check already enforced
@@ -1127,8 +1247,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
    *  of the Maps P2-2 plan — see `dorent-symbol.markup.ts`) plus a count
    *  badge when more than one listing shares this group's coordinate. */
   private markerGroupHtml(group: MapMarkerGroup, clipId: string): string {
-    const badge =
-      group.count > 1 ? `<span class="app-map__pin-badge">${group.count}</span>` : '';
+    const badge = group.count > 1 ? `<span class="app-map__pin-badge">${group.count}</span>` : '';
     return dorentSymbolMarkup(clipId) + badge;
   }
 
@@ -1201,6 +1320,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       group,
       el,
       ballEl: el?.querySelector<HTMLElement>('.dr-symbol__ball') ?? null,
+      hovered: false,
       desiredAnimating: false,
     };
 
@@ -1208,31 +1328,36 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       el.setAttribute('role', 'button');
       el.tabIndex = 0;
       el.setAttribute('aria-label', this.labelForGroup(group));
-      if (group.key === this.activeMarkerKey()) el.classList.add('is-active');
+      // A newly-created marker (e.g. a re-pan created a new group key) picks
+      // up BOTH the ring and — if it's the highlighted group — the
+      // continuous bounce immediately, rather than waiting for the next
+      // `activeMarkerKey`/`highlightedMarkerKey` effect run.
+      this.applyActiveClass(entry);
+      this.updateDesiredAnimating(entry);
 
       // Permanent listener (mirrors `DorentSymbolComponent`'s own
       // `(animationiteration)` binding, see class doc comment there): the
       // falling edge only actually clears the class once the loop has eased
       // back through its rest keyframe, UNLESS reduced motion means there
-      // was never a loop to begin with (see `onMarkerHoverEnd` below).
+      // was never a loop to begin with (see `updateDesiredAnimating()` below).
       entry.ballEl?.addEventListener('animationiteration', () => {
         if (!entry.desiredAnimating) el.classList.remove('is-animating');
       });
 
       el.addEventListener('mouseover', () => this.onMarkerHoverStart(entry));
       el.addEventListener('mouseout', () => this.onMarkerHoverEnd(entry));
-      // `activate()` (not just `markerActivated.emit`) also emits this
+      // `activateGroup()` (not just `markerActivated.emit`) also emits this
       // group's current anchor via `markerHovered` — needed for the touch
       // and keyboard paths, which reach this WITHOUT a preceding `mouseover`
       // (unlike a desktop click, which the browser always fires a real
       // `mouseover` ahead of, so the anchor is already known by the time
       // `click` lands there). Without this, a caller has no pixel position
       // to open a popup at until the visitor happens to pan the map at
-      // least once afterward — see `ListingsMapComponent`, Maps P2-2.
-      const activate = () => {
-        this.markerHovered.emit(this.anchorForGroupKey(group.key));
-        this.markerActivated.emit(group.key);
-      };
+      // least once afterward — see `ListingsMapComponent`, Maps P2-2. Shared
+      // with the group's own radius circle (`syncMarkerGroupCircles()`) so
+      // clicking the circle activates the group identically to clicking the
+      // ball itself.
+      const activate = () => this.activateGroup(group.key);
       el.addEventListener('click', activate);
       el.addEventListener('keydown', (event: Event) => {
         const key = (event as KeyboardEvent).key;
@@ -1244,6 +1369,18 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     }
 
     return entry;
+  }
+
+  /** Emits `markerHovered` with the group's current anchor, then
+   *  `markerActivated` with its key — the ball's own click/Enter/Space
+   *  handler (`createMarkerEntry()`, above) and the group radius circle's
+   *  `click` handler (`syncMarkerGroupCircles()`, below) both funnel through
+   *  here so a click on either produces byte-identical behaviour. See
+   *  `createMarkerEntry()`'s `activate()` comment for why the anchor is
+   *  (re-)emitted here too, not just on click. */
+  private activateGroup(key: string): void {
+    this.markerHovered.emit(this.anchorForGroupKey(key));
+    this.markerActivated.emit(key);
   }
 
   /** Updates an EXISTING marker's badge/aria-label in place when its
@@ -1267,23 +1404,62 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   }
 
   private onMarkerHoverStart(entry: MarkerEntry): void {
-    entry.desiredAnimating = true;
-    entry.el?.classList.add('is-animating');
+    entry.hovered = true;
+    this.updateDesiredAnimating(entry);
     this.hoveredMarkerKey = entry.group.key;
     this.markerHovered.emit(this.anchorForGroupKey(entry.group.key));
   }
 
   private onMarkerHoverEnd(entry: MarkerEntry): void {
-    entry.desiredAnimating = false;
-    if (this.prefersReducedMotionForMarkers) {
-      // No loop is running under reduced motion, so `animationiteration`
-      // (the listener attached in `createMarkerEntry`) never fires — clear
-      // immediately or the shadow would stick forever after the first
-      // hover. See ADR-011 / M-024.
-      entry.el?.classList.remove('is-animating');
-    }
+    entry.hovered = false;
+    // Recomputes the combined desired state — if this group is also
+    // `highlightedMarkerKey`, `updateDesiredAnimating()` finds it still
+    // desired and leaves `.is-animating` alone, so leaving a HIGHLIGHTED
+    // marker's hover never stops its permanent bounce.
+    this.updateDesiredAnimating(entry);
     if (this.hoveredMarkerKey === entry.group.key) this.hoveredMarkerKey = null;
     this.markerHovered.emit(null);
+  }
+
+  /** Combines `activeMarkerKey` (the parent's open popup) and
+   *  `highlightedMarkerKey` (the permanently-highlighted "this is the
+   *  current listing" marker) into the single `.is-active` ring class — see
+   *  both inputs' own doc comments for why they're independent signals that
+   *  can each be `true` for a DIFFERENT group at the same time. Centralised
+   *  here, rather than each effect toggling the class off its own single
+   *  condition, so the two effects driving them can never fight over the
+   *  same class: each just re-derives the FULL truth from both signals,
+   *  regardless of which one changed. */
+  private applyActiveClass(entry: MarkerEntry): void {
+    const isActive =
+      entry.group.key === this.activeMarkerKey() || entry.group.key === this.highlightedMarkerKey();
+    entry.el?.classList.toggle('is-active', isActive);
+  }
+
+  /** Recomputes `entry.desiredAnimating` (hover ∪ highlighted) and applies
+   *  the ADR-011/M-024-safe falling edge — see `MarkerEntry`'s own doc
+   *  comment. Called from `onMarkerHoverStart`/`onMarkerHoverEnd` (the hover
+   *  half) and the `highlightedMarkerKey` effect (the highlight half);
+   *  either can flip the COMBINED value, so both funnel through here rather
+   *  than toggling the class or setting `desiredAnimating` directly. */
+  private updateDesiredAnimating(entry: MarkerEntry): void {
+    const desired = entry.hovered || entry.group.key === this.highlightedMarkerKey();
+    entry.desiredAnimating = desired;
+    if (desired) {
+      entry.el?.classList.add('is-animating');
+      return;
+    }
+    // Falling edge — mirrors the pre-existing M-024 branch this replaces:
+    // under reduced motion no CSS animation loop ever runs, so the
+    // `animationiteration` listener attached in `createMarkerEntry()` (which
+    // checks `entry.desiredAnimating`, already `false` here) never fires;
+    // clear immediately instead of leaving the shadow stuck forever. Under
+    // normal motion, this is deliberately a no-op — the loop eases itself
+    // back through its own rest keyframe first, and `animationiteration`
+    // removes the class from there.
+    if (this.prefersReducedMotionForMarkers) {
+      entry.el?.classList.remove('is-animating');
+    }
   }
 
   /** Mirrors `syncCircle()` for `markers`: one translucent `L.circle` per
@@ -1291,7 +1467,53 @@ export class MapComponent implements AfterViewInit, OnDestroy {
    *  Gated on BOTH `markerRadiusMeters` being set AND the live zoom being at
    *  least `markerCircleMinZoom` — re-run on every `zoomend` (see `init()`)
    *  as well as on the relevant input changes, since only Leaflet knows the
-   *  live zoom. */
+   *  live zoom.
+   *
+   *  UNLIKE `syncCircle()`'s single `pin`/`crosshair` circle (always
+   *  `interactive: false` — decorative only), these per-group circles are
+   *  `interactive: true` and wired with the SAME hover/click behaviour as
+   *  the group's own ball marker: the approved design wants the radius
+   *  circle itself to be the hover/click TARGET (it reads as a much bigger,
+   *  easier-to-hit affordance than the 24px ball alone), not just a
+   *  decoration drawn under it. `mouseover`/`mouseout` reuse
+   *  `onMarkerHoverStart()`/`onMarkerHoverEnd()` verbatim (same bounce +
+   *  `markerHovered` emission the ball's own hover already produces);
+   *  `click` reuses `activateGroup()` (same as the ball's click/keyboard
+   *  activation). Every handler looks the `MarkerEntry` up LAZILY, via
+   *  `this.markerGroupLayers.get(key)` AT EVENT TIME, rather than closing
+   *  over the entry captured when the circle was created: circles here and
+   *  markers in `syncMarkerGroups()` are diffed/recreated independently (two
+   *  separate diff loops sharing one effect — see the constructor), so a
+   *  captured entry reference could go stale and point at an already
+   *  torn-down marker. The ball's OWN hover/click/keyboard handlers
+   *  (`createMarkerEntry()`) are untouched — a circle only renders when
+   *  `markerRadiusMeters` is set and the live zoom clears
+   *  `markerCircleMinZoom`, so the ball must keep working as a target on its
+   *  own; this is purely additive.
+   *
+   *  `bubblingMouseEvents: false` is required, not optional decoration:
+   *  Leaflet's `Path` (which `Circle` extends) defaults this to `true` —
+   *  UNLIKE `Marker`, whose own default is `false` — so without it, a click
+   *  on the circle would ALSO bubble up and fire the map's own `click`
+   *  (`mapClicked`, see `init()`), right on top of the `markerActivated`
+   *  this circle's own handler already emits. `ListingsMapComponent` treats
+   *  `mapClicked` as "close the pinned popup", which would immediately
+   *  undo the very click that just opened it. With this off, a circle click
+   *  behaves exactly like a ball click (a `Marker`, already
+   *  `bubblingMouseEvents: false` by default).
+   *
+   *  A pointer moving from the circle onto the ball fires the browser's
+   *  `mouseout`(circle) then `mouseover`(ball) as two separate events, never
+   *  simultaneously — the transient `markerHovered(null)` the `mouseout`
+   *  produces is absorbed by `ListingsMapComponent`'s own
+   *  `POPUP_CLOSE_GRACE_MS` (150ms) close-grace timer, the same mechanism
+   *  that already lets a visitor's pointer travel from the ball to its own
+   *  popup without the popup flickering shut in between.
+   *
+   *  Cursor: no extra CSS needed here — Leaflet's own `leaflet.css` (bundled
+   *  via `@use` in map.component.scss) already sets `cursor: pointer` on
+   *  every `.leaflet-interactive` SVG path, a class an `interactive: true`
+   *  circle gets automatically from Leaflet's SVG renderer. */
   private syncMarkerGroupCircles(): void {
     const L = this.leaflet;
     const map = this.map;
@@ -1314,6 +1536,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     const primary = this.readPrimaryColor();
     for (const group of groups) {
       if (this.markerGroupCircles.has(group.key)) continue;
+      const key = group.key;
       const circle = L.circle([group.position.lat, group.position.lng], {
         radius: radius!,
         color: primary,
@@ -1321,8 +1544,20 @@ export class MapComponent implements AfterViewInit, OnDestroy {
         opacity: 0.55,
         fillColor: primary,
         fillOpacity: 0.16,
-        interactive: false,
+        interactive: true,
+        // See this method's own doc comment — Path's default (true) would
+        // otherwise let a circle click also fire the map's own `click`.
+        bubblingMouseEvents: false,
       }).addTo(map);
+      circle.on('mouseover', () => {
+        const entry = this.markerGroupLayers.get(key);
+        if (entry) this.onMarkerHoverStart(entry);
+      });
+      circle.on('mouseout', () => {
+        const entry = this.markerGroupLayers.get(key);
+        if (entry) this.onMarkerHoverEnd(entry);
+      });
+      circle.on('click', () => this.activateGroup(key));
       this.markerGroupCircles.set(group.key, circle);
     }
   }
@@ -1336,6 +1571,19 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     const el = this.containerRef()?.nativeElement;
     if (!el || typeof getComputedStyle !== 'function') return FALLBACK;
     const value = getComputedStyle(el).getPropertyValue('--ui-color-primary').trim();
+    return value || FALLBACK;
+  }
+
+  /** Same resolve-the-live-custom-property trick as `readPrimaryColor()`
+   *  above, for `--ui-color-map-user` instead — see `syncUserAccuracyCircle()`'s
+   *  doc comment for why the visitor's own accuracy circle must never share
+   *  `readPrimaryColor()`'s colour with the listing's uncertainty circle.
+   *  Fallback matches the token's literal value in `styles.css`. */
+  private readUserColor(): string {
+    const FALLBACK = '#2f6bff';
+    const el = this.containerRef()?.nativeElement;
+    if (!el || typeof getComputedStyle !== 'function') return FALLBACK;
+    const value = getComputedStyle(el).getPropertyValue('--ui-color-map-user').trim();
     return value || FALLBACK;
   }
 

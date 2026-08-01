@@ -65,3 +65,70 @@ test.describe('Listing detail — approximate location', () => {
     expect(tiles.count()).toBe(0);
   });
 });
+
+/**
+ * Regression coverage for the dorent.am "My location" bug (confirmed live,
+ * 2026-08-01): `GeolocationService` used to request `enableHighAccuracy:
+ * false` with a 60s cache, so the blue dot could be off by hundreds of
+ * metres to kilometres while the UI printed "≈X from you" with full
+ * confidence — no indication the fix was a rough WiFi/IP-level guess.
+ *
+ * The fix (`enableHighAccuracy: true`, `maximumAge: 0`, plus a threshold
+ * that flags any fix over `LOW_ACCURACY_THRESHOLD_METERS`) has two risk
+ * layers, deliberately split across two test tiers rather than duplicated:
+ * - the exact request-options argument is verified by
+ *   `geolocation.service.spec.ts` (a `navigator.geolocation.getCurrentPosition`
+ *   spy) — that is the ONLY layer that can see it. Playwright's
+ *   `context.setGeolocation()` is a CDP-level override that answers with
+ *   whatever coordinate/accuracy it's given regardless of the
+ *   `enableHighAccuracy`/`maximumAge` the caller actually requested, so no
+ *   browser-level test can observe that argument.
+ * - what a browser-level test CAN observe, and what nothing currently does,
+ *   is the consumption side: does a real `navigator.geolocation` round trip
+ *   through the real component tree (`ListingLocationComponent` →
+ *   `ListingsMapComponent` → `MapComponent`) actually disclose a low-accuracy
+ *   fix instead of rendering it as confident, and does it stay quiet for a
+ *   high-accuracy one. That's what these two tests pin down.
+ *
+ * Selectors: `.listing-location__geo-denied` is the SAME block used for both
+ * the `denied` state and the `lowAccuracy` state within the `granted` case
+ * (see `listing-location.component.html`'s `@switch (geoState())` —
+ * `lowAccuracy` is checked inside `@case ('granted')`, not a separate
+ * `@case`) — confirmed by reading the template, not assumed.
+ */
+test.describe('Listing detail — "My location" accuracy disclosure', () => {
+  test('flags a low-accuracy fix instead of showing it as silently confident', async ({
+    page,
+    context,
+  }) => {
+    await context.grantPermissions(['geolocation']);
+    await context.setGeolocation({ latitude: 40.1, longitude: 44.5, accuracy: 3000 }); // WiFi/IP-level
+    await mockTiles(page);
+    await mockApi(page, { listingDetails: e2eListingDetails() });
+
+    await page.goto('/listings/listing-e2e-1');
+    await page.locator('.listing-location__locate-btn').click();
+
+    // Distance is still shown — a rough distance is better than none — but
+    // the soft block offering the manual picker must appear alongside it.
+    await expect(page.locator('.listing-location__distance')).toBeVisible();
+    await expect(page.locator('.listing-location__geo-denied')).toBeVisible();
+  });
+
+  test('shows a plain confident distance line for a high-accuracy fix, no warning', async ({
+    page,
+    context,
+  }) => {
+    await context.grantPermissions(['geolocation']);
+    // Matches e2eListingDetails()'s own fixture coordinate (support/fixtures.ts).
+    await context.setGeolocation({ latitude: 40.1872, longitude: 44.5152, accuracy: 20 }); // GPS-level
+    await mockTiles(page);
+    await mockApi(page, { listingDetails: e2eListingDetails() });
+
+    await page.goto('/listings/listing-e2e-1');
+    await page.locator('.listing-location__locate-btn').click();
+
+    await expect(page.locator('.listing-location__distance')).toBeVisible();
+    await expect(page.locator('.listing-location__geo-denied')).toHaveCount(0);
+  });
+});

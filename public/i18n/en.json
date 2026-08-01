@@ -540,6 +540,8 @@
         "myLocationLocating": "Locating...",
         "distanceFromYou": "≈ {{distance}} away",
         "distanceLegend": "Blue dot is you, orange is the toy area",
+        "accuracyLabel": "± {{accuracy}}",
+        "lowAccuracyMessage": "Your location looks approximate. For a more precise distance, pick a point on the map.",
         "geoDeniedMessage": "Location is turned off. No problem — pick a point on the map instead.",
         "pickPointButton": "Pick a point on the map",
         "scrollGateHint": "Hold Ctrl and scroll to zoom",

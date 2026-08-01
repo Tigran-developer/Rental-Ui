@@ -23,7 +23,11 @@ const state = vi.hoisted(() => ({
     options: Record<string, unknown>;
     element: HTMLElement | null;
   }[],
-  circleCalls: [] as { coords: [number, number]; options: Record<string, unknown> }[],
+  circleCalls: [] as {
+    coords: [number, number];
+    options: Record<string, unknown>;
+    handlers: Record<string, ((event?: unknown) => void)[]>;
+  }[],
   divIconCalls: [] as Record<string, unknown>[],
   latLngBoundsCalls: [] as unknown[],
   fitBoundsCalls: [] as { bounds: unknown; options: Record<string, unknown> }[],
@@ -230,9 +234,23 @@ vi.mock('leaflet', () => ({
       };
       return fakeMarker;
     }),
+    // `on()` (needed by the per-group circles' hover/click wiring — see
+    // `syncMarkerGroupCircles()` in map.component.ts) captures handlers into
+    // THIS circle call's own `handlers` bag, mirroring the `tileLayer` fake
+    // above — `circleCalls[i].handlers['click']?.forEach((h) => h())` lets a
+    // test simulate a Leaflet layer event without needing a real Leaflet
+    // renderer.
     circle: vi.fn((coords: [number, number], options: Record<string, unknown>) => {
-      state.circleCalls.push({ coords, options });
-      const fakeCircle = { addTo: vi.fn(() => fakeCircle) };
+      const handlers: Record<string, ((event?: unknown) => void)[]> = {};
+      const call = { coords, options, handlers };
+      state.circleCalls.push(call);
+      const fakeCircle = {
+        addTo: vi.fn(() => fakeCircle),
+        on: vi.fn((event: string, handler: (event?: unknown) => void) => {
+          (handlers[event] ??= []).push(handler);
+          return fakeCircle;
+        }),
+      };
       return fakeCircle;
     }),
     divIcon: vi.fn((options: Record<string, unknown>) => {
@@ -267,6 +285,7 @@ vi.mock('leaflet', () => ({
       [markerRadiusMeters]="markerRadiusMeters"
       [markerCircleMinZoom]="markerCircleMinZoom"
       [activeMarkerKey]="activeMarkerKey"
+      [highlightedMarkerKey]="highlightedMarkerKey"
       [markerLabel]="markerLabel"
       [markerGroupLabel]="markerGroupLabel"
       (centerChange)="onCenterChange($event)"
@@ -298,6 +317,7 @@ class MapHostComponent {
   markerRadiusMeters: number | null = null;
   markerCircleMinZoom = 12;
   activeMarkerKey: string | null = null;
+  highlightedMarkerKey: string | null = null;
   markerLabel = 'Listing';
   markerGroupLabel = '{count} listings here';
   received: MapLatLng[] = [];
@@ -470,8 +490,7 @@ describe('MapComponent', () => {
   // does not reliably resolve `color-mix()`/custom-property-heavy rules —
   // pins down the actual regression class without relying on jsdom fidelity.
   it('never emits `::ng-deep` in its compiled styles — invalid CSS once ViewEncapsulation.None ships them unshimmed', () => {
-    const compiledStyles = (MapComponent as unknown as { ɵcmp: { styles: string[] } }).ɵcmp
-      .styles;
+    const compiledStyles = (MapComponent as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles;
     expect(compiledStyles.length).toBeGreaterThan(0);
     expect(compiledStyles.some((sheet) => sheet.includes('::ng-deep'))).toBe(false);
   });
@@ -509,7 +528,7 @@ describe('MapComponent', () => {
   // `.app-map__zoom-stack` (below) instead. Was `true` when interactive
   // before that control existed; asserted separately from the test above so
   // a future revert of just this one option still fails clearly.
-  it('never constructs Leaflet\'s own zoomControl, interactive or not', async () => {
+  it("never constructs Leaflet's own zoomControl, interactive or not", async () => {
     TestBed.configureTestingModule({ imports: [MapHostComponent] });
     const fixture = TestBed.createComponent(MapHostComponent);
     fixture.componentInstance.interactive = true;
@@ -928,7 +947,7 @@ describe('MapComponent', () => {
       expect(state.circleCalls).toHaveLength(0);
     });
 
-    it('draws the circle centred on the MAP\'S OWN CENTRE, never on `pin`, even when a pin happens to be set too', async () => {
+    it("draws the circle centred on the MAP'S OWN CENTRE, never on `pin`, even when a pin happens to be set too", async () => {
       TestBed.configureTestingModule({ imports: [MapHostComponent] });
       const fixture = TestBed.createComponent(MapHostComponent);
       state.fakeCenter = { lat: 40.1776, lng: 44.5126 };
@@ -1060,9 +1079,7 @@ describe('MapComponent', () => {
       wrapper.dispatchEvent(new WheelEvent('wheel', { bubbles: true, cancelable: true }));
       fixture.detectChanges();
 
-      const hint: HTMLElement | null = fixture.nativeElement.querySelector(
-        '.app-map__scroll-hint',
-      );
+      const hint: HTMLElement | null = fixture.nativeElement.querySelector('.app-map__scroll-hint');
       expect(hint).not.toBeNull();
       expect(hint!.textContent).toContain('Hold Ctrl and scroll to zoom');
 
@@ -1196,6 +1213,25 @@ describe('MapComponent', () => {
       return fixture;
     }
 
+    /** Same as `createMarkerHost()` but also sets `markerRadiusMeters` (so
+     *  the per-group circles actually render — the map's fake `getZoom()`
+     *  defaults to 13, above `markerCircleMinZoom`'s own default of 12, so
+     *  no `zoomend` needs firing) — used by the group-circle
+     *  hover/click tests below, which need `MapHostComponent`'s own output
+     *  collector arrays (`hoveredAnchors`/`activatedKeys`), unlike
+     *  `createDirectMapFixture()` (mounts `MapComponent` directly, no
+     *  wrapper to collect outputs into). */
+    async function createMarkerHostWithCircles(markerRadiusMeters = 150) {
+      TestBed.configureTestingModule({ imports: [MapHostComponent] });
+      const fixture = TestBed.createComponent(MapHostComponent);
+      fixture.componentInstance.markers = [groupA, groupB];
+      fixture.componentInstance.markerRadiusMeters = markerRadiusMeters;
+      fixture.detectChanges();
+      await vi.runAllTimersAsync();
+      fixture.detectChanges();
+      return fixture;
+    }
+
     /**
      * `MapComponent` mounted DIRECTLY (no `MapHostComponent` wrapper
      * template) via `TestBed.createComponent(MapComponent)` +
@@ -1218,6 +1254,10 @@ describe('MapComponent', () => {
       userPin?: MapLatLng | null;
       fitPins?: boolean;
       interactive?: boolean;
+      pin?: MapLatLng | null;
+      showPin?: boolean;
+      fitIncludesMarkers?: boolean;
+      highlightedMarkerKey?: string | null;
     }) {
       TestBed.configureTestingModule({ imports: [MapComponent] });
       const fixture = TestBed.createComponent(MapComponent);
@@ -1235,6 +1275,14 @@ describe('MapComponent', () => {
       }
       if (inputs.userPin !== undefined) fixture.componentRef.setInput('userPin', inputs.userPin);
       if (inputs.fitPins !== undefined) fixture.componentRef.setInput('fitPins', inputs.fitPins);
+      if (inputs.pin !== undefined) fixture.componentRef.setInput('pin', inputs.pin);
+      if (inputs.showPin !== undefined) fixture.componentRef.setInput('showPin', inputs.showPin);
+      if (inputs.fitIncludesMarkers !== undefined) {
+        fixture.componentRef.setInput('fitIncludesMarkers', inputs.fitIncludesMarkers);
+      }
+      if (inputs.highlightedMarkerKey !== undefined) {
+        fixture.componentRef.setInput('highlightedMarkerKey', inputs.highlightedMarkerKey);
+      }
       fixture.detectChanges();
       await vi.runAllTimersAsync();
       fixture.detectChanges();
@@ -1284,7 +1332,7 @@ describe('MapComponent', () => {
       expect(el.getAttribute('aria-label')).toBe('3 listings here');
     });
 
-    it('substitutes the `{count}` placeholder with EACH group\'s own count, so a group of 2 and a group of 5 do not announce identically', async () => {
+    it("substitutes the `{count}` placeholder with EACH group's own count, so a group of 2 and a group of 5 do not announce identically", async () => {
       const fixture = await createDirectMapFixture({
         markers: [
           { ...groupA, count: 2 },
@@ -1319,6 +1367,91 @@ describe('MapComponent', () => {
 
       expect(state.circleCalls).toHaveLength(2);
       expect(state.circleCalls.every((c) => c.options['radius'] === 150)).toBe(true);
+    });
+
+    // Defect fix: the group's radius circle is now the hover/click TARGET
+    // itself (a much bigger, easier-to-hit affordance than the 24px ball
+    // alone), not just decoration drawn under it — see
+    // `syncMarkerGroupCircles()`'s doc comment in map.component.ts.
+    describe('group circles are hoverable/clickable, same as the ball (defect fix)', () => {
+      it('creates group circles as `interactive: true` with `bubblingMouseEvents: false`', async () => {
+        await createDirectMapFixture({
+          markers: [groupA, groupB],
+          markerRadiusMeters: 150,
+        });
+
+        expect(state.circleCalls).toHaveLength(2);
+        expect(state.circleCalls.every((c) => c.options['interactive'] === true)).toBe(true);
+        // Leaflet's `Path` (which `Circle` extends) defaults
+        // `bubblingMouseEvents` to `true` — UNLIKE `Marker`'s own `false`
+        // default — so without explicitly turning it off here, a circle
+        // click would ALSO bubble up and fire the map's own `click`
+        // (`mapClicked`) right alongside `markerActivated`.
+        expect(state.circleCalls.every((c) => c.options['bubblingMouseEvents'] === false)).toBe(
+          true,
+        );
+      });
+
+      it("a `mouseover` on a group circle emits `markerHovered` with that group's anchor and toggles `.is-animating` on its ball; `mouseout` emits `null`", async () => {
+        const fixture = await createMarkerHostWithCircles();
+        fixture.componentInstance.hoveredAnchors = [];
+        const circleForA = state.circleCalls.find(
+          (c) => c.coords[0] === groupA.position.lat && c.coords[1] === groupA.position.lng,
+        )!;
+        const ballElA = state.markerCalls[0].element!;
+
+        circleForA.handlers['mouseover']?.forEach((h) => h());
+
+        expect(fixture.componentInstance.hoveredAnchors.at(-1)).toEqual({
+          key: groupA.key,
+          x: state.fakeContainerPoint.x,
+          y: state.fakeContainerPoint.y,
+        });
+        expect(ballElA.classList.contains('is-animating')).toBe(true);
+
+        circleForA.handlers['mouseout']?.forEach((h) => h());
+
+        expect(fixture.componentInstance.hoveredAnchors.at(-1)).toBeNull();
+      });
+
+      it("a `click` on a group circle emits `markerActivated` with the group key, and `markerHovered` with its anchor (the exact same `activateGroup()` behaviour the ball's own click uses)", async () => {
+        const fixture = await createMarkerHostWithCircles();
+        fixture.componentInstance.hoveredAnchors = [];
+        const circleForB = state.circleCalls.find(
+          (c) => c.coords[0] === groupB.position.lat && c.coords[1] === groupB.position.lng,
+        )!;
+
+        circleForB.handlers['click']?.forEach((h) => h());
+
+        expect(fixture.componentInstance.activatedKeys).toEqual([groupB.key]);
+        expect(fixture.componentInstance.hoveredAnchors.at(-1)).toEqual({
+          key: groupB.key,
+          x: state.fakeContainerPoint.x,
+          y: state.fakeContainerPoint.y,
+        });
+      });
+
+      // A circle's `mouseover`/`mouseout`/`click` handler looks the live
+      // `MarkerEntry` up LAZILY (`markerGroupLayers.get(key)`) rather than
+      // closing over it at circle-creation time — if the entry has since
+      // been removed (group no longer in `markers`), the handler must be a
+      // silent no-op, never a crash.
+      it('does not throw when a group circle event fires for a key whose marker entry no longer exists', async () => {
+        const fixture = await createDirectMapFixture({
+          markers: [groupA, groupB],
+          markerRadiusMeters: 150,
+        });
+        const circleForA = state.circleCalls.find(
+          (c) => c.coords[0] === groupA.position.lat && c.coords[1] === groupA.position.lng,
+        )!;
+
+        fixture.componentRef.setInput('markers', [groupB]);
+        fixture.detectChanges();
+        await vi.runAllTimersAsync();
+
+        expect(() => circleForA.handlers['mouseover']?.forEach((h) => h())).not.toThrow();
+        expect(() => circleForA.handlers['mouseout']?.forEach((h) => h())).not.toThrow();
+      });
     });
 
     it('emits the marker anchor on mouseover and `null` on mouseout', async () => {
@@ -1360,7 +1493,7 @@ describe('MapComponent', () => {
     // caller has no pixel position to open a popup at until the visitor
     // happens to pan the map afterward. See `createMarkerEntry()`'s
     // `activate()` helper in map.component.ts.
-    it('also emits the group\'s anchor via `markerHovered` on click, even with no preceding mouseover', async () => {
+    it("also emits the group's anchor via `markerHovered` on click, even with no preceding mouseover", async () => {
       const fixture = await createMarkerHost();
       const el = state.markerCalls[0].element!;
       fixture.componentInstance.hoveredAnchors = [];
@@ -1375,7 +1508,7 @@ describe('MapComponent', () => {
       expect(fixture.componentInstance.activatedKeys).toEqual([groupA.key]);
     });
 
-    it('also emits the group\'s anchor via `markerHovered` on Enter/Space activation', async () => {
+    it("also emits the group's anchor via `markerHovered` on Enter/Space activation", async () => {
       const fixture = await createMarkerHost();
       const el = state.markerCalls[1].element!;
       fixture.componentInstance.hoveredAnchors = [];
@@ -1389,7 +1522,7 @@ describe('MapComponent', () => {
       });
     });
 
-    it('re-emits the tracked (hovered) marker anchor on `move`/`zoom` so a caller\'s popup stays glued during panning', async () => {
+    it("re-emits the tracked (hovered) marker anchor on `move`/`zoom` so a caller's popup stays glued during panning", async () => {
       const fixture = await createMarkerHost();
       const el = state.markerCalls[0].element!;
       el.dispatchEvent(new MouseEvent('mouseover'));
@@ -1464,6 +1597,194 @@ describe('MapComponent', () => {
       expect(el.classList.contains('is-animating')).toBe(false);
     });
 
+    describe('highlightedMarkerKey (listing-detail "this is my toy" bounce)', () => {
+      it('gives the highlighted group both `.is-active` (the ring) and `.is-animating` (the bounce) on mount', async () => {
+        await createDirectMapFixture({
+          markers: [groupA, groupB],
+          highlightedMarkerKey: groupA.key,
+        });
+
+        const [elA, elB] = state.markerCalls.map((call) => call.element!);
+        expect(elA.classList.contains('is-active')).toBe(true);
+        expect(elA.classList.contains('is-animating')).toBe(true);
+        expect(elB.classList.contains('is-active')).toBe(false);
+        expect(elB.classList.contains('is-animating')).toBe(false);
+      });
+
+      it('does NOT stop animating when the pointer leaves a HIGHLIGHTED marker (hover ending must not override the permanent highlight)', async () => {
+        await createDirectMapFixture({
+          markers: [groupA, groupB],
+          highlightedMarkerKey: groupA.key,
+        });
+        const elA = state.markerCalls[0].element!;
+        expect(elA.classList.contains('is-animating')).toBe(true);
+
+        // Hover the SAME (already-highlighted) marker, then leave it.
+        elA.dispatchEvent(new MouseEvent('mouseover'));
+        expect(elA.classList.contains('is-animating')).toBe(true);
+        elA.dispatchEvent(new MouseEvent('mouseout'));
+
+        // Still bouncing — it's the highlighted marker, hover ending is
+        // irrelevant to it. No `animationiteration` needed either, since
+        // `desiredAnimating` never actually went false.
+        expect(elA.classList.contains('is-animating')).toBe(true);
+      });
+
+      it('gates the falling edge on `.is-animating` through the SAME animationiteration deferral as hover, when a group stops being highlighted', async () => {
+        const fixture = await createDirectMapFixture({
+          markers: [groupA, groupB],
+          highlightedMarkerKey: groupA.key,
+        });
+        const elA = state.markerCalls[0].element!;
+        const ballA = elA.querySelector('.dr-symbol__ball')!;
+        expect(elA.classList.contains('is-animating')).toBe(true);
+
+        fixture.componentRef.setInput('highlightedMarkerKey', null);
+        fixture.detectChanges();
+        await vi.runAllTimersAsync();
+
+        // Still animating immediately after — the loop must ease back
+        // through its own rest keyframe first (ADR-011/M-024), not snap.
+        expect(elA.classList.contains('is-animating')).toBe(true);
+
+        ballA.dispatchEvent(new Event('animationiteration'));
+        expect(elA.classList.contains('is-animating')).toBe(false);
+      });
+
+      // M-024 regression, reproduced for the PERMANENT highlight instead of
+      // hover: under `prefers-reduced-motion: reduce` no CSS animation loop
+      // ever runs, so `animationiteration` never fires — the falling edge
+      // must clear immediately or the ring's shadow sticks forever once a
+      // group stops being highlighted.
+      it('clears `.is-animating` immediately (no animationiteration) when a highlighted group is un-highlighted under prefers-reduced-motion', async () => {
+        state.prefersReducedMotion = true;
+        const fixture = await createDirectMapFixture({
+          markers: [groupA, groupB],
+          highlightedMarkerKey: groupA.key,
+        });
+        const elA = state.markerCalls[0].element!;
+        expect(elA.classList.contains('is-animating')).toBe(true);
+
+        fixture.componentRef.setInput('highlightedMarkerKey', null);
+        fixture.detectChanges();
+        await vi.runAllTimersAsync();
+
+        expect(elA.classList.contains('is-animating')).toBe(false);
+      });
+
+      it('moves `.is-active`/`.is-animating` to a NEWLY highlighted group and clears them from the previous one', async () => {
+        const fixture = await createDirectMapFixture({
+          markers: [groupA, groupB],
+          highlightedMarkerKey: groupA.key,
+        });
+        const [elA, elB] = state.markerCalls.map((call) => call.element!);
+
+        fixture.componentRef.setInput('highlightedMarkerKey', groupB.key);
+        fixture.detectChanges();
+        await vi.runAllTimersAsync();
+
+        expect(elB.classList.contains('is-active')).toBe(true);
+        expect(elB.classList.contains('is-animating')).toBe(true);
+        // groupA's `.is-active` clears immediately (that ring has no
+        // animation-latch concern); `.is-animating` defers to
+        // `animationiteration` under normal motion (asserted above already
+        // for the single-group case) — here just confirm the ring moved.
+        expect(elA.classList.contains('is-active')).toBe(false);
+      });
+
+      it('does NOT fight `activeMarkerKey` — a DIFFERENT group can be `.is-active` (popup open) while the highlighted group keeps its own ring independently', async () => {
+        TestBed.configureTestingModule({ imports: [MapHostComponent] });
+        const fixture = TestBed.createComponent(MapHostComponent);
+        fixture.componentInstance.markers = [groupA, groupB];
+        fixture.componentInstance.activeMarkerKey = groupB.key;
+        fixture.componentInstance.highlightedMarkerKey = groupA.key;
+        fixture.detectChanges();
+        await vi.runAllTimersAsync();
+        fixture.detectChanges();
+
+        const [elA, elB] = state.markerCalls.map((call) => call.element!);
+        // groupA: highlighted (ring + bounce). groupB: active/popup-open
+        // (ring only, per `activeMarkerKey`'s own contract) — both `.is-active`
+        // at once, on DIFFERENT markers, and only groupA bounces.
+        expect(elA.classList.contains('is-active')).toBe(true);
+        expect(elA.classList.contains('is-animating')).toBe(true);
+        expect(elB.classList.contains('is-active')).toBe(true);
+        expect(elB.classList.contains('is-animating')).toBe(false);
+      });
+    });
+
+    describe('showPin (listing-detail: current listing is a marker group, not a second pin)', () => {
+      it('does NOT create the plain `pin` marker when showPin is false, even with a pin coordinate set', async () => {
+        await createDirectMapFixture({
+          pin: { lat: 40.18, lng: 44.51 },
+          showPin: false,
+        });
+
+        // No `.app-map__marker` divIcon (the plain-pin style) was requested.
+        expect(state.divIconCalls.some((o) => o['className'] === 'app-map__marker')).toBe(false);
+      });
+
+      it('still anchors `syncCircle()` (the uncertainty circle) and `syncFitBounds()` at `pin` when showPin is false', async () => {
+        await createDirectMapFixture({
+          interactive: true,
+          pin: { lat: 40.18, lng: 44.51 },
+          showPin: false,
+          userPin: { lat: 40.2, lng: 44.55 },
+          fitPins: true,
+        });
+
+        // `pin` still participates as one of the two fitBounds points.
+        expect(state.latLngBoundsCalls).toHaveLength(1);
+        expect(state.latLngBoundsCalls[0]).toEqual(
+          expect.arrayContaining([[40.18, 44.51]]),
+        );
+      });
+
+      it('renders the plain `pin` marker when showPin is left at its default (true) — existing callers unchanged', async () => {
+        await createDirectMapFixture({ pin: { lat: 40.18, lng: 44.51 } });
+
+        expect(state.markerCalls.some((m) => m.coords[0] === 40.18 && m.coords[1] === 44.51)).toBe(
+          true,
+        );
+      });
+    });
+
+    describe('fitIncludesMarkers (listing-detail: "frame me and the toy", never the whole catalogue)', () => {
+      it('excludes marker-group positions from the fitBounds frame when false, even with fitPins on and markers present', async () => {
+        await createDirectMapFixture({
+          interactive: true,
+          pin: { lat: 40.18, lng: 44.51 },
+          showPin: false,
+          userPin: { lat: 40.2, lng: 44.55 },
+          fitPins: true,
+          fitIncludesMarkers: false,
+          markers: [groupA, groupB],
+        });
+
+        // Only the two explicit points (pin + userPin) — neither groupA's
+        // nor groupB's position is in the bounds.
+        expect(state.latLngBoundsCalls).toHaveLength(1);
+        expect(state.latLngBoundsCalls[0]).toEqual([
+          [40.18, 44.51],
+          [40.2, 44.55],
+        ]);
+      });
+
+      it('includes marker-group positions by default (fitIncludesMarkers=true) — catalogue map unchanged', async () => {
+        await createDirectMapFixture({
+          interactive: true,
+          fitPins: true,
+          userPin: { lat: 40.2, lng: 44.55 },
+          markers: [groupA],
+        });
+
+        expect(state.latLngBoundsCalls).toHaveLength(1);
+        expect(state.latLngBoundsCalls[0]).toEqual(
+          expect.arrayContaining([[40.18, 44.51]]),
+        );
+      });
+    });
+
     it('includes marker group positions in the fitBounds frame alongside pin/userPin', async () => {
       const fixture = await createDirectMapFixture({
         interactive: true,
@@ -1493,8 +1814,7 @@ describe('MapComponent', () => {
 
     it('projects `[app-map-overlay]` content above the map, stacked below the zoom stack', async () => {
       const fixture = await createMarkerHost();
-      const overlay: HTMLElement | null =
-        fixture.nativeElement.querySelector('.app-map__overlay');
+      const overlay: HTMLElement | null = fixture.nativeElement.querySelector('.app-map__overlay');
       expect(overlay).not.toBeNull();
     });
   });

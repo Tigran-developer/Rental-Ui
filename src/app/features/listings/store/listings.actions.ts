@@ -141,16 +141,20 @@ export const clearCreateListingState = createAction(
 
 /**
  * Maps P2-2: fetches catalog map pins for `bounds` (the current map viewport)
- * combined with the existing `ListingsState.filters`/`originCoords`. `bounds:
- * null` is valid — the effect omits the viewport box entirely rather than
- * sending a degenerate one (mirrors `ListingsApiService.getMapPins`'s
- * all-or-nothing contract). Dispatched on every pan/zoom, so the effect must
- * `switchMap` (not `mergeMap`/`concatMap`) to cancel a stale in-flight
- * request.
+ * combined with the existing `ListingsState.filters`/`originCoords` — UNLESS
+ * `scope: 'all'` (listing-detail maps, later increment), which fetches with
+ * NO filter and NO origin regardless of what's currently in the store (see
+ * `ListingsEffects.loadMapPins$`): a listing-detail page must show every
+ * toy, not whatever the visitor last searched for on `/listings`. `'filtered'`
+ * is today's (and the catalogue map's) only behaviour. `bounds: null` is
+ * valid — the effect omits the viewport box entirely rather than sending a
+ * degenerate one (mirrors `ListingsApiService.getMapPins`'s all-or-nothing
+ * contract). Dispatched on every pan/zoom, so the effect must `switchMap`
+ * (not `mergeMap`/`concatMap`) to cancel a stale in-flight request.
  */
 export const loadMapPins = createAction(
   '[Listings] Load Map Pins',
-  props<{ bounds: MapPinsBounds | null }>(),
+  props<{ bounds: MapPinsBounds | null; scope: 'filtered' | 'all' }>(),
 );
 
 export const loadMapPinsSuccess = createAction(

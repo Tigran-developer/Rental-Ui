@@ -28,7 +28,11 @@ import { ListingsMapComponent } from './listings-map.component';
  * `moveend`/`click`/`fitBounds`.
  */
 const state = vi.hoisted(() => ({
-  markerCalls: [] as { coords: [number, number]; options: Record<string, unknown>; element: HTMLElement | null }[],
+  markerCalls: [] as {
+    coords: [number, number];
+    options: Record<string, unknown>;
+    element: HTMLElement | null;
+  }[],
   eventHandlers: {} as Record<string, (() => void)[]>,
   fitBoundsCalls: [] as unknown[],
   fakeContainerPoint: { x: 100, y: 200 },
@@ -91,8 +95,14 @@ vi.mock('leaflet', () => ({
       };
       return fakeMarker;
     }),
+    // `on()` is needed because the real component now wires
+    // mouseover/mouseout/click on every group circle (see
+    // `syncMarkerGroupCircles()` in map.component.ts) — this integration
+    // spec doesn't assert on circle events itself (see map.component.spec.ts
+    // for that), it just needs the fake not to throw when the real code
+    // calls it.
     circle: vi.fn(() => {
-      const fakeCircle = { addTo: vi.fn(() => fakeCircle) };
+      const fakeCircle = { addTo: vi.fn(() => fakeCircle), on: vi.fn(() => fakeCircle) };
       return fakeCircle;
     }),
     divIcon: vi.fn((options: Record<string, unknown>) => ({ ...options })),
@@ -134,10 +144,20 @@ const BASE_FILTERS: ListingsFilter = {
 
 interface Testable {
   fitPinsPulse: () => boolean;
+  fitAnchorPulse: () => boolean;
   openKey: () => string | null;
+  highlightedMarkerKey: () => string | null;
 }
 
-async function createHarness(pins = [makeListingMapPin()]) {
+async function createHarness(
+  pins = [makeListingMapPin()],
+  inputs: {
+    scope?: 'filtered' | 'all';
+    activeListingId?: string | null;
+    autoFit?: boolean;
+    userPin?: { lat: number; lng: number } | null;
+  } = {},
+) {
   TestBed.configureTestingModule({
     imports: [ListingsMapComponent, TranslateModule.forRoot()],
     providers: [
@@ -170,7 +190,13 @@ async function createHarness(pins = [makeListingMapPin()]) {
           empty: 'Nothing here',
         },
         createForm: {
-          perUnit: { hourly: '/ hour', daily: '/ day', weekly: '/ week', monthly: '/ month', yearly: '/ year' },
+          perUnit: {
+            hourly: '/ hour',
+            daily: '/ day',
+            weekly: '/ week',
+            monthly: '/ month',
+            yearly: '/ year',
+          },
         },
       },
       reviews: { summary: { ariaRating: '{{rating}}/5', noReviews: 'No reviews' } },
@@ -183,6 +209,12 @@ async function createHarness(pins = [makeListingMapPin()]) {
   vi.spyOn(store, 'dispatch');
 
   const fixture = TestBed.createComponent(ListingsMapComponent);
+  if (inputs.scope !== undefined) fixture.componentRef.setInput('scope', inputs.scope);
+  if (inputs.activeListingId !== undefined) {
+    fixture.componentRef.setInput('activeListingId', inputs.activeListingId);
+  }
+  if (inputs.autoFit !== undefined) fixture.componentRef.setInput('autoFit', inputs.autoFit);
+  if (inputs.userPin !== undefined) fixture.componentRef.setInput('userPin', inputs.userPin);
   fixture.detectChanges();
   await vi.runAllTimersAsync();
   fixture.detectChanges();
@@ -211,7 +243,9 @@ describe('ListingsMapComponent', () => {
 
   it('dispatches an initial (bounds: null) fetch on mount', async () => {
     const { store } = await createHarness();
-    expect(store.dispatch).toHaveBeenCalledWith(ListingsActions.loadMapPins({ bounds: null }));
+    expect(store.dispatch).toHaveBeenCalledWith(
+      ListingsActions.loadMapPins({ bounds: null, scope: 'filtered' }),
+    );
   });
 
   it('groups pins sharing a coordinate into ONE marker with the combined count', async () => {
@@ -243,6 +277,7 @@ describe('ListingsMapComponent', () => {
     expect(store.dispatch).toHaveBeenCalledWith(
       ListingsActions.loadMapPins({
         bounds: { minLat: 40.1, maxLat: 40.2, minLng: 44.5, maxLng: 44.6 },
+        scope: 'filtered',
       }),
     );
   });
@@ -405,5 +440,128 @@ describe('ListingsMapComponent', () => {
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector('.listings-map__banner--truncated')).not.toBeNull();
     expect(el.textContent).toContain('Partial results');
+  });
+
+  describe('scope (listing-detail reuse — Maps P2-2 second increment)', () => {
+    it('dispatches `loadMapPins` with `scope: "all"` when the `scope` input is set', async () => {
+      const { store } = await createHarness([makeListingMapPin()], { scope: 'all' });
+      expect(store.dispatch).toHaveBeenCalledWith(
+        ListingsActions.loadMapPins({ bounds: null, scope: 'all' }),
+      );
+    });
+
+    it('keeps dispatching `scope: "all"` for the debounced viewport-driven fetch too', async () => {
+      const { store } = await createHarness([makeListingMapPin()], { scope: 'all' });
+      (store.dispatch as ReturnType<typeof vi.fn>).mockClear();
+
+      state.eventHandlers['moveend']?.forEach((h) => h());
+      await vi.advanceTimersByTimeAsync(400);
+
+      expect(store.dispatch).toHaveBeenCalledWith(
+        ListingsActions.loadMapPins({
+          bounds: { minLat: 40.1, maxLat: 40.2, minLng: 44.5, maxLng: 44.6 },
+          scope: 'all',
+        }),
+      );
+    });
+
+    it('defaults to `scope: "filtered"` when the input is left unset (catalogue behaviour unchanged)', async () => {
+      const { store } = await createHarness();
+      expect(store.dispatch).toHaveBeenCalledWith(
+        ListingsActions.loadMapPins({ bounds: null, scope: 'filtered' }),
+      );
+    });
+  });
+
+  describe('activeListingId (listing-detail "this is my toy" highlight)', () => {
+    it('resolves to the `MapMarkerGroup.key` of the group CONTAINING a pin with that id', async () => {
+      const pins = [
+        makeListingMapPin({ id: 'a', latitude: 40.18, longitude: 44.51 }),
+        makeListingMapPin({ id: 'b', latitude: 40.2, longitude: 44.55 }),
+      ];
+      await createHarness(pins, { activeListingId: 'b' });
+
+      // The wrapped `app-map`'s `[highlightedMarkerKey]` binding drives
+      // `.is-active`/`.is-animating` on the matching marker — asserted at
+      // the `MapComponent` level already (`map.component.spec.ts`); here we
+      // only need to confirm THIS component resolved the right key, visible
+      // via the marker for pin `b`'s group actually carrying the ring class.
+      const markerForB = state.markerCalls.find(
+        (call) => call.coords[0] === 40.2 && call.coords[1] === 44.55,
+      );
+      expect(markerForB?.element?.classList.contains('is-active')).toBe(true);
+      expect(markerForB?.element?.classList.contains('is-animating')).toBe(true);
+    });
+
+    it('resolves to `null` (no highlight) when the id is not in the fetched pins', async () => {
+      const pins = [makeListingMapPin({ id: 'a', latitude: 40.18, longitude: 44.51 })];
+      await createHarness(pins, { activeListingId: 'not-in-the-list' });
+
+      expect(state.markerCalls[0]?.element?.classList.contains('is-active')).toBe(false);
+    });
+
+    it('defaults to no highlight when `activeListingId` is left unset', async () => {
+      await createHarness([makeListingMapPin({ id: 'a' })]);
+      expect(state.markerCalls[0]?.element?.classList.contains('is-active')).toBe(false);
+    });
+  });
+
+  describe('autoFit (listing-detail: never auto-fits to the whole fetched pin set)', () => {
+    it('does NOT pulse `fitPins` — and never calls fitBounds — when the initial fetch resolves while autoFit is false', async () => {
+      const pins = [
+        makeListingMapPin({ id: 'a', latitude: 40.18, longitude: 44.51 }),
+        makeListingMapPin({ id: 'b', latitude: 40.2, longitude: 44.55 }),
+      ];
+      const { fixture, store, component } = await createHarness(pins, { autoFit: false });
+
+      // Same loading true->false dance the pre-existing "does NOT auto-fit
+      // for a viewport-driven response" test above uses to simulate a fetch
+      // resolving — this is the initial (bounds: null) kind, which WOULD
+      // pulse `fitPinsPulse` if `autoFit` were left at its default.
+      store.overrideSelector(selectMapPinsLoading, true);
+      store.refreshState();
+      fixture.detectChanges();
+      store.overrideSelector(selectMapPinsLoading, false);
+      store.refreshState();
+      fixture.detectChanges();
+      await vi.runAllTimersAsync();
+
+      expect(component.fitPinsPulse()).toBe(false);
+      expect(state.fitBoundsCalls).toHaveLength(0);
+    });
+
+    it('still fits once via `fitAnchorPulse` when `userPin` becomes known while autoFit is false', async () => {
+      const { fixture } = await createHarness([makeListingMapPin()], { autoFit: false });
+      // `fitBounds()` needs at least two points — `anchorPin` (the
+      // listing's own coordinate) is the other one alongside `userPin`,
+      // exactly as the real listing-detail maps always supply both.
+      fixture.componentRef.setInput('anchorPin', { lat: 40.1776, lng: 44.5126 });
+      fixture.detectChanges();
+      state.fitBoundsCalls = [];
+
+      fixture.componentRef.setInput('userPin', { lat: 40.2, lng: 44.55 });
+      fixture.detectChanges();
+      await vi.runAllTimersAsync();
+
+      expect(state.fitBoundsCalls).toHaveLength(1);
+    });
+
+    it('pulses `fitPinsPulse` (and calls fitBounds) after the initial fetch resolves when autoFit is left at its default (true) — catalogue behaviour unchanged', async () => {
+      const pins = [
+        makeListingMapPin({ id: 'a', latitude: 40.18, longitude: 44.51 }),
+        makeListingMapPin({ id: 'b', latitude: 40.2, longitude: 44.55 }),
+      ];
+      const { fixture, store } = await createHarness(pins);
+
+      store.overrideSelector(selectMapPinsLoading, true);
+      store.refreshState();
+      fixture.detectChanges();
+      store.overrideSelector(selectMapPinsLoading, false);
+      store.refreshState();
+      fixture.detectChanges();
+      await vi.runAllTimersAsync();
+
+      expect(state.fitBoundsCalls).toHaveLength(1);
+    });
   });
 });

@@ -1,14 +1,33 @@
 :host {
   display: block;
+  /* `height: 100%` is a no-op for the catalogue usage (this host's own
+     ancestor chain — `.listings-page__map` — has no explicit height, so a
+     percentage against it resolves to `auto`, same as omitting this rule
+     entirely) but is REQUIRED for the listing-detail full-screen dialog
+     reuse (`listing-location-map.component.ts`, `[height]="100%"`), whose
+     `.listing-location-map__surface` ancestor DOES have a definite height.
+     Completes the chain down to `.listings-map__map-wrap`'s own
+     `[style.height]` binding below — see that selector's doc comment. */
+  height: 100%;
 }
 
 .listings-map {
   display: block;
+  /* See `:host`'s own comment — same no-op-unless-ancestor-is-definite
+     reasoning, one level further down the chain. */
+  height: 100%;
 }
 
 .listings-map__map-wrap {
   position: relative;
   width: 100%;
+  /* Default (no inline `[style.height]` override — see
+     `ListingsMapComponent.height`'s doc comment): the catalogue's own
+     responsive breakpoints below. An explicit `height` input value (a fixed
+     custom property for the listing-detail card, `100%` for its full-screen
+     dialog) is set via `[style.height]` on this element in the template,
+     which — being an inline style — outranks this class rule regardless of
+     which breakpoint would otherwise apply. */
   height: 640px;
   border-radius: var(--ui-radius-md);
   overflow: hidden;
@@ -39,6 +58,15 @@
 /* ── Popup anchor + stack ───────────────────────────────────── */
 .listings-map__popup-anchor {
   position: absolute;
+  /* Fixed pixel width — the ANCHOR now owns the popup's actual rendered
+     width (was owned by the card's own `:host` — see
+     `listings-map-popup.component.scss`'s `:host` doc comment for the
+     overflow/clipping defect that ownership split fixed). Both the
+     single-card render (`app-listings-map-popup` directly inside this) and
+     the stacked render (`.listings-map__popup-stack`, `width: 100%` below)
+     end up the SAME 264px. Matches `POPUP_WIDTH_PX` in
+     listings-map.component.ts — keep both in sync. */
+  width: 264px;
   /* `app-map`'s own `.app-map__overlay` sets `pointer-events: none` on
      itself — this projected content re-enables it, same division of
      responsibility as `[app-map-actions]` (see map.component.ts's class
@@ -49,7 +77,14 @@
 .listings-map__popup-stack {
   display: flex;
   flex-direction: column;
-  width: 220px;
+  /* Fills `.listings-map__popup-anchor`'s 264px rather than owning its own
+     fixed width — see that selector's doc comment. `box-sizing: border-box`
+     folds this stack's own 1px border into that 264px instead of adding to
+     it (the app's global `*,*::before,*::after` reset in styles.css already
+     sets this; kept explicit here too since this rule's correctness
+     genuinely depends on it, not just inherits it incidentally). */
+  width: 100%;
+  box-sizing: border-box;
   background: var(--ui-color-surface);
   border: 1px solid var(--ui-color-border);
   border-radius: var(--ui-radius-md);
