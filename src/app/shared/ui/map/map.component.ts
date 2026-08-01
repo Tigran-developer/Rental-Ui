@@ -17,6 +17,7 @@ import {
 import type * as Leaflet from 'leaflet';
 
 import { environment } from '../../../../environments/environment';
+import { dorentSymbolMarkup } from '../dorent-symbol/dorent-symbol.markup';
 
 /**
  * A latitude/longitude pair. The only "coordinate" shape this component's
@@ -25,6 +26,45 @@ import { environment } from '../../../../environments/environment';
 export interface MapLatLng {
   lat: number;
   lng: number;
+}
+
+/**
+ * One clustered catalog pin — the public API's whole notion of "a marker
+ * group" (Maps P2-2). `key` is the STABLE identity a caller and this
+ * component both use to track the same group across re-renders (see
+ * `markers`' doc comment below for the diffing contract this enables) — the
+ * public coordinate pair as a string, e.g. `"40.177600,44.512600"`, since two
+ * listings sharing the exact same fuzzed (geohash-cell-centroid) coordinate
+ * ARE the same group by construction.
+ */
+export interface MapMarkerGroup {
+  key: string;
+  position: MapLatLng;
+  /** How many listings share this exact public coordinate. */
+  count: number;
+}
+
+/**
+ * A marker group's on-screen pixel position, from
+ * `Leaflet.Map.latLngToContainerPoint()` — emitted so the parent can render
+ * its OWN popup UI (routerLink/translate/image/card-stack — see the class
+ * doc comment on why this component doesn't use `L.popup`) positioned over
+ * this component without ever needing a Leaflet type itself.
+ */
+export interface MapMarkerAnchor {
+  key: string;
+  x: number;
+  y: number;
+}
+
+/** The visible map viewport, from `Leaflet.Map.getBounds()` — emitted on
+ *  `viewportChanged` so a caller can refetch markers for the area the
+ *  visitor actually panned/zoomed to. */
+export interface MapBounds {
+  minLat: number;
+  maxLat: number;
+  minLng: number;
+  maxLng: number;
 }
 
 /**
@@ -172,6 +212,37 @@ export function resolveTileSource(
 }
 
 /**
+ * Bookkeeping for one live catalog-pin marker (Maps P2-2) — never part of
+ * this component's public API. `el` is the marker's own icon `HTMLElement`
+ * (`Leaflet.Marker.getElement()`), used to imperatively toggle
+ * `.is-animating`/`.is-active` and read `aria-label` updates without
+ * recreating the marker (see `markers`' doc comment for why an unchanged
+ * `key` must never be torn down). `desiredAnimating` is the ADR-011/M-024
+ * falling-edge latch: `onBallAnimationIteration`-equivalent below only clears
+ * `.is-animating` once the loop has eased back to rest AND this is still
+ * `false` — mirroring `DorentSymbolComponent`'s own `animating` signal, just
+ * expressed imperatively since this DOM is raw Leaflet `divIcon` HTML, never
+ * an Angular template.
+ */
+interface MarkerEntry {
+  readonly marker: Leaflet.Marker;
+  readonly group: MapMarkerGroup;
+  readonly el: HTMLElement | null;
+  readonly ballEl: HTMLElement | null;
+  desiredAnimating: boolean;
+}
+
+// SVG/HTML `id` characters only — a marker group's `key` is a coordinate
+// string like `"40.177600,44.512600"` (commas, dots, and a possible leading
+// `-` for southern/western hemispheres), none of which are valid alone in
+// every context an id can appear. Collisions are impossible as long as the
+// input keys are themselves unique, which `MapMarkerGroup.key` already
+// guarantees by contract.
+function sanitizeForClipId(raw: string): string {
+  return raw.replace(/[^a-zA-Z0-9_-]/g, '_');
+}
+
+/**
  * Shared Leaflet map wrapper — the ONLY file in the codebase allowed to import
  * `leaflet`. Everything else (the wizard's location picker today; the P1-8
  * read-only listing-detail map next) talks to this through inputs/outputs only,
@@ -206,15 +277,18 @@ export function resolveTileSource(
  * confirmed live (`ViewEncapsulation.Emulated` vs `.None`, everything else
  * identical) by reading each tile's *computed* `position` — `static` under
  * `Emulated`, `absolute` under `None` — while its *inline* `transform` never
- * changed. This is why the marker/crosshair rules below use `:host ::ng-deep`
- * (which escapes emulated scoping for those specific selectors): that was the
- * right fix for the few custom classes this component authors itself, but
- * `leaflet.css` is a whole third-party stylesheet of plain selectors with no
- * `::ng-deep`, so only turning off encapsulation for the component covers it.
- * `:host`/`::ng-deep` continue to work with `None` (the former still resolves
- * to this component's host selector; the latter is simply a no-op since
- * nothing is scoped) — see `map.component.spec.ts` for the regression
- * assertion pinning this metadata.
+ * changed. The marker/crosshair rules in map.component.scss (`.app-map__marker*`,
+ * `.app-map__user-*`) are, for the same reason, plain global class selectors
+ * with NO `:host`/`::ng-deep` — under `None`, Angular emits this component's
+ * compiled CSS completely unshimmed (no `_ngcontent-*` scoping attribute is
+ * generated at all, so there is nothing for `:host`/`::ng-deep` to scope
+ * against). `::ng-deep` is not a real CSS pseudo-element the browser
+ * understands; a selector like `:host ::ng-deep .app-map__marker` is simply
+ * invalid CSS once `:host` stops being rewritten, and a browser drops the
+ * WHOLE rule, not just the scoping part. That exact mistake shipped once
+ * (`:host ::ng-deep` left in map.component.scss after the switch to `None`)
+ * and silently killed both the orange `pin` dot and the blue `userPin` dot —
+ * see `map.component.spec.ts` for the regression assertion pinning this.
  *
  * Two display modes:
  * - `interactive=false` (default): a frozen thumbnail — no pan/zoom/drag. Used
@@ -413,8 +487,63 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   /** Translated `aria-label` for the `−` zoom button. `null` (default) leaves it unlabelled. */
   readonly zoomOutLabel = input<string | null>(null);
 
+  /** Clustered catalog pins (Maps P2-2) — one marker per group, diffed by
+   *  `MapMarkerGroup.key` so an unrelated input change never tears down and
+   *  rebuilds markers a caller didn't touch (the parent refetches on every
+   *  map pan — see `viewportChanged` below — so this runs often). */
+  readonly markers = input<MapMarkerGroup[]>([]);
+  /** Radius (metres) of a translucent circle drawn around EVERY marker
+   *  group. `null` (default) draws none — mirrors `circleRadiusMeters`, but
+   *  per-group rather than a single circle at `pin`. */
+  readonly markerRadiusMeters = input<number | null>(null);
+  /** Below this zoom, marker circles are not rendered at all — a small
+   *  real-world radius is sub-pixel DOM garbage at a zoomed-out view. */
+  readonly markerCircleMinZoom = input<number>(12);
+  /** The group whose popup the PARENT currently has open — drives a
+   *  `.is-active` class on that group's marker. `null` (default): none. */
+  readonly activeMarkerKey = input<string | null>(null);
+  /** Translated `aria-label` for a single-listing marker (`count === 1`).
+   *  Opaque to this file, exactly like `zoomInLabel`/`zoomOutLabel` — no
+   *  ngx-translate import here. */
+  readonly markerLabel = input<string>('');
+  /** Translated `aria-label` TEMPLATE for a multi-listing marker (`count >
+   *  1`) — a single string shared by every group, containing a literal
+   *  `{count}` placeholder the caller leaves unresolved (e.g. "5 toys at
+   *  this spot" -> "{count} toys at this spot"). This file substitutes each
+   *  group's OWN `count` when building its icon (see `labelForGroup()`), so
+   *  a group of 2 and a group of 7 announce differently instead of sharing
+   *  one opaque string — the same ngx-translate-ignorant convention as
+   *  `markerLabel`/`zoomInLabel`/`zoomOutLabel`, just with one placeholder
+   *  this file knows how to replace. */
+  readonly markerGroupLabel = input<string>('');
+
   readonly centerChange = output<MapLatLng>();
   readonly mapError = output<void>();
+  /** A marker group's on-screen anchor, on `mouseover` (with the anchor) and
+   *  `mouseout` (`null`) — see `MapMarkerAnchor`'s doc comment. Also
+   *  re-emitted (never `null`) on `move`/`zoom` for whichever group is
+   *  currently hovered OR `activeMarkerKey` (hover takes priority when both
+   *  are set to two different groups), so a caller's popup — positioned
+   *  from the last anchor this emitted — stays glued to its group while the
+   *  map pans/zooms instead of drifting off it mid-gesture. */
+  readonly markerHovered = output<MapMarkerAnchor | null>();
+  /** A marker group's `key`, on `click` and on Enter/Space while it holds
+   *  keyboard focus. */
+  readonly markerActivated = output<string>();
+  /** The visible viewport, on `moveend` — see `MapBounds`. */
+  readonly viewportChanged = output<MapBounds>();
+  /**
+   * A click on the map BACKGROUND (never a marker) — Leaflet's own `click`
+   * event on the map instance, which its interactive-layer machinery
+   * (`interactive: true` markers, same as this component's catalog pins)
+   * stops from bubbling up when the click actually landed on a marker, so
+   * this never double-fires alongside `markerActivated`. Exists for Maps
+   * P2-2's catalogue map: `ListingsMapComponent` closes a pinned-open popup
+   * on Esc, a close button, OR a click on the map background — this is the
+   * third of those, and nothing else in this component's contract can
+   * express "the visitor clicked the map itself".
+   */
+  readonly mapClicked = output<void>();
 
   // Resolved once per instance (config is static for the app's lifetime) so
   // `init()` and `showMapTilerLogo` below read the exact same result instead
@@ -442,18 +571,69 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   // `.app-map__scroll-hint` shows for this long after an un-modified wheel is
   // intercepted (matches the approved design's own demo timing).
   private static readonly SCROLL_HINT_MS = 1100;
+  // The catalog pin's `iconSize` — the ball fills this box edge-to-edge
+  // (ADR-011: ink diameter == box size), so `iconAnchor` below is HALF this
+  // for x and the FULL value for y — the ball's ground-contact point (its
+  // bottom edge) sits on the geo coordinate, not its vertical centre; the
+  // shadow ellipse paints below that via `overflow: visible`, never shifting
+  // the anchor itself.
+  private static readonly PIN_ICON_SIZE = 32;
 
   private map: Leaflet.Map | null = null;
   private leaflet: typeof Leaflet | null = null;
   private markerLayer: Leaflet.Marker | null = null;
   private userMarkerLayer: Leaflet.Marker | null = null;
   private circleLayer: Leaflet.Circle | null = null;
+  // Catalog pins (Maps P2-2), keyed by `MapMarkerGroup.key` — diffed rather
+  // than torn down and rebuilt on every input change, see `markers`' doc
+  // comment above.
+  private readonly markerGroupLayers = new Map<string, MarkerEntry>();
+  private readonly markerGroupCircles = new Map<string, Leaflet.Circle>();
+  // The group currently under the POINTER (native `mouseover`/`mouseout` on
+  // its marker element) — distinct from `activeMarkerKey` (an input, the
+  // group whose popup the PARENT has open). Both drive the `move`/`zoom`
+  // anchor re-emit below; see `markerHovered`'s doc comment for the
+  // precedence between them.
+  private hoveredMarkerKey: string | null = null;
   // The crosshair's current geo position (`crosshair` mode only) — kept as a
   // plain field, not a signal: it is written and read entirely from the
   // imperative `moveend`/initial `emitCenter()` calls in `init()` (mirroring
   // how `centerChange` already reports the same value to the caller), never
   // from Angular's own change detection, so a signal would add nothing here.
   private crosshairCenter: MapLatLng | null = null;
+  /**
+   * The catalogue map's own auto-fit → refetch loop hazard (Maps P2-2): a
+   * caller's `viewportChanged` handler refetches `markers` for the new
+   * viewport; if that response is fed back into `markers` while `fitPins`
+   * is still on, `syncFitBounds()` reruns, calls `fitBounds()` again, which
+   * fires ITS OWN `moveend` — indistinguishable, from the `moveend` handler
+   * below's point of view, from a visitor genuinely panning the map. Left
+   * unbroken that is fetch → fit → moveend → fetch … forever. This flag is
+   * the half of the fix that belongs HERE: only `MapComponent` itself knows
+   * a given `moveend` was caused by ITS OWN `fitBounds()` call rather than a
+   * real user gesture, so only it can suppress emitting `viewportChanged`
+   * for that one event. `syncFitBounds()` sets this immediately before
+   * calling `fitBounds()` and clears it immediately after — Leaflet's
+   * `fitBounds(..., { animate: false })` calls `setView` synchronously,
+   * which fires `moveend` synchronously in the same call stack when the
+   * view actually changes, so the moveend handler below always finds the
+   * flag still `true` for the event it needs to swallow. Clearing it
+   * unconditionally right after the call (rather than only inside the
+   * handler) also makes this self-healing if the fit was a no-op (already
+   * framed — Leaflet then never fires `moveend` at all): the flag would
+   * otherwise stay stuck `true` and incorrectly swallow the NEXT real pan's
+   * `viewportChanged`.
+   *
+   * The OTHER half of the fix is the caller's responsibility, not this
+   * component's — `ListingsMapComponent` (Maps P2-2) must only turn
+   * `fitPins` on for the response of a `bounds: null` request (initial open
+   * / filter change), never for a viewport-driven one. Suppressing the
+   * self-caused `moveend` here alone is not sufficient: without that other
+   * half, a viewport-driven response would still call `fitBounds()` again
+   * (silently re-centring the view the visitor just panned to) even though
+   * this flag correctly stops it from ALSO re-triggering a fetch.
+   */
+  private suppressNextMoveend = false;
   private resizeObserver: ResizeObserver | null = null;
   private destroyed = false;
   private anyTileLoaded = false;
@@ -468,6 +648,18 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   // runtime, this just degrades to "not touch" rather than throwing.
   private readonly isTouchCapable: boolean =
     typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+
+  // Read ONCE, at construction, mirroring `DorentSymbolComponent`'s own guard
+  // (see ADR-011 / M-024) — a marker's hover-driven `.is-animating` class
+  // must clear IMMEDIATELY on the falling edge when this is `true`, because
+  // the reduced-motion media query removes the `@keyframes` rule entirely,
+  // so the `animationiteration` event this otherwise defers to never fires.
+  // Deferring anyway would leave the shadow permanently visible after the
+  // first hover — exactly M-024's second defect, reproduced here for the map
+  // pin instead of the header ball.
+  private readonly prefersReducedMotionForMarkers: boolean =
+    typeof matchMedia === 'function' &&
+    matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /** `true` while the touch scroll-gate overlay (`.app-map__gate`) should be
    *  showing: opted in via `scrollGate`, only meaningful for an `interactive`,
@@ -531,10 +723,37 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       this.circleRadiusMeters();
       this.circleDashed();
       this.fitPins();
+      this.markers();
       this.syncMarker();
       this.syncUserMarker();
       this.syncCircle();
       this.syncFitBounds();
+    });
+
+    // Catalog pins (Maps P2-2) — a separate effect from the one above:
+    // `markers`/`markerRadiusMeters`/`markerCircleMinZoom` are a genuinely
+    // independent feature (clustered search-result pins) from the single
+    // `pin`/`userPin` a caller like the listing-detail map shows, and mixing
+    // their sync calls into one effect would re-run the OTHER feature's sync
+    // on every unrelated change for no reason.
+    effect(() => {
+      this.markers();
+      this.markerRadiusMeters();
+      this.markerCircleMinZoom();
+      this.syncMarkerGroups();
+      this.syncMarkerGroupCircles();
+    });
+
+    // `activeMarkerKey` only ever needs to toggle a class on markers that
+    // ALREADY exist — never a reason to touch marker creation/removal, so it
+    // gets its own effect rather than folding into the one above (which
+    // would otherwise re-diff every marker whenever the parent merely opens
+    // a different popup).
+    effect(() => {
+      const active = this.activeMarkerKey();
+      for (const entry of this.markerGroupLayers.values()) {
+        entry.el?.classList.toggle('is-active', entry.group.key === active);
+      }
     });
   }
 
@@ -556,6 +775,10 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     }
     this.map?.remove();
     this.map = null;
+    // `map.remove()` already tears down every layer it owns — this just
+    // drops OUR bookkeeping so nothing here holds a dangling reference.
+    this.markerGroupLayers.clear();
+    this.markerGroupCircles.clear();
   }
 
   private async init(): Promise<void> {
@@ -646,6 +869,51 @@ export class MapComponent implements AfterViewInit, OnDestroy {
         this.syncCircle();
         this.syncFitBounds();
       }
+
+      // Catalog pins (Maps P2-2) — independent of `crosshair`/`pin`/`userPin`
+      // above; a caller using `markers` (the catalogue map) never sets
+      // `crosshair`, but nothing here assumes that.
+      this.syncMarkerGroups();
+      this.syncMarkerGroupCircles();
+
+      // `viewportChanged` — always wired, not just when `markers` happens to
+      // be non-empty right now, so a caller that starts with an empty
+      // catalogue still gets told where the visitor panned to.
+      map.on('moveend', () => {
+        // See `suppressNextMoveend`'s own doc comment — swallows exactly the
+        // `moveend` this component's own `syncFitBounds()` just caused, so a
+        // caller's viewport-driven refetch never sees it as a user pan.
+        if (this.suppressNextMoveend) {
+          this.suppressNextMoveend = false;
+          return;
+        }
+        this.viewportChanged.emit(this.currentBounds());
+      });
+
+      // `markerCircleMinZoom` is compared against the LIVE zoom (`map.
+      // getZoom()`), which only Leaflet knows — re-run the circle sync once
+      // a zoom gesture settles so circles appear/disappear exactly as the
+      // visitor crosses the threshold, not only when an Angular input
+      // happens to change.
+      map.on('zoomend', () => this.syncMarkerGroupCircles());
+
+      // `mapClicked` — see its own doc comment. Leaflet's interactive marker
+      // layers stop this event from bubbling up for a click that landed on
+      // one of THEM, so this only fires for a genuine background click.
+      map.on('click', () => this.mapClicked.emit());
+
+      // A hovered OR active marker's popup must stay glued to it while the
+      // map pans/zooms (see `markerHovered`'s doc comment) — `move`/`zoom`
+      // fire repeatedly DURING the gesture/animation, unlike `moveend`/
+      // `zoomend` above (once, after it settles), which is what keeps the
+      // anchor from visibly lagging behind the marker mid-gesture.
+      const recomputeTrackedAnchor = () => {
+        const key = this.hoveredMarkerKey ?? this.activeMarkerKey();
+        if (key === null) return;
+        this.markerHovered.emit(this.anchorForGroupKey(key));
+      };
+      map.on('move', recomputeTrackedAnchor);
+      map.on('zoom', recomputeTrackedAnchor);
 
       // Leaflet measures its container's pixel size at creation time; if that
       // happens before the container has its final layout (a step just became
@@ -788,19 +1056,275 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     if (!L || !map) return;
     if (!this.fitPins() || this.crosshair()) return;
 
+    // `pin`/`userPin` first (matches this method's pre-`markers` call order
+    // exactly, so existing callers passing only those two see byte-identical
+    // `L.latLngBounds()` input), then every catalog-pin group — all three
+    // sources are optional and combine into one frame.
+    const points: [number, number][] = [];
     const p = this.pin();
     const u = this.userPin();
-    if (!p || !u) return;
+    if (p) points.push([p.lat, p.lng]);
+    if (u) points.push([u.lat, u.lng]);
+    for (const group of this.markers()) {
+      points.push([group.position.lat, group.position.lng]);
+    }
+    // Fitting a single point isn't really "fitting" anything — same
+    // threshold the pre-`markers` `pin`+`userPin` check already enforced
+    // (both had to be set).
+    if (points.length < 2) return;
 
-    const bounds = L.latLngBounds([
-      [p.lat, p.lng],
-      [u.lat, u.lng],
-    ]);
+    const bounds = L.latLngBounds(points);
+    // See `suppressNextMoveend`'s own doc comment for why this is set
+    // immediately before the call and cleared immediately after, rather than
+    // only inside the `moveend` handler.
+    this.suppressNextMoveend = true;
     map.fitBounds(bounds, {
       padding: MapComponent.FIT_BOUNDS_PADDING,
       maxZoom: MapComponent.FIT_BOUNDS_MAX_ZOOM,
       animate: false,
     });
+    this.suppressNextMoveend = false;
+  }
+
+  /** `Leaflet.Map.getBounds()`, translated to this component's own
+   *  `MapBounds` shape — the only place a Leaflet `LatLngBounds` value is
+   *  read at all, matching this file's "no Leaflet type crosses the public
+   *  API" rule. */
+  private currentBounds(): MapBounds {
+    const bounds = this.map!.getBounds();
+    return {
+      minLat: bounds.getSouth(),
+      maxLat: bounds.getNorth(),
+      minLng: bounds.getWest(),
+      maxLng: bounds.getEast(),
+    };
+  }
+
+  /** `Leaflet.Map.latLngToContainerPoint()` for one marker group, translated
+   *  to `MapMarkerAnchor` — `null` if the group no longer exists (it was
+   *  removed from `markers` in the same tick a hover/active key still
+   *  referenced it) or the map isn't up yet. */
+  private anchorForGroupKey(key: string): MapMarkerAnchor | null {
+    const map = this.map;
+    if (!map) return null;
+    const group = this.markers().find((g) => g.key === key);
+    if (!group) return null;
+    const point = map.latLngToContainerPoint([group.position.lat, group.position.lng]);
+    return { key, x: point.x, y: point.y };
+  }
+
+  /** Already-translated `aria-label` for one group — `markerLabel` for
+   *  `count === 1`; for `count > 1`, `markerGroupLabel()`'s `{count}`
+   *  placeholder substituted with THIS group's own count (see that input's
+   *  doc comment for why per-group substitution matters: a group of 2 and a
+   *  group of 7 must not announce identically). */
+  private labelForGroup(group: MapMarkerGroup): string {
+    if (group.count <= 1) return this.markerLabel();
+    return this.markerGroupLabel().replace('{count}', String(group.count));
+  }
+
+  /** The catalog pin's inner HTML: the shared brand-ball markup (section C
+   *  of the Maps P2-2 plan — see `dorent-symbol.markup.ts`) plus a count
+   *  badge when more than one listing shares this group's coordinate. */
+  private markerGroupHtml(group: MapMarkerGroup, clipId: string): string {
+    const badge =
+      group.count > 1 ? `<span class="app-map__pin-badge">${group.count}</span>` : '';
+    return dorentSymbolMarkup(clipId) + badge;
+  }
+
+  /** Diffs `markers` against the live `markerGroupLayers` map BY KEY — only
+   *  groups that appeared/disappeared since the last sync are created/
+   *  removed; an unchanged key is left alone (its marker is never torn down
+   *  and rebuilt), and a group whose `count` changed updates the SAME
+   *  marker's badge/aria-label in place. See `markers`' doc comment for why
+   *  this matters: the parent refetches on every map pan. */
+  private syncMarkerGroups(): void {
+    const L = this.leaflet;
+    const map = this.map;
+    if (!L || !map) return;
+
+    const groups = this.markers();
+    const currentKeys = new Set(groups.map((g) => g.key));
+
+    for (const [key, entry] of this.markerGroupLayers) {
+      if (!currentKeys.has(key)) {
+        map.removeLayer(entry.marker);
+        this.markerGroupLayers.delete(key);
+        if (this.hoveredMarkerKey === key) this.hoveredMarkerKey = null;
+      }
+    }
+
+    for (const group of groups) {
+      const existing = this.markerGroupLayers.get(group.key);
+      if (existing) {
+        this.updateMarkerEntry(existing, group);
+        continue;
+      }
+      this.markerGroupLayers.set(group.key, this.createMarkerEntry(L, map, group));
+    }
+  }
+
+  /** Builds one group's marker + icon, wires its hover/click/keyboard
+   *  handlers directly on the icon element (`marker.getElement()`) rather
+   *  than through Leaflet's own event bus — this needs Enter/Space keyboard
+   *  activation too, which isn't a standard Leaflet-fired event, so
+   *  everything is handled uniformly at the DOM level instead of splitting
+   *  mouse events one way and keyboard another. Contrast with `pinIcon()`
+   *  (:822-ish, static `pin` marker): that one is `interactive: false` and
+   *  its CSS sets `pointer-events: none` — this marker is the opposite on
+   *  purpose, it must be hoverable and clickable. */
+  private createMarkerEntry(
+    L: typeof Leaflet,
+    map: Leaflet.Map,
+    group: MapMarkerGroup,
+  ): MarkerEntry {
+    const clipId = `dr-symbol-clip-map-${sanitizeForClipId(group.key)}`;
+    const icon = L.divIcon({
+      className: 'app-map__pin',
+      html: this.markerGroupHtml(group, clipId),
+      iconSize: [MapComponent.PIN_ICON_SIZE, MapComponent.PIN_ICON_SIZE],
+      // Bottom-CENTRE, not the box's vertical centre — the ball's ground
+      // contact point (its bottom edge in the 0-100 viewBox) must sit on the
+      // geo coordinate; the shadow ellipse painting further below it
+      // (`overflow: visible`) never shifts this.
+      iconAnchor: [MapComponent.PIN_ICON_SIZE / 2, MapComponent.PIN_ICON_SIZE],
+    });
+    const marker = L.marker([group.position.lat, group.position.lng], {
+      icon,
+      interactive: true,
+      keyboard: true,
+    }).addTo(map);
+
+    const el = marker.getElement?.() ?? null;
+    const entry: MarkerEntry = {
+      marker,
+      group,
+      el,
+      ballEl: el?.querySelector<HTMLElement>('.dr-symbol__ball') ?? null,
+      desiredAnimating: false,
+    };
+
+    if (el) {
+      el.setAttribute('role', 'button');
+      el.tabIndex = 0;
+      el.setAttribute('aria-label', this.labelForGroup(group));
+      if (group.key === this.activeMarkerKey()) el.classList.add('is-active');
+
+      // Permanent listener (mirrors `DorentSymbolComponent`'s own
+      // `(animationiteration)` binding, see class doc comment there): the
+      // falling edge only actually clears the class once the loop has eased
+      // back through its rest keyframe, UNLESS reduced motion means there
+      // was never a loop to begin with (see `onMarkerHoverEnd` below).
+      entry.ballEl?.addEventListener('animationiteration', () => {
+        if (!entry.desiredAnimating) el.classList.remove('is-animating');
+      });
+
+      el.addEventListener('mouseover', () => this.onMarkerHoverStart(entry));
+      el.addEventListener('mouseout', () => this.onMarkerHoverEnd(entry));
+      // `activate()` (not just `markerActivated.emit`) also emits this
+      // group's current anchor via `markerHovered` — needed for the touch
+      // and keyboard paths, which reach this WITHOUT a preceding `mouseover`
+      // (unlike a desktop click, which the browser always fires a real
+      // `mouseover` ahead of, so the anchor is already known by the time
+      // `click` lands there). Without this, a caller has no pixel position
+      // to open a popup at until the visitor happens to pan the map at
+      // least once afterward — see `ListingsMapComponent`, Maps P2-2.
+      const activate = () => {
+        this.markerHovered.emit(this.anchorForGroupKey(group.key));
+        this.markerActivated.emit(group.key);
+      };
+      el.addEventListener('click', activate);
+      el.addEventListener('keydown', (event: Event) => {
+        const key = (event as KeyboardEvent).key;
+        if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
+          event.preventDefault();
+          activate();
+        }
+      });
+    }
+
+    return entry;
+  }
+
+  /** Updates an EXISTING marker's badge/aria-label in place when its
+   *  `count` changes without recreating the marker — see `syncMarkerGroups`'
+   *  doc comment. */
+  private updateMarkerEntry(entry: MarkerEntry, group: MapMarkerGroup): void {
+    const el = entry.el;
+    if (!el) return;
+    el.setAttribute('aria-label', this.labelForGroup(group));
+    let badge = el.querySelector<HTMLElement>('.app-map__pin-badge');
+    if (group.count > 1) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'app-map__pin-badge';
+        el.appendChild(badge);
+      }
+      badge.textContent = String(group.count);
+    } else {
+      badge?.remove();
+    }
+  }
+
+  private onMarkerHoverStart(entry: MarkerEntry): void {
+    entry.desiredAnimating = true;
+    entry.el?.classList.add('is-animating');
+    this.hoveredMarkerKey = entry.group.key;
+    this.markerHovered.emit(this.anchorForGroupKey(entry.group.key));
+  }
+
+  private onMarkerHoverEnd(entry: MarkerEntry): void {
+    entry.desiredAnimating = false;
+    if (this.prefersReducedMotionForMarkers) {
+      // No loop is running under reduced motion, so `animationiteration`
+      // (the listener attached in `createMarkerEntry`) never fires — clear
+      // immediately or the shadow would stick forever after the first
+      // hover. See ADR-011 / M-024.
+      entry.el?.classList.remove('is-animating');
+    }
+    if (this.hoveredMarkerKey === entry.group.key) this.hoveredMarkerKey = null;
+    this.markerHovered.emit(null);
+  }
+
+  /** Mirrors `syncCircle()` for `markers`: one translucent `L.circle` per
+   *  group, diffed by key the same way `syncMarkerGroups()` diffs markers.
+   *  Gated on BOTH `markerRadiusMeters` being set AND the live zoom being at
+   *  least `markerCircleMinZoom` — re-run on every `zoomend` (see `init()`)
+   *  as well as on the relevant input changes, since only Leaflet knows the
+   *  live zoom. */
+  private syncMarkerGroupCircles(): void {
+    const L = this.leaflet;
+    const map = this.map;
+    if (!L || !map) return;
+
+    const radius = this.markerRadiusMeters();
+    const shouldShow = radius !== null && radius > 0 && map.getZoom() >= this.markerCircleMinZoom();
+    const groups = shouldShow ? this.markers() : [];
+    const currentKeys = new Set(groups.map((g) => g.key));
+
+    for (const [key, circle] of this.markerGroupCircles) {
+      if (!currentKeys.has(key)) {
+        map.removeLayer(circle);
+        this.markerGroupCircles.delete(key);
+      }
+    }
+
+    if (!shouldShow) return;
+
+    const primary = this.readPrimaryColor();
+    for (const group of groups) {
+      if (this.markerGroupCircles.has(group.key)) continue;
+      const circle = L.circle([group.position.lat, group.position.lng], {
+        radius: radius!,
+        color: primary,
+        weight: 1.5,
+        opacity: 0.55,
+        fillColor: primary,
+        fillOpacity: 0.16,
+        interactive: false,
+      }).addTo(map);
+      this.markerGroupCircles.set(group.key, circle);
+    }
   }
 
   /** Reads the live `--ui-color-primary` value off this component's own host

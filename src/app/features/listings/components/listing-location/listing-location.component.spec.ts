@@ -4,7 +4,8 @@ import { By } from '@angular/platform-browser';
 import { provideMockStore } from '@ngrx/store/testing';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
-import { APPROXIMATE_AREA_RADIUS_METERS, ListingLocationComponent } from './listing-location.component';
+import { ListingLocationComponent } from './listing-location.component';
+import { APPROXIMATE_AREA_RADIUS_METERS } from '../../models/approximate-area.const';
 import type { ListingDistrict } from '../../models/district.model';
 import { ListingLocationMapComponent } from '../listing-location-map/listing-location-map.component';
 import { LocationPickerComponent } from '../location-picker/location-picker.component';

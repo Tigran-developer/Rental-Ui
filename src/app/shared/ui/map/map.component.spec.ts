@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { MapComponent, resolveTileSource, TILE_PROVIDER_CONFIG } from './map.component';
-import type { MapLatLng } from './map.component';
+import type { MapBounds, MapLatLng, MapMarkerAnchor, MapMarkerGroup } from './map.component';
 
 /**
  * `app-map` is the only file allowed to import `leaflet` (see the class doc
@@ -18,14 +18,29 @@ const state = vi.hoisted(() => ({
     options: Record<string, unknown>;
     handlers: Record<string, (() => void)[]>;
   }[],
-  markerCalls: [] as { coords: [number, number]; options: Record<string, unknown> }[],
+  markerCalls: [] as {
+    coords: [number, number];
+    options: Record<string, unknown>;
+    element: HTMLElement | null;
+  }[],
   circleCalls: [] as { coords: [number, number]; options: Record<string, unknown> }[],
   divIconCalls: [] as Record<string, unknown>[],
   latLngBoundsCalls: [] as unknown[],
   fitBoundsCalls: [] as { bounds: unknown; options: Record<string, unknown> }[],
   removedLayers: [] as unknown[],
   moveendHandlers: [] as (() => void)[],
+  // Generic per-event handler registry — covers `move`/`zoom`/`zoomend` (the
+  // multi-marker anchor-tracking/circle-threshold wiring), in addition to the
+  // `moveend`-specific array above which older tests already rely on.
+  eventHandlers: {} as Record<string, (() => void)[]>,
   fakeCenter: { lat: 40.1776, lng: 44.5126 },
+  // Drives `Leaflet.Map.getZoom()` for the marker-circle min-zoom gate.
+  fakeZoom: 13,
+  // Drives `Leaflet.Map.latLngToContainerPoint()` for marker anchor tracking.
+  fakeContainerPoint: { x: 111, y: 222 },
+  latLngToContainerPointCalls: [] as unknown[],
+  // Drives `Leaflet.Map.getBounds()` for `viewportChanged`.
+  fakeBounds: { getNorth: 40.2, getSouth: 40.1, getEast: 44.6, getWest: 44.5 },
   mapRemoved: false,
   mapThrows: false,
   // Reassigned to the most recently created fake map's `invalidateSize` spy —
@@ -36,6 +51,11 @@ const state = vi.hoisted(() => ({
   // `map.component.ts`'s `isTouchCapable` (read once, at construction) comes
   // out `true` or `false` for the NEXT component created.
   pointerCoarse: false,
+  // Drives the `matchMedia('(prefers-reduced-motion: reduce)')` stub below —
+  // read once, at construction, by `MapComponent`'s own
+  // `prefersReducedMotionForMarkers` (M-024 regression: must be set BEFORE
+  // the fixture is created for a given test).
+  prefersReducedMotion: false,
   // Spies on the fake map's `dragging`/`touchZoom` handlers so tests can
   // assert `dismissTouchGate()` actually re-enables them.
   lastDraggingEnable: null as ReturnType<typeof vi.fn> | null,
@@ -62,8 +82,20 @@ function makeFakeMap(options: Record<string, unknown>) {
     setView: vi.fn(),
     on: vi.fn((event: string, handler: () => void) => {
       if (event === 'moveend') state.moveendHandlers.push(handler);
+      (state.eventHandlers[event] ??= []).push(handler);
     }),
     getCenter: vi.fn(() => state.fakeCenter),
+    getZoom: vi.fn(() => state.fakeZoom),
+    latLngToContainerPoint: vi.fn((latlng: unknown) => {
+      state.latLngToContainerPointCalls.push(latlng);
+      return state.fakeContainerPoint;
+    }),
+    getBounds: vi.fn(() => ({
+      getNorth: () => state.fakeBounds.getNorth,
+      getSouth: () => state.fakeBounds.getSouth,
+      getEast: () => state.fakeBounds.getEast,
+      getWest: () => state.fakeBounds.getWest,
+    })),
     invalidateSize,
     removeLayer: vi.fn((layer: unknown) => state.removedLayers.push(layer)),
     remove: vi.fn(() => {
@@ -73,6 +105,14 @@ function makeFakeMap(options: Record<string, unknown>) {
     zoomOut,
     fitBounds: vi.fn((bounds: unknown, fitOptions: Record<string, unknown>) => {
       state.fitBoundsCalls.push({ bounds, options: fitOptions });
+      // Mirrors real Leaflet: `fitBounds(..., { animate: false })` calls
+      // `setView` synchronously, which fires `moveend` synchronously in the
+      // same call stack when the view actually changes — needed so
+      // `map.component.ts`'s own `suppressNextMoveend` guard (see its doc
+      // comment) has a REAL synchronous `moveend` to swallow in tests,
+      // rather than the mock only ever recording that it was "called" with
+      // no observable consequence.
+      state.moveendHandlers.forEach((h) => h());
     }),
     dragging: { enable: draggingEnable, disable: vi.fn(), enabled: vi.fn(() => false) },
     touchZoom: { enable: touchZoomEnable, disable: vi.fn(), enabled: vi.fn(() => false) },
@@ -110,17 +150,22 @@ vi.stubGlobal('ResizeObserver', FakeResizeObserver);
 
 /**
  * jsdom has no `matchMedia` either. `map.component.ts` reads
- * `matchMedia('(pointer: coarse)')` exactly once per instance, at
- * construction (`isTouchCapable`) — so `state.pointerCoarse` must be set
- * BEFORE `TestBed.createComponent()` for a given test, not after. Every other
- * media query (there are none today) falls back to `matches: false`.
+ * `matchMedia('(pointer: coarse)')` (`isTouchCapable`) AND
+ * `matchMedia('(prefers-reduced-motion: reduce)')` (`prefersReducedMotionForMarkers`
+ * — the M-024 regression guard for hover-driven marker bounce) exactly once
+ * per instance, at construction — so `state.pointerCoarse`/
+ * `state.prefersReducedMotion` must be set BEFORE `TestBed.createComponent()`
+ * for a given test, not after. Every other media query falls back to
+ * `matches: false`.
  */
 vi.stubGlobal(
   'matchMedia',
   vi.fn(
     (query: string) =>
       ({
-        matches: query === '(pointer: coarse)' && state.pointerCoarse,
+        matches:
+          (query === '(pointer: coarse)' && state.pointerCoarse) ||
+          (query === '(prefers-reduced-motion: reduce)' && state.prefersReducedMotion),
         media: query,
         addEventListener: vi.fn(),
         removeEventListener: vi.fn(),
@@ -160,13 +205,35 @@ vi.mock('leaflet', () => ({
       state.tileLayerCalls.push({ url, options, handlers });
       return layer;
     }),
+    // Builds a REAL (detached) DOM element from the `divIcon` options passed
+    // via `options.icon` when there is one — `map.component.ts`'s multi-
+    // marker code calls `marker.getElement()` and attaches native
+    // `mouseover`/`mouseout`/`click`/`keydown`/`animationiteration` listeners
+    // directly to it (see `createMarkerEntry()`), so the fake has to hand
+    // back a real, listener-capable node, not a plain object. `addTo()`
+    // returns the marker itself (mirroring real Leaflet) rather than
+    // `undefined` — needed so `map.removeLayer(entry.marker)` in
+    // `syncMarkerGroups()` records the actual marker object being removed.
     marker: vi.fn((coords: [number, number], options: Record<string, unknown>) => {
-      state.markerCalls.push({ coords, options });
-      return { addTo: vi.fn() };
+      const iconOptions = options['icon'] as Record<string, unknown> | undefined;
+      let element: HTMLElement | null = null;
+      if (iconOptions && typeof iconOptions['html'] === 'string') {
+        element = document.createElement('div');
+        element.className = String(iconOptions['className'] ?? '');
+        element.innerHTML = iconOptions['html'] as string;
+      }
+      state.markerCalls.push({ coords, options, element });
+      const fakeMarker = {
+        addTo: vi.fn(() => fakeMarker),
+        getElement: vi.fn(() => element),
+        setLatLng: vi.fn(),
+      };
+      return fakeMarker;
     }),
     circle: vi.fn((coords: [number, number], options: Record<string, unknown>) => {
       state.circleCalls.push({ coords, options });
-      return { addTo: vi.fn() };
+      const fakeCircle = { addTo: vi.fn(() => fakeCircle) };
+      return fakeCircle;
     }),
     divIcon: vi.fn((options: Record<string, unknown>) => {
       state.divIconCalls.push(options);
@@ -196,8 +263,18 @@ vi.mock('leaflet', () => ({
       [scrollGate]="scrollGate"
       [zoomInLabel]="zoomInLabel"
       [zoomOutLabel]="zoomOutLabel"
+      [markers]="markers"
+      [markerRadiusMeters]="markerRadiusMeters"
+      [markerCircleMinZoom]="markerCircleMinZoom"
+      [activeMarkerKey]="activeMarkerKey"
+      [markerLabel]="markerLabel"
+      [markerGroupLabel]="markerGroupLabel"
       (centerChange)="onCenterChange($event)"
       (mapError)="onMapError()"
+      (markerHovered)="onMarkerHovered($event)"
+      (markerActivated)="onMarkerActivated($event)"
+      (viewportChanged)="onViewportChanged($event)"
+      (mapClicked)="onMapClicked()"
     >
       <div app-map-gate-hint>Tap to move the map</div>
       <div app-map-scroll-hint>Hold Ctrl and scroll to zoom</div>
@@ -217,13 +294,35 @@ class MapHostComponent {
   scrollGate = false;
   zoomInLabel: string | null = null;
   zoomOutLabel: string | null = null;
+  markers: MapMarkerGroup[] = [];
+  markerRadiusMeters: number | null = null;
+  markerCircleMinZoom = 12;
+  activeMarkerKey: string | null = null;
+  markerLabel = 'Listing';
+  markerGroupLabel = '{count} listings here';
   received: MapLatLng[] = [];
   errorCount = 0;
+  hoveredAnchors: (MapMarkerAnchor | null)[] = [];
+  activatedKeys: string[] = [];
+  viewports: MapBounds[] = [];
+  mapClickCount = 0;
   onCenterChange(c: MapLatLng): void {
     this.received.push(c);
   }
   onMapError(): void {
     this.errorCount++;
+  }
+  onMarkerHovered(anchor: MapMarkerAnchor | null): void {
+    this.hoveredAnchors.push(anchor);
+  }
+  onMarkerActivated(key: string): void {
+    this.activatedKeys.push(key);
+  }
+  onViewportChanged(bounds: MapBounds): void {
+    this.viewports.push(bounds);
+  }
+  onMapClicked(): void {
+    this.mapClickCount++;
   }
 }
 
@@ -248,11 +347,17 @@ describe('MapComponent', () => {
     state.fitBoundsCalls = [];
     state.removedLayers = [];
     state.moveendHandlers = [];
+    state.eventHandlers = {};
     state.fakeCenter = { lat: 40.1776, lng: 44.5126 };
+    state.fakeZoom = 13;
+    state.fakeContainerPoint = { x: 111, y: 222 };
+    state.latLngToContainerPointCalls = [];
+    state.fakeBounds = { getNorth: 40.2, getSouth: 40.1, getEast: 44.6, getWest: 44.5 };
     state.mapRemoved = false;
     state.mapThrows = false;
     state.lastInvalidateSize = null;
     state.pointerCoarse = false;
+    state.prefersReducedMotion = false;
     state.lastDraggingEnable = null;
     state.lastTouchZoomEnable = null;
     state.lastZoomIn = null;
@@ -341,6 +446,34 @@ describe('MapComponent', () => {
 
     expect(attrNames(host).some((n) => n.startsWith('_nghost'))).toBe(false);
     expect(attrNames(child).some((n) => n.startsWith('_ngcontent'))).toBe(false);
+  });
+
+  // Regression for the "you are here" dot bug: map.component.scss used to
+  // keep a `:host ::ng-deep` prefix on the Leaflet-owned marker rules
+  // (`.app-map__marker*`, `.app-map__user-*`) left over from BEFORE this
+  // component switched to `ViewEncapsulation.None`. That reads as harmless —
+  // `::ng-deep` "escapes scoping" — but `::ng-deep` is not a real CSS
+  // pseudo-element the browser understands; it only ever meant anything as a
+  // textual marker Angular's Emulated-encapsulation shim rewrites at RUNTIME
+  // (`shimStylesContent`), and that shim only runs when a component ID is
+  // passed to it, which `NoneEncapsulationDomRenderer` never does (see the
+  // class doc comment). So under `None` the compiled style string ships
+  // completely verbatim: `:host ::ng-deep .app-map__user-dot { ... }` reaches
+  // the browser as literal, invalid CSS, and the browser drops the ENTIRE
+  // rule — not just the scoping prefix. Both the orange `pin` dot and the
+  // blue `userPin` dot rendered with no size/background/halo as a result,
+  // even though the divIcon element and its class name were present in the
+  // DOM (which is exactly why the existing "renders a distinctly-styled
+  // user-location marker" test below, asserting only `className`, passed the
+  // whole time this was broken). Reading the compiled style strings directly
+  // — rather than asserting computed style through jsdom, whose CSS engine
+  // does not reliably resolve `color-mix()`/custom-property-heavy rules —
+  // pins down the actual regression class without relying on jsdom fidelity.
+  it('never emits `::ng-deep` in its compiled styles — invalid CSS once ViewEncapsulation.None ships them unshimmed', () => {
+    const compiledStyles = (MapComponent as unknown as { ɵcmp: { styles: string[] } }).ɵcmp
+      .styles;
+    expect(compiledStyles.length).toBeGreaterThan(0);
+    expect(compiledStyles.some((sheet) => sheet.includes('::ng-deep'))).toBe(false);
   });
 
   it('creates the map centred on the given coordinate and zoom, static (non-interactive) by default', async () => {
@@ -620,6 +753,32 @@ describe('MapComponent', () => {
     // pinned here.
     expect(typeof state.fitBoundsCalls[0].options['maxZoom']).toBe('number');
     expect(state.fitBoundsCalls[0].options['padding']).toBeDefined();
+  });
+
+  // Maps P2-2 loop hazard: `fitBounds()`'s own `moveend` must never reach a
+  // caller as `viewportChanged`, or a viewport-driven refetch would follow
+  // every auto-fit — fetch → fit → moveend → fetch … forever. See
+  // `suppressNextMoveend`'s doc comment in map.component.ts.
+  it('does NOT emit `viewportChanged` for the `moveend` its OWN `fitBounds()` call causes, but still does for a later real pan', async () => {
+    TestBed.configureTestingModule({ imports: [MapHostComponent] });
+    const fixture = TestBed.createComponent(MapHostComponent);
+    fixture.componentInstance.interactive = true;
+    fixture.componentInstance.pin = { lat: 40.18, lng: 44.51 };
+    fixture.componentInstance.userPin = { lat: 40.2, lng: 44.55 };
+    fixture.componentInstance.fitPins = true;
+    fixture.detectChanges();
+    await vi.runAllTimersAsync();
+
+    // The mock's `fitBounds()` fires `moveend` synchronously (mirroring real
+    // Leaflet's `animate: false` behaviour) — that must have been swallowed.
+    expect(state.fitBoundsCalls).toHaveLength(1);
+    expect(fixture.componentInstance.viewports).toHaveLength(0);
+
+    // A genuine subsequent pan (the test harness invoking the registered
+    // `moveend` handler directly, same as the pre-existing "emits the
+    // visible viewport bounds on moveend" test) must still come through.
+    state.moveendHandlers.forEach((h) => h());
+    expect(fixture.componentInstance.viewports).toHaveLength(1);
   });
 
   it('does NOT call fitBounds when only one of pin/userPin is set, even with fitPins on', async () => {
@@ -1008,6 +1167,335 @@ describe('MapComponent', () => {
 
       expect(state.mapOptions!['dragging']).toBe(true);
       expect(fixture.nativeElement.querySelector('.app-map__gate')).toBeNull();
+    });
+  });
+
+  // Maps P2-2 plumbing step: multi-marker API (`markers`, `markerRadiusMeters`,
+  // `markerCircleMinZoom`, `activeMarkerKey`, `markerLabel`/`markerGroupLabel`)
+  // and its three outputs (`markerHovered`, `markerActivated`,
+  // `viewportChanged`).
+  describe('markers (Maps P2-2 catalog pins)', () => {
+    const groupA: MapMarkerGroup = {
+      key: '40.180000,44.510000',
+      position: { lat: 40.18, lng: 44.51 },
+      count: 1,
+    };
+    const groupB: MapMarkerGroup = {
+      key: '40.200000,44.550000',
+      position: { lat: 40.2, lng: 44.55 },
+      count: 1,
+    };
+
+    async function createMarkerHost() {
+      TestBed.configureTestingModule({ imports: [MapHostComponent] });
+      const fixture = TestBed.createComponent(MapHostComponent);
+      fixture.componentInstance.markers = [groupA, groupB];
+      fixture.detectChanges();
+      await vi.runAllTimersAsync();
+      fixture.detectChanges();
+      return fixture;
+    }
+
+    /**
+     * `MapComponent` mounted DIRECTLY (no `MapHostComponent` wrapper
+     * template) via `TestBed.createComponent(MapComponent)` +
+     * `fixture.componentRef.setInput(...)`, for tests that need to change an
+     * input SIGNAL (`markers`, `userPin`, …) more than once over a test's
+     * lifetime. `componentRef.setInput()` is the documented Angular testing
+     * API for exactly that — unlike re-assigning a field on a WRAPPER host
+     * component's template-bound property (`MapHostComponent`'s own
+     * `[markers]="markers"`), it writes the input signal directly and
+     * doesn't leave the wrapper's OWN already-checked template expression
+     * value stale, which is what was tripping `NG0100:
+     * ExpressionChangedAfterItHasBeenCheckedError` when this used
+     * `fixture.componentInstance.markers = …` on `MapHostComponent` instead.
+     */
+    async function createDirectMapFixture(inputs: {
+      markers?: MapMarkerGroup[];
+      markerRadiusMeters?: number | null;
+      markerCircleMinZoom?: number;
+      markerGroupLabel?: string;
+      userPin?: MapLatLng | null;
+      fitPins?: boolean;
+      interactive?: boolean;
+    }) {
+      TestBed.configureTestingModule({ imports: [MapComponent] });
+      const fixture = TestBed.createComponent(MapComponent);
+      fixture.componentRef.setInput('center', { lat: 40.1776, lng: 44.5126 });
+      fixture.componentRef.setInput('interactive', inputs.interactive ?? false);
+      if (inputs.markers !== undefined) fixture.componentRef.setInput('markers', inputs.markers);
+      if (inputs.markerRadiusMeters !== undefined) {
+        fixture.componentRef.setInput('markerRadiusMeters', inputs.markerRadiusMeters);
+      }
+      if (inputs.markerCircleMinZoom !== undefined) {
+        fixture.componentRef.setInput('markerCircleMinZoom', inputs.markerCircleMinZoom);
+      }
+      if (inputs.markerGroupLabel !== undefined) {
+        fixture.componentRef.setInput('markerGroupLabel', inputs.markerGroupLabel);
+      }
+      if (inputs.userPin !== undefined) fixture.componentRef.setInput('userPin', inputs.userPin);
+      if (inputs.fitPins !== undefined) fixture.componentRef.setInput('fitPins', inputs.fitPins);
+      fixture.detectChanges();
+      await vi.runAllTimersAsync();
+      fixture.detectChanges();
+      return fixture;
+    }
+
+    it('creates one marker per group and removes it when the group disappears from `markers`', async () => {
+      const fixture = await createDirectMapFixture({ markers: [groupA, groupB] });
+      expect(state.markerCalls).toHaveLength(2);
+
+      fixture.componentRef.setInput('markers', [groupA]);
+      fixture.detectChanges();
+      await vi.runAllTimersAsync();
+
+      // No NEW marker created for the group that's still there…
+      expect(state.markerCalls).toHaveLength(2);
+      // …and the removed group's marker was actually torn down.
+      const removedMarkerObjects = state.removedLayers;
+      expect(removedMarkerObjects.length).toBeGreaterThan(0);
+    });
+
+    it('does NOT recreate a marker whose key is unchanged between input changes, and updates its badge/aria-label in place when count changes', async () => {
+      const fixture = await createDirectMapFixture({
+        markers: [{ ...groupA, count: 1 }],
+        markerGroupLabel: '{count} listings here',
+      });
+
+      expect(state.markerCalls).toHaveLength(1);
+      const el = state.markerCalls[0].element!;
+      expect(el.querySelector('.app-map__pin-badge')).toBeNull();
+
+      // Same key, new array reference (realistic: parent recomputes on every
+      // refetch), count bumped from 1 to 3. `componentRef.setInput()` — the
+      // documented API for changing a signal input after the fact — rather
+      // than re-assigning a WRAPPER host's template-bound field (see
+      // `createDirectMapFixture`'s doc comment for why the latter tripped
+      // NG0100 here).
+      fixture.componentRef.setInput('markers', [{ ...groupA, count: 3 }]);
+      fixture.detectChanges();
+      await vi.runAllTimersAsync();
+
+      // No new `L.marker()` call — the existing one was updated in place.
+      expect(state.markerCalls).toHaveLength(1);
+      const badge = el.querySelector('.app-map__pin-badge');
+      expect(badge).not.toBeNull();
+      expect(badge!.textContent).toBe('3');
+      expect(el.getAttribute('aria-label')).toBe('3 listings here');
+    });
+
+    it('substitutes the `{count}` placeholder with EACH group\'s own count, so a group of 2 and a group of 5 do not announce identically', async () => {
+      const fixture = await createDirectMapFixture({
+        markers: [
+          { ...groupA, count: 2 },
+          { ...groupB, count: 5 },
+        ],
+        markerGroupLabel: '{count} listings here',
+      });
+
+      expect(state.markerCalls).toHaveLength(2);
+      const [elA, elB] = state.markerCalls.map((call) => call.element!);
+      expect(elA.getAttribute('aria-label')).toBe('2 listings here');
+      expect(elB.getAttribute('aria-label')).toBe('5 listings here');
+    });
+
+    it('draws a translucent circle per group at `markerRadiusMeters`, and none below `markerCircleMinZoom`', async () => {
+      TestBed.configureTestingModule({ imports: [MapHostComponent] });
+      const fixture = TestBed.createComponent(MapHostComponent);
+      fixture.componentInstance.markers = [groupA, groupB];
+      fixture.componentInstance.markerRadiusMeters = 150;
+      fixture.componentInstance.markerCircleMinZoom = 12;
+      state.fakeZoom = 10; // below the threshold
+      fixture.detectChanges();
+      await vi.runAllTimersAsync();
+
+      expect(state.circleCalls).toHaveLength(0);
+
+      // Cross the threshold — mirrors a real Leaflet `zoomend` firing once
+      // the zoom gesture settles.
+      state.fakeZoom = 12;
+      state.eventHandlers['zoomend']?.forEach((h) => h());
+      fixture.detectChanges();
+
+      expect(state.circleCalls).toHaveLength(2);
+      expect(state.circleCalls.every((c) => c.options['radius'] === 150)).toBe(true);
+    });
+
+    it('emits the marker anchor on mouseover and `null` on mouseout', async () => {
+      const fixture = await createMarkerHost();
+      const el = state.markerCalls[0].element!;
+
+      el.dispatchEvent(new MouseEvent('mouseover'));
+      expect(fixture.componentInstance.hoveredAnchors.at(-1)).toEqual({
+        key: groupA.key,
+        x: state.fakeContainerPoint.x,
+        y: state.fakeContainerPoint.y,
+      });
+
+      el.dispatchEvent(new MouseEvent('mouseout'));
+      expect(fixture.componentInstance.hoveredAnchors.at(-1)).toBeNull();
+    });
+
+    it('emits `markerActivated` with the group key on click', async () => {
+      const fixture = await createMarkerHost();
+      const el = state.markerCalls[0].element!;
+
+      el.dispatchEvent(new MouseEvent('click'));
+
+      expect(fixture.componentInstance.activatedKeys).toEqual([groupA.key]);
+    });
+
+    it('emits `markerActivated` on Enter/Space while the marker holds keyboard focus', async () => {
+      const fixture = await createMarkerHost();
+      const el = state.markerCalls[1].element!;
+
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }));
+
+      expect(fixture.componentInstance.activatedKeys).toEqual([groupB.key, groupB.key]);
+    });
+
+    // Touch/keyboard activation has no preceding real `mouseover` to supply
+    // an anchor the way a desktop click always does — without this, a
+    // caller has no pixel position to open a popup at until the visitor
+    // happens to pan the map afterward. See `createMarkerEntry()`'s
+    // `activate()` helper in map.component.ts.
+    it('also emits the group\'s anchor via `markerHovered` on click, even with no preceding mouseover', async () => {
+      const fixture = await createMarkerHost();
+      const el = state.markerCalls[0].element!;
+      fixture.componentInstance.hoveredAnchors = [];
+
+      el.dispatchEvent(new MouseEvent('click'));
+
+      expect(fixture.componentInstance.hoveredAnchors.at(-1)).toEqual({
+        key: groupA.key,
+        x: state.fakeContainerPoint.x,
+        y: state.fakeContainerPoint.y,
+      });
+      expect(fixture.componentInstance.activatedKeys).toEqual([groupA.key]);
+    });
+
+    it('also emits the group\'s anchor via `markerHovered` on Enter/Space activation', async () => {
+      const fixture = await createMarkerHost();
+      const el = state.markerCalls[1].element!;
+      fixture.componentInstance.hoveredAnchors = [];
+
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+
+      expect(fixture.componentInstance.hoveredAnchors.at(-1)).toEqual({
+        key: groupB.key,
+        x: state.fakeContainerPoint.x,
+        y: state.fakeContainerPoint.y,
+      });
+    });
+
+    it('re-emits the tracked (hovered) marker anchor on `move`/`zoom` so a caller\'s popup stays glued during panning', async () => {
+      const fixture = await createMarkerHost();
+      const el = state.markerCalls[0].element!;
+      el.dispatchEvent(new MouseEvent('mouseover'));
+      fixture.componentInstance.hoveredAnchors = [];
+
+      state.fakeContainerPoint = { x: 300, y: 400 };
+      state.eventHandlers['move']?.forEach((h) => h());
+
+      expect(fixture.componentInstance.hoveredAnchors.at(-1)).toEqual({
+        key: groupA.key,
+        x: 300,
+        y: 400,
+      });
+    });
+
+    it('emits `mapClicked` when the map background fires a real Leaflet `click`', async () => {
+      const fixture = await createMarkerHost();
+
+      state.eventHandlers['click']?.forEach((h) => h());
+
+      expect(fixture.componentInstance.mapClickCount).toBe(1);
+    });
+
+    it('emits the visible viewport bounds on `moveend`', async () => {
+      const fixture = await createMarkerHost();
+      fixture.componentInstance.viewports = [];
+
+      state.fakeBounds = { getNorth: 41, getSouth: 39, getEast: 45, getWest: 44 };
+      state.moveendHandlers.forEach((h) => h());
+
+      expect(fixture.componentInstance.viewports.at(-1)).toEqual({
+        minLat: 39,
+        maxLat: 41,
+        minLng: 44,
+        maxLng: 45,
+      });
+    });
+
+    // M-024 regression, reproduced for the map's own hover-driven bounce
+    // (mirrors the header ball's `DorentSymbolComponent` guard): under
+    // `prefers-reduced-motion: reduce`, no CSS animation loop ever runs, so
+    // `animationiteration` — the event the falling edge normally defers to —
+    // never fires. `state.prefersReducedMotion` MUST be set before the
+    // fixture is created (the flag is read once, at construction).
+    it('clears `.is-animating` immediately on mouseout under prefers-reduced-motion, with no animationiteration event', async () => {
+      state.prefersReducedMotion = true;
+      const fixture = await createMarkerHost();
+      const el = state.markerCalls[0].element!;
+
+      el.dispatchEvent(new MouseEvent('mouseover'));
+      expect(el.classList.contains('is-animating')).toBe(true);
+
+      el.dispatchEvent(new MouseEvent('mouseout'));
+      // No `animationiteration` dispatched at all — reduced motion means the
+      // class must already be gone.
+      expect(el.classList.contains('is-animating')).toBe(false);
+    });
+
+    it('defers clearing `.is-animating` to `animationiteration` when motion is NOT reduced (the default)', async () => {
+      const fixture = await createMarkerHost();
+      const el = state.markerCalls[0].element!;
+      const ball = el.querySelector('.dr-symbol__ball')!;
+
+      el.dispatchEvent(new MouseEvent('mouseover'));
+      expect(el.classList.contains('is-animating')).toBe(true);
+
+      el.dispatchEvent(new MouseEvent('mouseout'));
+      // Still animating — the loop hasn't eased back to rest yet.
+      expect(el.classList.contains('is-animating')).toBe(true);
+
+      ball.dispatchEvent(new Event('animationiteration'));
+      expect(el.classList.contains('is-animating')).toBe(false);
+    });
+
+    it('includes marker group positions in the fitBounds frame alongside pin/userPin', async () => {
+      const fixture = await createDirectMapFixture({
+        interactive: true,
+        fitPins: true,
+        markers: [groupA],
+      });
+
+      // A single point alone is never "fit" — matches the pre-existing
+      // pin+userPin behaviour, which already required at least two points.
+      expect(state.latLngBoundsCalls).toHaveLength(0);
+      expect(state.fitBoundsCalls).toHaveLength(0);
+
+      // Adding `userPin` brings the total to two points (userPin + the one
+      // marker group) — now it fits, and the marker group's position is
+      // part of the bounds `L.latLngBounds()` was called with.
+      fixture.componentRef.setInput('userPin', { lat: 40.2, lng: 44.55 });
+      fixture.detectChanges();
+      await vi.runAllTimersAsync();
+
+      expect(state.latLngBoundsCalls).toHaveLength(1);
+      expect(state.latLngBoundsCalls[0]).toEqual([
+        [40.2, 44.55],
+        [40.18, 44.51],
+      ]);
+      expect(state.fitBoundsCalls).toHaveLength(1);
+    });
+
+    it('projects `[app-map-overlay]` content above the map, stacked below the zoom stack', async () => {
+      const fixture = await createMarkerHost();
+      const overlay: HTMLElement | null =
+        fixture.nativeElement.querySelector('.app-map__overlay');
+      expect(overlay).not.toBeNull();
     });
   });
 });

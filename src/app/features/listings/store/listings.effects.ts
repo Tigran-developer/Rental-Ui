@@ -98,6 +98,31 @@ export class ListingsEffects {
     ),
   );
 
+  readonly loadMapPins$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(ListingsActions.loadMapPins),
+      withLatestFrom(
+        this.store.select(selectListingsFilters),
+        this.store.select(selectListingsOriginCoords),
+      ),
+      // switchMap (not mergeMap/concatMap): the map re-dispatches on every
+      // pan/zoom, so a stale in-flight viewport response must be cancelled,
+      // not raced against a newer one.
+      switchMap(([{ bounds }, filters, originCoords]) =>
+        this.listingsApi.getMapPins(filters, bounds, originCoords).pipe(
+          map((result) => ListingsActions.loadMapPinsSuccess({ result })),
+          catchError((error: unknown) =>
+            of(
+              ListingsActions.loadMapPinsFailure({
+                error: toErrorMessage(error),
+              }),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+
   readonly loadListingDetails$ = createEffect(() =>
     this.actions$.pipe(
       ofType(ListingsActions.loadListingDetails),

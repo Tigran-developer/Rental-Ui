@@ -122,7 +122,7 @@
 
       @if (vm(); as v) {
 
-        @if (v.hasError && v.error) {
+        @if (viewMode() === 'list' && v.hasError && v.error) {
           <div class="listings-page__error" role="alert">
             <p-message severity="error" styleClass="listings-page__message">
               <div class="listings-page__error-content">
@@ -139,11 +139,11 @@
           </div>
         }
 
-        @if (v.showInitialSkeleton) {
+        @if (viewMode() === 'list' && v.showInitialSkeleton) {
           <app-ui-loading-skeleton [items]="skeletonCount(v)" />
         }
 
-        @if (v.showEmpty) {
+        @if (viewMode() === 'list' && v.showEmpty) {
           @if (v.hasActiveFilters) {
             <div class="lp-empty-search">
               <div class="lp-empty-search__icon-wrap" aria-hidden="true">
@@ -230,6 +230,32 @@
               }
             </div>
 
+            <!-- List/Map toggle (Maps P2-2) -->
+            <div class="lp-view-toggle" role="group" [attr.aria-label]="'listings.map.viewToggle.groupLabel' | translate">
+              <button
+                type="button"
+                class="lp-view-toggle__btn"
+                [class.lp-view-toggle__btn--active]="viewMode() === 'list'"
+                [attr.aria-pressed]="viewMode() === 'list'"
+                [attr.aria-label]="'listings.map.viewToggle.list' | translate"
+                (click)="setViewMode('list')"
+              >
+                <i class="pi pi-list" aria-hidden="true"></i>
+                <span class="lp-view-toggle__label">{{ 'listings.map.viewToggle.list' | translate }}</span>
+              </button>
+              <button
+                type="button"
+                class="lp-view-toggle__btn"
+                [class.lp-view-toggle__btn--active]="viewMode() === 'map'"
+                [attr.aria-pressed]="viewMode() === 'map'"
+                [attr.aria-label]="'listings.map.viewToggle.map' | translate"
+                (click)="setViewMode('map')"
+              >
+                <i class="pi pi-map" aria-hidden="true"></i>
+                <span class="lp-view-toggle__label">{{ 'listings.map.viewToggle.map' | translate }}</span>
+              </button>
+            </div>
+
             <div class="lp-sort-wrapper">
               @if (sortMenuOpen()) {
                 <div class="lp-sort-backdrop" aria-hidden="true" (click)="sortMenuOpen.set(false)"></div>
@@ -276,40 +302,44 @@
           </div>
         }
 
-        @if (v.items.length > 0) {
-          <div class="listings-page__grid cards-grid">
-            @for (listing of v.items; track listing.id) {
-              <app-listing-card
-                [listing]="listing"
-                [isAuthenticated]="v.isAuthenticated"
-                [bookingStatus]="bookingStatusMap().get(listing.id)"
-                [isOwner]="myListingIds().has(listing.id)"
-                (favoriteToggled)="onFavoriteToggled($event)"
+        @if (viewMode() === 'list') {
+          @if (v.items.length > 0) {
+            <div class="listings-page__grid cards-grid">
+              @for (listing of v.items; track listing.id) {
+                <app-listing-card
+                  [listing]="listing"
+                  [isAuthenticated]="v.isAuthenticated"
+                  [bookingStatus]="bookingStatusMap().get(listing.id)"
+                  [isOwner]="myListingIds().has(listing.id)"
+                  (favoriteToggled)="onFavoriteToggled($event)"
+                />
+              }
+            </div>
+          }
+
+          @if (v.showAppendSkeleton) {
+            <div
+              class="listings-page__append-loading"
+              aria-live="polite"
+              [attr.aria-label]="'listings.page.loadingMore' | translate"
+            >
+              <app-ui-loading-skeleton [items]="3" />
+            </div>
+          }
+
+          @if (v.showLoadMore) {
+            <div class="listings-page__load-more">
+              <p-button
+                type="button"
+                [outlined]="true"
+                icon="pi pi-angle-down"
+                [label]="'listings.page.loadMore' | translate"
+                (onClick)="loadMore()"
               />
-            }
-          </div>
-        }
-
-        @if (v.showAppendSkeleton) {
-          <div
-            class="listings-page__append-loading"
-            aria-live="polite"
-            [attr.aria-label]="'listings.page.loadingMore' | translate"
-          >
-            <app-ui-loading-skeleton [items]="3" />
-          </div>
-        }
-
-        @if (v.showLoadMore) {
-          <div class="listings-page__load-more">
-            <p-button
-              type="button"
-              [outlined]="true"
-              icon="pi pi-angle-down"
-              [label]="'listings.page.loadMore' | translate"
-              (onClick)="loadMore()"
-            />
-          </div>
+            </div>
+          }
+        } @else {
+          <app-listings-map class="listings-page__map" />
         }
       }
 

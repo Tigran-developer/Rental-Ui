@@ -2,6 +2,7 @@ import { createFeatureSelector, createSelector } from '@ngrx/store';
 
 import type { ListingCategoryOption } from '../models/create-listing.model';
 import type { ListingDetails } from '../models/listing-details.model';
+import type { ListingMapPin } from '../models/listing-map-pin.model';
 import type { ListingPreview } from '../models/listing.model';
 import type {
   ListingsFilter,
@@ -108,4 +109,24 @@ export const selectCreateListingImageUploadProgress = createSelector(
   selectListingsState,
   (state: ListingsState): number | null =>
     state.createListingImageUploadProgress,
+);
+
+export const selectMapPins = createSelector(
+  selectListingsState,
+  (state: ListingsState): ListingMapPin[] => state.mapPins,
+);
+
+export const selectMapPinsLoading = createSelector(
+  selectListingsState,
+  (state: ListingsState): boolean => state.mapPinsLoading,
+);
+
+export const selectMapPinsError = createSelector(
+  selectListingsState,
+  (state: ListingsState): string | null => state.mapPinsError,
+);
+
+export const selectMapPinsTruncated = createSelector(
+  selectListingsState,
+  (state: ListingsState): boolean => state.mapPinsTruncated,
 );

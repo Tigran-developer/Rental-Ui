@@ -1,0 +1,83 @@
+<div class="listings-map" (keydown.escape)="onEscape()">
+  <div class="listings-map__map-wrap" #mapWrapper>
+    <app-map
+      class="listings-map__map"
+      [center]="initialCenter"
+      [zoom]="initialZoom"
+      [interactive]="true"
+      [scrollGate]="true"
+      [markers]="markers()"
+      [markerRadiusMeters]="markerRadiusMeters"
+      [activeMarkerKey]="openKey()"
+      [markerLabel]="'listings.map.marker.single' | translate"
+      [markerGroupLabel]="'listings.map.marker.group' | translate"
+      [fitPins]="fitPinsPulse()"
+      [zoomInLabel]="'listings.details.location.zoomIn' | translate"
+      [zoomOutLabel]="'listings.details.location.zoomOut' | translate"
+      height="100%"
+      (markerHovered)="onMarkerHovered($event)"
+      (markerActivated)="onMarkerActivated($event)"
+      (viewportChanged)="onViewportChanged($event)"
+      (mapClicked)="onMapClicked()"
+    >
+      <div app-map-overlay>
+        @if (openGroup(); as group) {
+          @if (popupStyle(); as pos) {
+            <div
+              class="listings-map__popup-anchor"
+              [style.left]="pos.left"
+              [style.top]="pos.top"
+              (mouseenter)="onPopupMouseEnter()"
+              (mouseleave)="onPopupMouseLeave()"
+            >
+              @if (group.pins.length > 1) {
+                <div class="listings-map__popup-stack">
+                  <p class="listings-map__popup-stack-heading">
+                    {{ 'listings.map.stack.heading' | translate: { count: group.pins.length } }}
+                  </p>
+                  <div class="listings-map__popup-stack-body">
+                    @for (pin of group.pins; track pin.id) {
+                      <app-listings-map-popup [pin]="pin" (closeRequested)="closePopup()" />
+                    }
+                  </div>
+                </div>
+              } @else {
+                <app-listings-map-popup [pin]="group.pins[0]" (closeRequested)="closePopup()" />
+              }
+            </div>
+          }
+        }
+      </div>
+    </app-map>
+
+    <div class="listings-map__status-stack">
+      @if (loading()) {
+        <div class="listings-map__status listings-map__status--loading" aria-live="polite">
+          {{ 'listings.map.loading' | translate }}
+        </div>
+      }
+
+      @if (error()) {
+        <div class="listings-map__status listings-map__status--error" role="alert">
+          <span>{{ 'listings.map.error.message' | translate }}</span>
+          <button type="button" class="listings-map__retry" (click)="retry()">
+            {{ 'listings.map.error.retry' | translate }}
+          </button>
+        </div>
+      }
+
+      @if (isEmpty()) {
+        <div class="listings-map__status listings-map__status--empty">
+          {{ 'listings.map.empty' | translate }}
+        </div>
+      }
+    </div>
+
+    @if (truncated()) {
+      <div class="listings-map__banner listings-map__banner--truncated" role="status">
+        <strong class="listings-map__banner-title">{{ 'listings.map.truncated.title' | translate }}</strong>
+        <span class="listings-map__banner-desc">{{ 'listings.map.truncated.description' | translate }}</span>
+      </div>
+    }
+  </div>
+</div>

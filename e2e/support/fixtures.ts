@@ -91,6 +91,29 @@ export function e2eListingDetails(overrides: Record<string, unknown> = {}) {
   };
 }
 
+/**
+ * One `GET /api/listings/map-pins` item (Maps P2-2). Mirrors
+ * `src/testing/fixtures.ts`'s `makeListingMapPin()` defaults (kept separate,
+ * same convention as every other fixture here vs. the unit fixtures file) —
+ * `latitude`/`longitude` are always the PUBLIC (fuzzed) pair by contract, see
+ * `listing-map-pin.model.ts`'s type-level doc comment.
+ */
+export function e2eMapPin(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'listing-e2e-map-1',
+    latitude: 40.18,
+    longitude: 44.51,
+    title: 'E2E Map Toy',
+    pricePerDay: 5,
+    priceUnit: 'Daily',
+    currency: 'AMD',
+    primaryImageUrl: null,
+    rating: null,
+    reviewCount: 0,
+    ...overrides,
+  };
+}
+
 export function e2ePendingListing(overrides: Record<string, unknown> = {}) {
   return {
     id: 'pending-e2e-1',

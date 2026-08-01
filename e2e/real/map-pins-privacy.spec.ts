@@ -29,14 +29,19 @@ import { ACCOUNTS, API_URL, TOY_KITCHEN, apiLogin, assertDockerStack } from '../
  * live, deployed route is safe" — only a call through the real controller +
  * real auth pipeline proves the latter.
  *
- * Why API-level (Playwright `request`), not a browser map journey: the
- * property under test — "the wire response is identical regardless of
- * caller identity" — is a server contract property with no rendering
- * involved (no Leaflet, no map UI consumer exists yet; contract-guardian
- * added `listings.mapPins` in `09cb81d` but P2-2, the frontend map view, is
- * a separate unshipped card). A direct API call proves the real property
- * without paying for browser/map rendering cost or coupling this test to a
- * UI that doesn't exist yet.
+ * Why API-level (Playwright `request`), not a browser map journey — still
+ * true now that P2-2 (the frontend map view, `Rental-Ui/e2e/listings-map.
+ * spec.ts`) has shipped: the property under test — "the wire response is
+ * identical regardless of caller identity" — is a server contract property
+ * with no rendering involved. A caller identity never varies within a single
+ * browser session (there is no in-page "log in as owner vs. admin vs.
+ * anonymous, refetch the same pin, diff the bytes" journey a real visitor
+ * ever performs), so proving it through `app-map`/Leaflet would add browser
+ * rendering cost without exercising anything the UI layer actually does
+ * differently per caller — the frontend map view never sees more than ONE
+ * identity's response per session at all. A direct API call proves the real
+ * property without paying for that cost or coupling an identity-comparison
+ * test to UI rendering it has no dependency on.
  *
  * Determinism: relies only on dev-seed invariants (TOY_KITCHEN, its literal
  * exact coordinate, and the `owner@rental.local`/`admin@rental.local` demo

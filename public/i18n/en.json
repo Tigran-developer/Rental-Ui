@@ -336,6 +336,34 @@
         "done": "Done"
       }
     },
+    "map": {
+      "viewToggle": {
+        "groupLabel": "Switch between list and map view",
+        "list": "List",
+        "map": "Map"
+      },
+      "marker": {
+        "single": "Toy at this location",
+        "group": "{count} toys at this location"
+      },
+      "popup": {
+        "viewButton": "View toy",
+        "close": "Close"
+      },
+      "stack": {
+        "heading": "{{count}} toys here"
+      },
+      "truncated": {
+        "title": "Showing part of the results",
+        "description": "Zoom in or narrow your filters to see every toy in this area."
+      },
+      "loading": "Loading map…",
+      "error": {
+        "message": "Couldn't load toys on the map.",
+        "retry": "Try again"
+      },
+      "empty": "No toys in this area yet."
+    },
     "gallery": {
       "mainImageAlt": "Toy image",
       "thumbnailsLabel": "Gallery thumbnails",

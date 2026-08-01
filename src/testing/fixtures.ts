@@ -12,6 +12,7 @@ import type {
   MyBooking,
 } from '../app/features/bookings/models/booking.model';
 import type { ListingPreview } from '../app/features/listings/models/listing.model';
+import type { ListingMapPin } from '../app/features/listings/models/listing-map-pin.model';
 import type { PendingListing } from '../app/features/admin/models/pending-listing.model';
 import type { BookingReviewStatus } from '../app/features/reviews/models/review.model';
 
@@ -40,6 +41,24 @@ export function makeListingPreview(
     pricePerDay: 5,
     mainImageUrl: null,
     isFavorite: false,
+    ...overrides,
+  };
+}
+
+export function makeListingMapPin(
+  overrides: Partial<ListingMapPin> = {},
+): ListingMapPin {
+  return {
+    id: 'listing-1',
+    latitude: 40.1,
+    longitude: 44.5,
+    title: 'Wooden Train Set',
+    pricePerDay: 5,
+    priceUnit: 'Daily',
+    currency: 'AMD',
+    primaryImageUrl: null,
+    rating: null,
+    reviewCount: 0,
     ...overrides,
   };
 }

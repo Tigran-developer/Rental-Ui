@@ -1,0 +1,67 @@
+<article class="listings-map-popup">
+  <button
+    type="button"
+    class="listings-map-popup__close"
+    [attr.aria-label]="'listings.map.popup.close' | translate"
+    (click)="onCloseClick()"
+  >
+    <span class="pi pi-times" aria-hidden="true"></span>
+  </button>
+
+  <div class="listings-map-popup__media">
+    <app-ui-image-container class="listings-map-popup__media-frame" aspectRatio="4 / 3">
+      @if (pin().primaryImageUrl) {
+        <img
+          class="listings-map-popup__img"
+          [src]="pin().primaryImageUrl"
+          [alt]="pin().title"
+          loading="lazy"
+          decoding="async"
+        />
+      } @else {
+        <div
+          class="listings-map-popup__no-image"
+          role="img"
+          [attr.aria-label]="pin().title"
+        >
+          <span class="pi pi-gift listings-map-popup__no-image-icon" aria-hidden="true"></span>
+        </div>
+      }
+    </app-ui-image-container>
+  </div>
+
+  <div class="listings-map-popup__body">
+    <h4 class="listings-map-popup__title">{{ pin().title }}</h4>
+
+    @if (pin().rating != null) {
+      <p
+        class="listings-map-popup__rating"
+        [attr.aria-label]="'reviews.summary.ariaRating' | translate: { rating: pin().rating }"
+      >
+        <span class="pi pi-star-fill listings-map-popup__rating-star" aria-hidden="true"></span>
+        <span class="listings-map-popup__rating-value">{{ pin().rating | number: '1.1-1' }}</span>
+        <span class="listings-map-popup__rating-count">({{ pin().reviewCount }})</span>
+      </p>
+    } @else {
+      <p
+        class="listings-map-popup__rating listings-map-popup__rating--empty"
+        [attr.aria-label]="'reviews.summary.noReviews' | translate"
+      >
+        <span class="pi pi-star-fill listings-map-popup__rating-star" aria-hidden="true"></span>
+        <span class="listings-map-popup__rating-value">{{ 5 | number: '1.1-1' }}</span>
+        <span class="listings-map-popup__rating-count">(0)</span>
+      </p>
+    }
+
+    <div class="listings-map-popup__footer">
+      <p class="listings-map-popup__price">
+        <span class="listings-map-popup__price-amount">{{ pin().pricePerDay | dram }}</span>
+        <span class="listings-map-popup__price-suffix">{{ priceUnitSuffixKey() | translate }}</span>
+      </p>
+
+      <a class="listings-map-popup__view-btn" [routerLink]="detailsRoute()">
+        {{ 'listings.map.popup.viewButton' | translate }}
+      </a>
+    </div>
+  </div>
+</article>

@@ -6,6 +6,14 @@
 // all), and bundling it here means it always travels with whatever chunk
 // this component lives in, the same way the `leaflet` JS import does.
 @use 'leaflet/dist/leaflet.css';
+// Shared bounce/shadow motion for the DoRent brand ball (ADR-011, M-024) —
+// see `_dorent-symbol-motion.scss`'s doc comment for why this has to be a
+// mixin call rather than a shared selector: this stylesheet's compiled CSS
+// ships completely unscoped (`ViewEncapsulation.None`, see map.component.ts's
+// class doc comment) while `dorent-symbol.component.scss` is `Emulated` —
+// neither can match the other's scoping, so both call the same mixin with
+// their own "currently animating" selector instead.
+@use '../dorent-symbol/dorent-symbol-motion' as dr-symbol-motion;
 
 .app-map {
   position: relative;
@@ -62,13 +70,22 @@
 
 /* ── The static `pin` marker, rendered by Leaflet as raw HTML inside its own
    marker pane (a DOM descendant of this component's host, but NOT part of
-   Angular's template). The `::ng-deep` here predates this component's switch
-   to `encapsulation: ViewEncapsulation.None` (see map.component.ts's class
-   doc comment) — with encapsulation off, `::ng-deep` is a no-op and `:host`
-   still resolves to this component's host selector, so these rules keep
-   working unchanged; left in place rather than rewritten to avoid an
-   unrelated diff. */
-:host ::ng-deep .app-map__marker {
+   Angular's template). These MUST be plain global class selectors, never
+   `:host ::ng-deep` — under `encapsulation: ViewEncapsulation.None` (see
+   map.component.ts's class doc comment) Angular ships this component's CSS
+   completely unshimmed (no `_ngcontent-*` scoping attribute is generated at
+   all), so the file reaches the browser byte-for-byte. `::ng-deep` is not a
+   real CSS pseudo-element — the browser doesn't special-case it — so
+   `:host ::ng-deep .foo` parses as an invalid compound selector and the
+   ENTIRE rule is dropped, not merely "unscoped". That silently killed the
+   `app-map__marker`/`app-map__marker-halo`/`app-map__marker-dot` and (below)
+   the `app-map__user-*` rules — the divIcon markup rendered with no size, no
+   background, no halo, i.e. invisible. Every class here is already
+   namespaced `app-map__*`, exactly like `.app-map__crosshair` and
+   `.app-map__maptiler-logo` below (template-created elements that never used
+   `::ng-deep` to begin with), so dropping the prefix is safe: nothing else
+   in the app can collide with these names. */
+.app-map__marker {
   width: 36px;
   height: 36px;
   display: flex;
@@ -77,7 +94,7 @@
   pointer-events: none;
 }
 
-:host ::ng-deep .app-map__marker-halo {
+.app-map__marker-halo {
   position: absolute;
   width: 36px;
   height: 36px;
@@ -85,7 +102,7 @@
   background: color-mix(in srgb, var(--ui-color-primary) 22%, transparent);
 }
 
-:host ::ng-deep .app-map__marker-dot {
+.app-map__marker-dot {
   position: relative;
   width: 20px;
   height: 20px;
@@ -104,7 +121,7 @@
    SVG renderer, which needs a colour STRING resolved via `readPrimaryColor()`
    in map.component.ts), this is plain DOM, so the CSS custom property just
    cascades normally; no JS colour-reading step is needed here. */
-:host ::ng-deep .app-map__user-marker {
+.app-map__user-marker {
   width: 18px;
   height: 18px;
   display: flex;
@@ -113,7 +130,7 @@
   pointer-events: none;
 }
 
-:host ::ng-deep .app-map__user-dot {
+.app-map__user-dot {
   position: relative;
   width: 18px;
   height: 18px;
@@ -124,7 +141,7 @@
     0 0 0 2px #fff;
 }
 
-:host ::ng-deep .app-map__user-dot::before {
+.app-map__user-dot::before {
   content: '';
   position: absolute;
   inset: -9px;
@@ -137,7 +154,7 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  :host ::ng-deep .app-map__user-dot::before {
+  .app-map__user-dot::before {
     opacity: 1;
     animation: app-map-user-pulse 2.4s ease-out infinite;
   }
@@ -338,4 +355,96 @@
     width: 56px;
     height: auto;
   }
+}
+
+/* ── Multi-marker catalog pins (Maps P2-2 plumbing step) ──────────────────
+   One `L.divIcon` per `MapMarkerGroup`, rendered as raw HTML in Leaflet's
+   marker pane — a DOM descendant of this component's host but, like
+   `.app-map__marker`/`.app-map__user-marker` above, NEVER part of Angular's
+   template, hence the same plain-global-selector rule applies (see the class
+   doc comment's `::ng-deep` history). Reuses the DoRent brand ball
+   (shared/ui/dorent-symbol/) as the pin graphic via `dorentSymbolMarkup()` —
+   `map.component.ts` builds the actual HTML string; this file only owns the
+   layout/motion CSS around it.
+
+   Unlike `.app-map__marker` (`pointer-events: none` — a static, non-
+   interactive pin), `.app-map__pin` is deliberately hoverable/clickable —
+   `map.component.ts` constructs its marker with `interactive: true`. */
+.app-map__pin {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-color-primary-strong);
+    outline-offset: 2px;
+    border-radius: 50%;
+  }
+}
+
+/* Halo ring for the group whose popup the PARENT currently has open
+   (`activeMarkerKey`). This plumbing step only needs SOME visible
+   distinction for `.is-active` to be testable/usable — the popup-UI step
+   (Maps P2-2, later) may want to revisit the exact treatment. */
+.app-map__pin.is-active::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px var(--ui-color-primary);
+  pointer-events: none;
+}
+
+/* Listing-count badge, shown only when `MapMarkerGroup.count > 1` — see
+   `map.component.ts`'s `updateMarkerEntry()` for why this is added/removed
+   in place rather than the whole marker being recreated when a group's
+   count changes between refetches. */
+.app-map__pin-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-color-secondary);
+  color: #fff;
+  font-size: 10px;
+  line-height: 16px;
+  font-weight: var(--ui-font-weight-bold);
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(20, 15, 5, 0.35);
+  pointer-events: none;
+}
+
+/* Rest-state geometry + the reduced-motion-gated bounce loop + both
+   `@keyframes`, shared verbatim with `dorent-symbol.component.scss` — see
+   `_dorent-symbol-motion.scss`'s doc comment. `.app-map__pin.is-animating`
+   is THIS file's own "currently animating" trigger (toggled imperatively by
+   `map.component.ts` on marker `mouseover`/`mouseout`, mirroring
+   `DorentSymbolComponent`'s hover-driven `animating` signal). */
+@include dr-symbol-motion.dr-symbol-motion('.app-map__pin.is-animating');
+
+/* ── `[app-map-overlay]` projection slot ──────────────────────────────────
+   Where a caller renders its OWN popup UI (routerLink/translate/image/card
+   stack — see map.component.ts's class doc comment for why `L.popup` isn't
+   used), positioned from the `MapMarkerAnchor` pixel coordinates this
+   component emits. `pointer-events: none` on the container itself — the
+   caller's projected content re-enables `pointer-events: auto` for itself,
+   the same division of responsibility `[app-map-actions]` above uses, just
+   without that slot's own `> * { pointer-events: auto }` shortcut (a popup
+   is normally a single projected root, not a loose set of buttons). Sits
+   above every Leaflet-owned pane/control (popupPane/tooltipPane top out
+   under 800; see the `.app-map__crosshair` comment above for why Leaflet's
+   own z-index space needs calling out explicitly at all) but below this
+   component's OWN chrome — the zoom stack (1002) and the scroll/touch gate
+   overlays (1004-1005) must never end up hidden under a caller's popup. */
+.app-map__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 900;
+  pointer-events: none;
 }

@@ -48,7 +48,11 @@ bundle is indistinguishable from a fresh one by eye. Rules:
 - **Mocked tier:** `webServer` reuses *anything* already listening on :4200 —
   including a docker container. If the docker stack is up, stop its `ui`
   service (or the stack) before `npm run e2e`, or you will silently test a
-  stale bundle.
+  stale bundle. This is now also enforced automatically: `globalSetup`
+  (`support/global-setup.ts`) checks :4200 for the docker `Server: nginx`
+  header before any mocked test runs and hard-fails with the same
+  instructions if found — one check protects every mocked spec, including
+  ones not yet written, instead of relying on remembering this paragraph.
 
 ## Coverage map — critical journeys (2026-07-24)
 
@@ -59,6 +63,7 @@ Layers: **U** = unit (vitest / xUnit), **M** = mocked Playwright, **R** = real-s
 | Auth (login, session hydrate, blocked user) | U: auth store/guard specs, xUnit auth tests · M: `auth.spec.ts` happy + rejected · R: real BCrypt/JWT login exercised as part of the booking journey | no dedicated R spec for register / blocked@ rejection / expiry |
 | Listing discovery (browse, filter, details) | U: store/selector specs, `listings-api.service.spec.ts` (param serialization) · M: `listings.smoke.spec.ts` render + favorite toggle · **R: `real/listings-search-filter.spec.ts`** — proves `?search=` actually narrows the real backend result set (regression for the search contract-drift bug, sibling of M-020) | age-group and distance filters have backend xUnit coverage (`ListingsQueryServiceFilterTests.cs`) and frontend param-serialization unit coverage, but no R spec — distance depends on `navigator.geolocation` (flaky in CI); pagination not e2e-covered at any layer |
 | Listing location (pin picker, approximate-map tap-to-load, districts) | U: `ListingDetailCoordinatePrivacyTests`/`ListingDetailAddressRevealTests` (xUnit, privacy gate) · M: `create-listing-location.spec.ts` (Step 3 pin → request body), `listing-location.spec.ts` (district/city text, tap-to-load map, no-coordinates fallback) | R: no real-stack coverage yet (real geohash fuzzing / district derivation only unit-tested); district-select override in the wizard not e2e-covered |
+| Map view (catalog, Maps P2-2: List/Map toggle, pin clustering, popups) | U: `listings-map.component.spec.ts` (real `app-map` + mocked Leaflet — grouping, 400ms viewport debounce, fitPins discipline, 150ms popup grace, truncated banner), xUnit `ListingMapPinsQueryServiceTests` + HTTP `ListingMapPinsHttpTests` (query-string binding, 400 on `minLng>maxLng`, wire shape) · **M: `listings-map.spec.ts`** — real Leaflet: toggle/URL/reload, N-coordinates-to-N-balls incl. the same-coordinate collapse (1 ball, 2 stacked popups), real-DOM hover popup + its `/listings/:id` link, the 150ms close-grace reachability, filter query-params re-attached on refetch | no real-stack (R) coverage of the map UI itself (privacy property is R-covered API-side, see `real/map-pins-privacy.spec.ts`); per-group uncertainty circles have no app-owned CSS hook so their render isn't asserted at any browser layer — see that spec's own doc comment |
 | Booking request + lifecycle (Pending→Approved→Active→Completed) | U: xUnit `BookingsService` transition tests (SQLite) · **R: `real/booking-lifecycle.spec.ts` — full journey, both parties** | Rejected / Cancelled / Expired paths not e2e-covered (unit-only) |
 | Role boundaries renter/owner/admin | U: xUnit authorization tests · M: adminGuard admits seeded admin · R: owner-only handover/complete CTAs asserted for both roles | no R coverage for admin vs API (e.g. non-admin hitting /admin), blocked-user writes |
 | Reviews | U: eligibility spec (`booking-details-page.eligibility.spec.ts`), xUnit review rules · R: "Leave a review" offered after real completion | submitting a review not e2e-covered at any layer |

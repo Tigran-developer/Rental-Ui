@@ -21,8 +21,8 @@ export const ApiContract = {
     byId: (id: string): ApiPath => `/api/listings/${encodeURIComponent(id)}`,
     mine: '/api/listings/mine',
     // Maps P2-1: viewport pins, [AllowAnonymous], same ListingsQueryFilter query
-    // shape as `root` (see ListingsController.GetMapPins). No consumer yet — the
-    // map view (Maps P2-2) is a separate card.
+    // shape as `root` (see ListingsController.GetMapPins). Consumer:
+    // features/listings/components/listings-map/ (Maps P2-2, in progress).
     mapPins: '/api/listings/map-pins',
     uploadImages: (id: string): ApiPath =>
       `/api/listings/${encodeURIComponent(id)}/images`,
