@@ -1,10 +1,4 @@
-<form
-  class="wizard"
-  [formGroup]="createListingForm"
-  (ngSubmit)="onSubmit()"
-  novalidate
->
-
+<form class="wizard" [formGroup]="createListingForm" (ngSubmit)="onSubmit()" novalidate>
   <!-- ── Mobile compact header w/ inline progress (mobile only) ─── -->
   <header class="wizard__header">
     <div class="wizard__header-row">
@@ -17,11 +11,11 @@
         <i class="pi pi-arrow-left" aria-hidden="true"></i>
       </button>
       <div class="wizard__header-center">
+        <span class="wizard__step-name">{{ getStepNameKey() | translate }}</span>
         <span class="wizard__step-of">{{
           'listings.createPage.wizard.stepProgress'
             | translate: { current: currentStep(), total: totalSteps }
         }}</span>
-        <span class="wizard__step-name">{{ getStepNameKey() | translate }}</span>
       </div>
       <div class="wizard__header-end" aria-hidden="true"></div>
     </div>
@@ -55,7 +49,9 @@
   @if (imageUploadError) {
     <div class="wizard__error-banner wizard__error-banner--warn" role="alert">
       <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-      <span class="wizard__banner-text">{{ 'listings.createPage.imageUploadWarning' | translate }}</span>
+      <span class="wizard__banner-text">{{
+        'listings.createPage.imageUploadWarning' | translate
+      }}</span>
       <button
         type="button"
         class="wizard__banner-btn"
@@ -72,13 +68,17 @@
 
   <!-- ── Responsive layout: desktop sidebar + content ────────── -->
   <div class="wizard__layout">
-
     <!-- Desktop vertical stepper. `display:none` below 1024px keeps its buttons
          out of the mobile tab order, so no aria-hidden is needed (and it must
          not be hidden — these are the only step controls on desktop). -->
     <aside class="wizard__sidebar">
-      <nav class="wizard__sidebar-sticky" [attr.aria-label]="'listings.createPage.wizard.sidebarTitle' | translate">
-        <div class="wizard__sidebar-eyebrow" aria-hidden="true">{{ 'listings.createPage.wizard.sidebarTitle' | translate }}</div>
+      <nav
+        class="wizard__sidebar-sticky"
+        [attr.aria-label]="'listings.createPage.wizard.sidebarTitle' | translate"
+      >
+        <div class="wizard__sidebar-eyebrow" aria-hidden="true">
+          {{ 'listings.createPage.wizard.sidebarTitle' | translate }}
+        </div>
         <div class="wizard-stepper">
           <div class="wizard-stepper__track"></div>
           <div class="wizard-stepper__fill" [style.height.%]="stepperFillPct()"></div>
@@ -99,7 +99,9 @@
                 }
               </span>
               <span class="wizard-stepper__text">
-                <span class="wizard-stepper__step">{{ 'listings.createPage.wizard.stepShort' | translate: { n: $index + 1 } }}</span>
+                <span class="wizard-stepper__step">{{
+                  'listings.createPage.wizard.stepShort' | translate: { n: $index + 1 }
+                }}</span>
                 <span class="wizard-stepper__label">{{ st.shortLabelKey | translate }}</span>
               </span>
             </button>
@@ -110,29 +112,34 @@
             <i class="pi pi-clock" aria-hidden="true"></i>
             {{ 'listings.createPage.wizard.aboutTime' | translate }}
           </div>
-          <div class="wizard-stepper__note-sub">{{ 'listings.createPage.wizard.reviewTime' | translate }}</div>
+          <div class="wizard-stepper__note-sub">
+            {{ 'listings.createPage.wizard.reviewTime' | translate }}
+          </div>
         </div>
       </nav>
     </aside>
 
     <!-- Content column -->
     <div class="wizard__content">
-
       <!-- Desktop content head (desktop only) -->
       <div class="wizard__content-head">
-        <span class="wizard__content-eyebrow">{{
-          'listings.createPage.wizard.stepProgress' | translate: { current: currentStep(), total: totalSteps }
-        }}</span>
         <h1 class="wizard__content-title">{{ getStepNameKey() | translate }}</h1>
+        <span class="wizard__content-eyebrow">{{
+          'listings.createPage.wizard.stepProgress'
+            | translate: { current: currentStep(), total: totalSteps }
+        }}</span>
       </div>
 
       <div class="wizard__body">
-
         <!-- ═══════════════════ STEP 1 — Photos ═══════════════════ -->
         @if (currentStep() === 1) {
           <section class="wizard-step wizard-panel">
-            <h2 class="wizard-panel__title">{{ 'listings.createPage.wizard.step1Heading' | translate }}</h2>
-            <p class="wizard-panel__subtitle">{{ 'listings.createPage.wizard.step1Hint' | translate }}</p>
+            <h2 class="wizard-panel__title">
+              {{ 'listings.createPage.wizard.step1Heading' | translate }}
+            </h2>
+            <p class="wizard-panel__subtitle">
+              {{ 'listings.createPage.wizard.step1Hint' | translate }}
+            </p>
 
             @if (mode === 'edit') {
               <p class="wizard-photo__count-hint wizard-photo__count-hint--ok">
@@ -149,13 +156,26 @@
                 </button>
               }
             } @else {
-              <p class="wizard-photo__count-hint" [class.wizard-photo__count-hint--ok]="photosValid()">
-                <i class="pi" [class.pi-check-circle]="photosValid()" [class.pi-info-circle]="!photosValid()" aria-hidden="true"></i>
-                {{ 'listings.createForm.photos.countHint' | translate: { current: photoCount(), min: minPhotos, max: maxPhotos } }}
+              <p
+                class="wizard-photo__count-hint"
+                [class.wizard-photo__count-hint--ok]="photosValid()"
+              >
+                <i
+                  class="pi"
+                  [class.pi-check-circle]="photosValid()"
+                  [class.pi-info-circle]="!photosValid()"
+                  aria-hidden="true"
+                ></i>
+                {{
+                  'listings.createForm.photos.countHint'
+                    | translate: { current: photoCount(), min: minPhotos, max: maxPhotos }
+                }}
               </p>
 
               @if (photoError()) {
-                <small class="wizard-field__error" role="alert">{{ photoError()! | translate: { min: minPhotos, max: maxPhotos } }}</small>
+                <small class="wizard-field__error" role="alert">{{
+                  photoError()! | translate: { min: minPhotos, max: maxPhotos }
+                }}</small>
               }
             }
 
@@ -171,7 +191,11 @@
                     (drop)="onCoverDrop($event)"
                   >
                     @if (editGallery()[0]) {
-                      <img class="wizard-photo__cover-img" [src]="editGallery()[0]?.url" alt="Current cover photo" />
+                      <img
+                        class="wizard-photo__cover-img"
+                        [src]="editGallery()[0]?.url"
+                        alt="Current cover photo"
+                      />
                       <span class="wizard-photo__cover-label-badge">
                         <i class="pi pi-star-fill" aria-hidden="true"></i>
                         {{ 'listings.createForm.photos.coverLabel' | translate }}
@@ -180,7 +204,9 @@
                       <span class="wizard-photo__cover-icon-wrap" aria-hidden="true">
                         <i class="pi pi-camera wizard-photo__cover-icon"></i>
                       </span>
-                      <span class="wizard-photo__cover-label">{{ 'listings.createForm.photos.addCover' | translate }}</span>
+                      <span class="wizard-photo__cover-label">{{
+                        'listings.createForm.photos.addCover' | translate
+                      }}</span>
                     }
                   </div>
                 } @else {
@@ -194,7 +220,11 @@
                     (drop)="onCoverDrop($event)"
                   >
                     @if (imagePreviews()[0]) {
-                      <img class="wizard-photo__cover-img" [src]="imagePreviews()[0]" alt="Cover photo" />
+                      <img
+                        class="wizard-photo__cover-img"
+                        [src]="imagePreviews()[0]"
+                        alt="Cover photo"
+                      />
                       <span class="wizard-photo__cover-label-badge">
                         <i class="pi pi-star-fill" aria-hidden="true"></i>
                         {{ 'listings.createForm.photos.coverLabel' | translate }}
@@ -211,8 +241,12 @@
                       <span class="wizard-photo__cover-icon-wrap" aria-hidden="true">
                         <i class="pi pi-camera wizard-photo__cover-icon"></i>
                       </span>
-                      <span class="wizard-photo__cover-label">{{ 'listings.createForm.photos.addCover' | translate }}</span>
-                      <span class="wizard-photo__cover-hint">{{ 'listings.createForm.photos.coverHint' | translate }}</span>
+                      <span class="wizard-photo__cover-label">{{
+                        'listings.createForm.photos.addCover' | translate
+                      }}</span>
+                      <span class="wizard-photo__cover-hint">{{
+                        'listings.createForm.photos.coverHint' | translate
+                      }}</span>
                     }
                     <input
                       id="wizard-images-input"
@@ -239,7 +273,11 @@
                       (drop)="onSlotDrop($event, i)"
                       (dragend)="onSlotDragEnd()"
                     >
-                      <img class="wizard-photo__slot-img" [src]="imagePreviews()[i]" [alt]="'Photo ' + (i + 1)" />
+                      <img
+                        class="wizard-photo__slot-img"
+                        [src]="imagePreviews()[i]"
+                        [alt]="'Photo ' + (i + 1)"
+                      />
                       <button
                         type="button"
                         class="wizard-photo__slot-remove"
@@ -310,7 +348,10 @@
                   </label>
                   <!-- Desktop-only decorative fillers -->
                   @for (f of fillerSlots(); track f) {
-                    <span class="wizard-photo__slot wizard-photo__slot--filler" aria-hidden="true"></span>
+                    <span
+                      class="wizard-photo__slot wizard-photo__slot--filler"
+                      aria-hidden="true"
+                    ></span>
                   }
                 </div>
               </div>
@@ -324,9 +365,18 @@
 
               <!-- Tips row -->
               <div class="wizard-photo__tips">
-                <span class="wizard-photo__tip"><i class="pi pi-camera" aria-hidden="true"></i>{{ 'listings.createForm.photos.tipClear' | translate }}</span>
-                <span class="wizard-photo__tip"><i class="pi pi-shield" aria-hidden="true"></i>{{ 'listings.createForm.photos.tipWear' | translate }}</span>
-                <span class="wizard-photo__tip"><i class="pi pi-th-large" aria-hidden="true"></i>{{ 'listings.createForm.photos.tipPieces' | translate }}</span>
+                <span class="wizard-photo__tip"
+                  ><i class="pi pi-camera" aria-hidden="true"></i
+                  >{{ 'listings.createForm.photos.tipClear' | translate }}</span
+                >
+                <span class="wizard-photo__tip"
+                  ><i class="pi pi-shield" aria-hidden="true"></i
+                  >{{ 'listings.createForm.photos.tipWear' | translate }}</span
+                >
+                <span class="wizard-photo__tip"
+                  ><i class="pi pi-th-large" aria-hidden="true"></i
+                  >{{ 'listings.createForm.photos.tipPieces' | translate }}</span
+                >
               </div>
             </div>
           </section>
@@ -335,23 +385,36 @@
         <!-- ═══════════════════ STEP 2 — Basics ═══════════════════ -->
         @if (currentStep() === 2) {
           <section class="wizard-step wizard-panel">
-            <h2 class="wizard-panel__title">{{ 'listings.createPage.wizard.step2Heading' | translate }}</h2>
-            <p class="wizard-panel__subtitle">{{ 'listings.createPage.wizard.step2Hint' | translate }}</p>
+            <h2 class="wizard-panel__title">
+              {{ 'listings.createPage.wizard.step2Heading' | translate }}
+            </h2>
+            <p class="wizard-panel__subtitle">
+              {{ 'listings.createPage.wizard.step2Hint' | translate }}
+            </p>
 
             <!-- Photo strip -->
             @if (displayPhotoCount() > 0) {
               <div class="wizard-field">
                 <span class="wizard-field__label">
-                  {{ 'listings.createPage.wizard.photosAdded' | translate: { count: displayPhotoCount() } }}
+                  {{
+                    'listings.createPage.wizard.photosAdded'
+                      | translate: { count: displayPhotoCount() }
+                  }}
                 </span>
                 <div class="wizard-photo-strip">
                   <!-- Edit mode: the full ordered gallery (cover first) -->
                   @if (mode === 'edit') {
                     @for (item of editGallery(); track item.url) {
                       <div class="wizard-photo-strip__thumb-wrap">
-                        <img class="wizard-photo-strip__thumb" [src]="item.url" aria-hidden="true" />
+                        <img
+                          class="wizard-photo-strip__thumb"
+                          [src]="item.url"
+                          aria-hidden="true"
+                        />
                         @if ($index === 0) {
-                          <span class="wizard-photo-strip__cover">{{ 'listings.createForm.photos.coverLabel' | translate }}</span>
+                          <span class="wizard-photo-strip__cover">{{
+                            'listings.createForm.photos.coverLabel' | translate
+                          }}</span>
                         }
                       </div>
                     }
@@ -361,7 +424,9 @@
                       <div class="wizard-photo-strip__thumb-wrap">
                         <img class="wizard-photo-strip__thumb" [src]="src" aria-hidden="true" />
                         @if ($index === 0) {
-                          <span class="wizard-photo-strip__cover">{{ 'listings.createForm.photos.coverLabel' | translate }}</span>
+                          <span class="wizard-photo-strip__cover">{{
+                            'listings.createForm.photos.coverLabel' | translate
+                          }}</span>
                         }
                       </div>
                     }
@@ -429,8 +494,14 @@
 
             <!-- Condition chips -->
             <div class="wizard-field">
-              <span class="wizard-field__label">{{ 'listings.createForm.condition' | translate }}</span>
-              <div class="wizard-chips" role="group" [attr.aria-label]="'listings.createForm.condition' | translate">
+              <span class="wizard-field__label">{{
+                'listings.createForm.condition' | translate
+              }}</span>
+              <div
+                class="wizard-chips"
+                role="group"
+                [attr.aria-label]="'listings.createForm.condition' | translate"
+              >
                 @for (chip of conditionChips; track chip.value) {
                   <button
                     type="button"
@@ -476,7 +547,9 @@
         <!-- ══════════════ STEP 3 — Pricing & Location ════════════ -->
         @if (currentStep() === 3) {
           <section class="wizard-step wizard-panel">
-            <h2 class="wizard-panel__title">{{ 'listings.createPage.wizard.step3Heading' | translate }}</h2>
+            <h2 class="wizard-panel__title">
+              {{ 'listings.createPage.wizard.step3Heading' | translate }}
+            </h2>
             <!-- Mobile only: the desktop design deliberately has no step-3 subtitle. -->
             <p class="wizard-panel__subtitle wizard-panel__subtitle--mobile">
               {{ 'listings.createPage.wizard.step3Subtitle' | translate }}
@@ -501,7 +574,11 @@
                   [useGrouping]="true"
                   [placeholder]="'listings.createForm.pricePerDayPlaceholder' | translate"
                   styleClass="rate-card__input"
-                  [pt]="{ pcInputText: { root: { 'aria-invalid': hasError('pricePerDay') ? 'true' : null } } }"
+                  [pt]="{
+                    pcInputText: {
+                      root: { 'aria-invalid': hasError('pricePerDay') ? 'true' : null },
+                    },
+                  }"
                 />
                 <div class="rate-card__unit-wrap">
                   <button
@@ -513,17 +590,33 @@
                     [attr.aria-expanded]="unitMenuOpen()"
                     [attr.aria-label]="'listings.createForm.priceUnitLabel' | translate"
                   >
-                    <span class="rate-card__per">{{ 'listings.createForm.priceUnitPer' | translate }}</span>
-                    <span class="rate-card__unit-value">{{ priceUnitNounKey(selectedUnit()) | translate }}</span>
+                    <span class="rate-card__per">{{
+                      'listings.createForm.priceUnitPer' | translate
+                    }}</span>
+                    <span class="rate-card__unit-value">{{
+                      priceUnitNounKey(selectedUnit()) | translate
+                    }}</span>
                     <i class="pi pi-chevron-down rate-card__chevron" aria-hidden="true"></i>
                   </button>
                 </div>
               </div>
 
               @if (unitMenuOpen()) {
-                <button type="button" class="rate-card__backdrop" aria-hidden="true" tabindex="-1" (click)="closeUnitMenu()"></button>
-                <div class="rate-card__menu" role="listbox" [attr.aria-label]="'listings.createForm.priceUnitMenuTitle' | translate">
-                  <span class="rate-card__menu-title">{{ 'listings.createForm.priceUnitMenuTitle' | translate }}</span>
+                <button
+                  type="button"
+                  class="rate-card__backdrop"
+                  aria-hidden="true"
+                  tabindex="-1"
+                  (click)="closeUnitMenu()"
+                ></button>
+                <div
+                  class="rate-card__menu"
+                  role="listbox"
+                  [attr.aria-label]="'listings.createForm.priceUnitMenuTitle' | translate"
+                >
+                  <span class="rate-card__menu-title">{{
+                    'listings.createForm.priceUnitMenuTitle' | translate
+                  }}</span>
                   @for (unit of priceUnits; track unit) {
                     <button
                       type="button"
@@ -534,7 +627,9 @@
                       (click)="selectUnit(unit)"
                     >
                       <span class="rate-card__menu-badge">{{ priceUnitBadge(unit) }}</span>
-                      <span class="rate-card__menu-label">{{ priceUnitOptionKey(unit) | translate }}</span>
+                      <span class="rate-card__menu-label">{{
+                        priceUnitOptionKey(unit) | translate
+                      }}</span>
                       @if (selectedUnit() === unit) {
                         <i class="pi pi-check rate-card__menu-check" aria-hidden="true"></i>
                       }
@@ -546,7 +641,10 @@
                 <div class="rate-card__renters">
                   <i class="pi pi-tag" aria-hidden="true"></i>
                   {{ 'listings.createForm.rentersSee' | translate }}
-                  <strong>{{ createListingForm.controls.pricePerDay.value | dram }} {{ priceUnitSuffixKey() | translate }}</strong>
+                  <strong
+                    >{{ createListingForm.controls.pricePerDay.value | dram }}
+                    {{ priceUnitSuffixKey() | translate }}</strong
+                  >
                 </div>
               }
               @if (hasError('pricePerDay')) {
@@ -562,37 +660,33 @@
 
             <div class="wizard-divider"></div>
 
-            <!-- Minimum rental (own row) -->
-            <div class="wizard-field">
-              <span class="wizard-field__label">{{ 'listings.createForm.minRental.label' | translate }}</span>
-              <div class="wizard-chips" role="group" [attr.aria-label]="'listings.createForm.minRental.label' | translate">
-                @for (days of minRentalDays; track days) {
-                  <button
-                    type="button"
-                    class="wizard-chip"
-                    [class.wizard-chip--active]="selectedMinDays() === days"
-                    [attr.aria-pressed]="selectedMinDays() === days"
-                    (click)="selectMinDays(days)"
-                  >
-                    {{ 'listings.createForm.minRental.d' + days | translate }}
-                  </button>
-                }
-              </div>
-              <p class="wizard-field__note">{{ 'listings.createForm.minRental.hint' | translate }}</p>
-            </div>
-
-            <!-- City + Pickup area (2-col on desktop) -->
+            <!-- Minimum rental + Pickup area (2-col on desktop) — DLPricing
+                 order: rate card, divider, then this pair. -->
             <div class="wizard-2col">
               <div class="wizard-field">
-                <app-ui-input
-                  type="text"
-                  formControlName="city"
-                  [label]="'listings.createForm.city' | translate"
-                  [required]="true"
-                  [leftIcon]="'pi pi-map-marker'"
-                  [placeholder]="'listings.createForm.cityPlaceholder' | translate"
-                  [errorMessage]="hasError('city') ? ('listings.createForm.validation.required' | translate) : null"
-                />
+                <span class="wizard-field__label">{{
+                  'listings.createForm.minRental.label' | translate
+                }}</span>
+                <div
+                  class="wizard-chips"
+                  role="group"
+                  [attr.aria-label]="'listings.createForm.minRental.label' | translate"
+                >
+                  @for (days of minRentalDays; track days) {
+                    <button
+                      type="button"
+                      class="wizard-chip"
+                      [class.wizard-chip--active]="selectedMinDays() === days"
+                      [attr.aria-pressed]="selectedMinDays() === days"
+                      (click)="selectMinDays(days)"
+                    >
+                      {{ 'listings.createForm.minRental.d' + days | translate }}
+                    </button>
+                  }
+                </div>
+                <p class="wizard-field__note">
+                  {{ 'listings.createForm.minRental.hint' | translate }}
+                </p>
               </div>
               <div class="wizard-field">
                 <app-ui-input
@@ -608,21 +702,38 @@
               </div>
             </div>
 
-            <!-- Pin location on a map (create flow only — the separate edit
-                 page can't persist coordinates yet; see create-listing-form's
-                 class doc / P1-6). -->
-            @if (mode !== 'edit') {
-              <div class="wizard-2col">
+            <!-- City + District (2-col on desktop). Neither has a slot in the
+                 design's own DLPricing (its "Pickup area" mock is a single
+                 district/city display) — both are real backend fields, so
+                 pairing them here is the closest faithful arrangement.
+                 District only applies to the create flow (see the map block
+                 below for why edit stays without it), so in edit mode City
+                 renders alone in this row. -->
+            <div class="wizard-2col">
+              <div class="wizard-field">
+                <app-ui-input
+                  type="text"
+                  formControlName="city"
+                  [label]="'listings.createForm.city' | translate"
+                  [required]="true"
+                  [leftIcon]="'pi pi-map-marker'"
+                  [placeholder]="'listings.createForm.cityPlaceholder' | translate"
+                  [errorMessage]="
+                    hasError('city')
+                      ? ('listings.createForm.validation.required' | translate)
+                      : null
+                  "
+                />
+              </div>
+              @if (mode !== 'edit') {
                 <div class="wizard-field">
                   <label class="wizard-field__label" for="wz-district">
                     {{ 'listings.createForm.district.label' | translate }}
                   </label>
-                  <select
-                    id="wz-district"
-                    class="wizard-select"
-                    formControlName="districtId"
-                  >
-                    <option [ngValue]="null">{{ 'listings.createForm.district.placeholder' | translate }}</option>
+                  <select id="wz-district" class="wizard-select" formControlName="districtId">
+                    <option [ngValue]="null">
+                      {{ 'listings.createForm.district.placeholder' | translate }}
+                    </option>
                     @for (d of districts; track d.id) {
                       <option [ngValue]="d.id">{{ districtName(d) }}</option>
                     }
@@ -632,47 +743,58 @@
                     {{ 'listings.createForm.district.derivedHint' | translate }}
                   </p>
                 </div>
+              }
+            </div>
 
-                <div class="wizard-field">
-                  <span class="wizard-field__label">{{ 'listings.createForm.locationPicker.cta' | translate }}</span>
-                  @if (hasPin()) {
-                    <div class="location-card">
-                      <app-map
-                        [center]="pinCenter()!"
-                        [pin]="pinCenter()"
-                        [zoom]="15"
-                        height="140px"
-                      />
-                      <button
-                        type="button"
-                        #locationPickerTrigger
-                        class="location-card__change-btn"
-                        (click)="openLocationPicker()"
-                      >
-                        <i class="pi pi-map-marker" aria-hidden="true"></i>
-                        {{ 'listings.createForm.locationPicker.change' | translate }}
-                      </button>
+            <!-- Pin location on a map, full width (create flow only — the
+                 separate edit page can't persist coordinates yet; see
+                 create-listing-form's class doc / P1-6). -->
+            @if (mode !== 'edit') {
+              <div class="wizard-field">
+                <span class="wizard-field__label">{{
+                  'listings.createForm.locationPicker.mapLabel' | translate
+                }}</span>
+                @if (hasPin()) {
+                  <div class="location-card">
+                    <div class="location-card__chip">
+                      <span class="location-card__chip-icon"
+                        ><i class="pi pi-shield" aria-hidden="true"></i
+                      ></span>
+                      <span class="location-card__chip-label">{{
+                        'listings.createForm.locationPicker.approximateChip' | translate
+                      }}</span>
                     </div>
-                    <p class="wizard-field__note">
-                      <i class="pi pi-lock" aria-hidden="true"></i>
-                      {{ 'listings.createForm.locationPicker.pinSetHint' | translate }}
-                    </p>
-                  } @else {
+                    <app-map
+                      [center]="pinCenter()!"
+                      [pin]="pinCenter()"
+                      [zoom]="15"
+                      height="var(--wizard-map-height)"
+                    />
                     <button
                       type="button"
                       #locationPickerTrigger
-                      class="location-card__cta"
+                      class="location-card__change-btn"
                       (click)="openLocationPicker()"
                     >
-                      <i class="pi pi-map" aria-hidden="true"></i>
-                      {{ 'listings.createForm.locationPicker.cta' | translate }}
+                      <i class="pi pi-map-marker" aria-hidden="true"></i>
+                      {{ 'listings.createForm.locationPicker.change' | translate }}
                     </button>
-                    <p class="wizard-field__note">
-                      <i class="pi pi-lock" aria-hidden="true"></i>
-                      {{ 'listings.createForm.locationPicker.privacyNote' | translate }}
-                    </p>
-                  }
-                </div>
+                  </div>
+                } @else {
+                  <button
+                    type="button"
+                    #locationPickerTrigger
+                    class="location-card__cta"
+                    (click)="openLocationPicker()"
+                  >
+                    <i class="pi pi-map" aria-hidden="true"></i>
+                    {{ 'listings.createForm.locationPicker.cta' | translate }}
+                  </button>
+                }
+                <p class="wizard-field__note">
+                  <i class="pi pi-lock" aria-hidden="true"></i>
+                  {{ 'listings.createForm.locationPicker.mapHelper' | translate }}
+                </p>
               </div>
 
               <app-location-picker
@@ -685,9 +807,15 @@
 
             <!-- Delivery -->
             <div class="wizard-field">
-              <span class="wizard-field__label">{{ 'listings.createForm.delivery.label' | translate }}</span>
+              <span class="wizard-field__label">{{
+                'listings.createForm.delivery.label' | translate
+              }}</span>
               <!-- Mutually exclusive: exactly one of Pickup / Courier is always set. -->
-              <div class="wizard-delivery-list" role="radiogroup" [attr.aria-label]="'listings.createForm.delivery.label' | translate">
+              <div
+                class="wizard-delivery-list"
+                role="radiogroup"
+                [attr.aria-label]="'listings.createForm.delivery.label' | translate"
+              >
                 <button
                   type="button"
                   role="radio"
@@ -698,8 +826,12 @@
                 >
                   <span class="wizard-delivery__radio" aria-hidden="true"></span>
                   <div class="wizard-delivery__text">
-                    <span class="wizard-delivery__title">{{ 'listings.createForm.delivery.pickup' | translate }}</span>
-                    <span class="wizard-delivery__hint">{{ 'listings.createForm.delivery.pickupHint' | translate }}</span>
+                    <span class="wizard-delivery__title">{{
+                      'listings.createForm.delivery.pickup' | translate
+                    }}</span>
+                    <span class="wizard-delivery__hint">{{
+                      'listings.createForm.delivery.pickupHint' | translate
+                    }}</span>
                   </div>
                 </button>
                 <button
@@ -712,8 +844,12 @@
                 >
                   <span class="wizard-delivery__radio" aria-hidden="true"></span>
                   <div class="wizard-delivery__text">
-                    <span class="wizard-delivery__title">{{ 'listings.createForm.delivery.deliver' | translate }}</span>
-                    <span class="wizard-delivery__hint">{{ 'listings.createForm.delivery.deliverHint' | translate }}</span>
+                    <span class="wizard-delivery__title">{{
+                      'listings.createForm.delivery.deliver' | translate
+                    }}</span>
+                    <span class="wizard-delivery__hint">{{
+                      'listings.createForm.delivery.deliverHint' | translate
+                    }}</span>
                   </div>
                 </button>
               </div>
@@ -724,52 +860,102 @@
         <!-- ══════════════ STEP 4 — Safety & Hygiene ══════════════ -->
         @if (currentStep() === 4) {
           <section class="wizard-step wizard-panel">
-            <h2 class="wizard-panel__title">{{ 'listings.createPage.wizard.step4Heading' | translate }}</h2>
-            <p class="wizard-panel__subtitle">{{ 'listings.createPage.wizard.step4Hint' | translate }}</p>
+            <h2 class="wizard-panel__title">
+              {{ 'listings.createPage.wizard.step4Heading' | translate }}
+            </h2>
+            <p class="wizard-panel__subtitle">
+              {{ 'listings.createPage.wizard.step4Hint' | translate }}
+            </p>
 
             <div class="wizard-2col">
               <!-- Cleaning checklist -->
               <div class="wizard-section">
-                <span class="wizard-section__label">{{ 'listings.createForm.cleaning.title' | translate }}</span>
+                <span class="wizard-section__label">{{
+                  'listings.createForm.cleaning.title' | translate
+                }}</span>
                 <div class="wizard-check-list">
                   <label class="wizard-check-row">
-                    <div class="wizard-check-row__box" [class.wizard-check-row__box--on]="cleanWashed()">
-                      @if (cleanWashed()) { <i class="pi pi-check wizard-check-row__tick" aria-hidden="true"></i> }
+                    <div
+                      class="wizard-check-row__box"
+                      [class.wizard-check-row__box--on]="cleanWashed()"
+                    >
+                      @if (cleanWashed()) {
+                        <i class="pi pi-check wizard-check-row__tick" aria-hidden="true"></i>
+                      }
                     </div>
                     <div class="wizard-check-row__text">
-                      <span class="wizard-check-row__title">{{ 'listings.createForm.cleaning.washed' | translate }}</span>
-                      <span class="wizard-check-row__hint">{{ 'listings.createForm.cleaning.washedHint' | translate }}</span>
+                      <span class="wizard-check-row__title">{{
+                        'listings.createForm.cleaning.washed' | translate
+                      }}</span>
+                      <span class="wizard-check-row__hint">{{
+                        'listings.createForm.cleaning.washedHint' | translate
+                      }}</span>
                     </div>
-                    <input type="checkbox" class="wizard-check-row__input" [checked]="cleanWashed()" (change)="cleanWashed.set(!cleanWashed())" />
+                    <input
+                      type="checkbox"
+                      class="wizard-check-row__input"
+                      [checked]="cleanWashed()"
+                      (change)="cleanWashed.set(!cleanWashed())"
+                    />
                   </label>
 
                   <label class="wizard-check-row">
-                    <div class="wizard-check-row__box" [class.wizard-check-row__box--on]="cleanDisinfected()">
-                      @if (cleanDisinfected()) { <i class="pi pi-check wizard-check-row__tick" aria-hidden="true"></i> }
+                    <div
+                      class="wizard-check-row__box"
+                      [class.wizard-check-row__box--on]="cleanDisinfected()"
+                    >
+                      @if (cleanDisinfected()) {
+                        <i class="pi pi-check wizard-check-row__tick" aria-hidden="true"></i>
+                      }
                     </div>
                     <div class="wizard-check-row__text">
-                      <span class="wizard-check-row__title">{{ 'listings.createForm.cleaning.disinfected' | translate }}</span>
-                      <span class="wizard-check-row__hint">{{ 'listings.createForm.cleaning.disinfectedHint' | translate }}</span>
+                      <span class="wizard-check-row__title">{{
+                        'listings.createForm.cleaning.disinfected' | translate
+                      }}</span>
+                      <span class="wizard-check-row__hint">{{
+                        'listings.createForm.cleaning.disinfectedHint' | translate
+                      }}</span>
                     </div>
-                    <input type="checkbox" class="wizard-check-row__input" [checked]="cleanDisinfected()" (change)="cleanDisinfected.set(!cleanDisinfected())" />
+                    <input
+                      type="checkbox"
+                      class="wizard-check-row__input"
+                      [checked]="cleanDisinfected()"
+                      (change)="cleanDisinfected.set(!cleanDisinfected())"
+                    />
                   </label>
 
                   <label class="wizard-check-row">
-                    <div class="wizard-check-row__box" [class.wizard-check-row__box--on]="cleanUV()">
-                      @if (cleanUV()) { <i class="pi pi-check wizard-check-row__tick" aria-hidden="true"></i> }
+                    <div
+                      class="wizard-check-row__box"
+                      [class.wizard-check-row__box--on]="cleanUV()"
+                    >
+                      @if (cleanUV()) {
+                        <i class="pi pi-check wizard-check-row__tick" aria-hidden="true"></i>
+                      }
                     </div>
                     <div class="wizard-check-row__text">
-                      <span class="wizard-check-row__title">{{ 'listings.createForm.cleaning.uv' | translate }}</span>
-                      <span class="wizard-check-row__hint">{{ 'listings.createForm.cleaning.uvHint' | translate }}</span>
+                      <span class="wizard-check-row__title">{{
+                        'listings.createForm.cleaning.uv' | translate
+                      }}</span>
+                      <span class="wizard-check-row__hint">{{
+                        'listings.createForm.cleaning.uvHint' | translate
+                      }}</span>
                     </div>
-                    <input type="checkbox" class="wizard-check-row__input" [checked]="cleanUV()" (change)="cleanUV.set(!cleanUV())" />
+                    <input
+                      type="checkbox"
+                      class="wizard-check-row__input"
+                      [checked]="cleanUV()"
+                      (change)="cleanUV.set(!cleanUV())"
+                    />
                   </label>
                 </div>
               </div>
 
               <!-- Wear / missing pieces notes -->
               <div class="wizard-field">
-                <label class="wizard-field__label" for="wz-safety">{{ 'listings.createForm.wearNotes' | translate }}</label>
+                <label class="wizard-field__label" for="wz-safety">{{
+                  'listings.createForm.wearNotes' | translate
+                }}</label>
                 <textarea
                   id="wz-safety"
                   class="wizard-field__textarea ui-textarea"
@@ -779,7 +965,8 @@
                   [placeholder]="'listings.createForm.wearNotesPlaceholder' | translate"
                 ></textarea>
                 <span class="wizard-field__counter">
-                  {{ noteLength() }} / 300 &middot; {{ 'listings.createForm.wearNotesOptional' | translate }}
+                  {{ noteLength() }} / 300 &middot;
+                  {{ 'listings.createForm.wearNotesOptional' | translate }}
                 </span>
               </div>
             </div>
@@ -788,157 +975,262 @@
 
         <!-- ══════════════ STEP 5 — Preview & Submit ══════════════ -->
         @if (currentStep() === 5) {
-          <div class="wizard-step wizard-preview-grid">
-
-            <!-- Live preview card -->
-            <div class="wizard-preview-col">
-              <div class="wizard-preview__eyebrow">{{ 'listings.createPage.wizard.previewEyebrow' | translate }}</div>
-              <div class="wizard-preview">
-                @if (coverImageUrl()) {
-                  <div class="wizard-preview__img-wrap">
-                    <img class="wizard-preview__img" [src]="coverImageUrl()" alt="Cover" />
-                    <div class="wizard-preview__badges">
-                      <span class="wizard-preview__badge">{{ ageRangeText() }} {{ 'listings.createForm.ageYearsShort' | translate }}</span>
-                    </div>
-                  </div>
-                } @else {
-                  <div class="wizard-preview__no-img"><i class="pi pi-image" aria-hidden="true"></i></div>
-                }
-                <div class="wizard-preview__body">
-                  <h3 class="wizard-preview__title">{{ createListingForm.controls.title.value || '—' }}</h3>
-                  <p class="wizard-preview__location">
-                    <i class="pi pi-map-marker" aria-hidden="true"></i>
-                    {{ getPickupSummary() }} &middot; {{ getDeliverySummaryKey() | translate }}
-                  </p>
-                  <p class="wizard-preview__price">
-                    {{ createListingForm.controls.pricePerDay.value | dram }}<span class="wizard-preview__price-suffix">
-                      {{ priceUnitSuffixKey() | translate }} &middot;
-                      {{
-                        'listings.createForm.minRental.preview'
-                          | translate: { period: minRentalLabelKey() | translate }
-                      }}
-                    </span>
-                  </p>
+          <div class="wizard-step">
+            <div class="wizard-preview-grid">
+              <!-- Live preview card -->
+              <div class="wizard-preview-col">
+                <div class="wizard-preview__eyebrow">
+                  {{ 'listings.createPage.wizard.previewEyebrow' | translate }}
                 </div>
+                <div class="wizard-preview">
+                  @if (coverImageUrl()) {
+                    <div class="wizard-preview__img-wrap">
+                      <img class="wizard-preview__img" [src]="coverImageUrl()" alt="Cover" />
+                      <div class="wizard-preview__badges">
+                        <span class="wizard-preview__badge"
+                          >{{ ageRangeText() }}
+                          {{ 'listings.createForm.ageYearsShort' | translate }}</span
+                        >
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="wizard-preview__no-img">
+                      <i class="pi pi-image" aria-hidden="true"></i>
+                    </div>
+                  }
+                  <div class="wizard-preview__body">
+                    <!-- DLPreview badge row. "Verified" is deliberately omitted —
+                       no real owner-verification flag exists yet in the API
+                       contract, and a hard-coded trust badge would state as
+                       fact something never actually checked (see M-027). -->
+                    @if (cleaningStepsDone() > 0) {
+                      <div class="wizard-preview__status-row">
+                        <span
+                          class="wizard-preview__status-badge wizard-preview__status-badge--info"
+                        >
+                          <i class="pi pi-sparkles" aria-hidden="true"></i>
+                          {{ 'listings.createPage.wizard.hygieneCheckedBadge' | translate }}
+                        </span>
+                      </div>
+                    }
+                    <h3 class="wizard-preview__title">
+                      {{ createListingForm.controls.title.value || '—' }}
+                    </h3>
+                    <p class="wizard-preview__location">
+                      <i class="pi pi-map-marker" aria-hidden="true"></i>
+                      {{ getPickupSummary() }} &middot; {{ getDeliverySummaryKey() | translate }}
+                    </p>
+                    <p class="wizard-preview__price">
+                      {{ createListingForm.controls.pricePerDay.value | dram
+                      }}<span class="wizard-preview__price-suffix">
+                        {{ priceUnitSuffixKey() | translate }} &middot;
+                        {{
+                          'listings.createForm.minRental.preview'
+                            | translate: { period: minRentalLabelKey() | translate }
+                        }}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Review & submit -->
+              <div class="wizard-review-col wizard-panel">
+                <h2 class="wizard-panel__title">
+                  {{ 'listings.createPage.wizard.step5Heading' | translate }}
+                </h2>
+                <p class="wizard-panel__subtitle">
+                  {{ 'listings.createPage.wizard.step5Hint' | translate }}
+                </p>
+
+                <dl class="wizard-summary">
+                  <div class="wizard-summary__row">
+                    <dt class="wizard-summary__label">
+                      {{ 'listings.createPage.wizard.summaryCategory' | translate }}
+                    </dt>
+                    <dd class="wizard-summary__value">{{ getCategoryName() || '—' }}</dd>
+                    <button type="button" class="wizard-summary__edit" (click)="jumpToStep(2)">
+                      {{ 'listings.createPage.wizard.edit' | translate }}
+                    </button>
+                  </div>
+                  <div class="wizard-summary__row">
+                    <dt class="wizard-summary__label">
+                      {{ 'listings.createPage.wizard.summaryAge' | translate }}
+                    </dt>
+                    <dd class="wizard-summary__value">
+                      {{ ageRangeText() }} {{ 'listings.createForm.ageYearsShort' | translate }}
+                    </dd>
+                    <button type="button" class="wizard-summary__edit" (click)="jumpToStep(2)">
+                      {{ 'listings.createPage.wizard.edit' | translate }}
+                    </button>
+                  </div>
+                  <div class="wizard-summary__row">
+                    <dt class="wizard-summary__label">
+                      {{ 'listings.createPage.wizard.summaryPhotos' | translate }}
+                    </dt>
+                    <dd class="wizard-summary__value">
+                      @if (displayPhotoCount() > 0) {
+                        {{
+                          'listings.createPage.wizard.photosAdded'
+                            | translate: { count: displayPhotoCount() }
+                        }}
+                      } @else {
+                        {{ 'listings.createPage.wizard.reviewNoPhotos' | translate }}
+                      }
+                    </dd>
+                    <button type="button" class="wizard-summary__edit" (click)="jumpToStep(1)">
+                      {{ 'listings.createPage.wizard.edit' | translate }}
+                    </button>
+                  </div>
+                  <div class="wizard-summary__row">
+                    <dt class="wizard-summary__label">
+                      {{ 'listings.createPage.wizard.summaryPrice' | translate }}
+                    </dt>
+                    <dd class="wizard-summary__value wizard-summary__value--price">
+                      {{ createListingForm.controls.pricePerDay.value | dram }}
+                      {{ priceUnitSuffixKey() | translate }}
+                    </dd>
+                    <button type="button" class="wizard-summary__edit" (click)="jumpToStep(3)">
+                      {{ 'listings.createPage.wizard.edit' | translate }}
+                    </button>
+                  </div>
+                  <div class="wizard-summary__row">
+                    <dt class="wizard-summary__label">
+                      {{ 'listings.createPage.wizard.summaryPickup' | translate }}
+                    </dt>
+                    <dd class="wizard-summary__value">{{ getPickupSummary() }}</dd>
+                    <button type="button" class="wizard-summary__edit" (click)="jumpToStep(3)">
+                      {{ 'listings.createPage.wizard.edit' | translate }}
+                    </button>
+                  </div>
+                  <div class="wizard-summary__row">
+                    <dt class="wizard-summary__label">
+                      {{ 'listings.createPage.wizard.summarySafety' | translate }}
+                    </dt>
+                    <dd class="wizard-summary__value">
+                      {{
+                        'listings.createPage.wizard.summarySafetyValue'
+                          | translate: { done: cleaningStepsDone(), total: cleaningStepsTotal }
+                      }}
+                    </dd>
+                    <button type="button" class="wizard-summary__edit" (click)="jumpToStep(4)">
+                      {{ 'listings.createPage.wizard.edit' | translate }}
+                    </button>
+                  </div>
+                </dl>
               </div>
             </div>
 
-            <!-- Review & submit -->
-            <div class="wizard-review-col wizard-panel">
-              <h2 class="wizard-panel__title">{{ 'listings.createPage.wizard.step5Heading' | translate }}</h2>
-              <p class="wizard-panel__subtitle">{{ 'listings.createPage.wizard.step5Hint' | translate }}</p>
-
-              <dl class="wizard-summary">
-                <div class="wizard-summary__row">
-                  <dt class="wizard-summary__label">{{ 'listings.createPage.wizard.summaryCategory' | translate }}</dt>
-                  <dd class="wizard-summary__value">{{ getCategoryName() || '—' }}</dd>
-                  <button type="button" class="wizard-summary__edit" (click)="jumpToStep(2)">{{ 'listings.createPage.wizard.edit' | translate }}</button>
-                </div>
-                <div class="wizard-summary__row">
-                  <dt class="wizard-summary__label">{{ 'listings.createPage.wizard.summaryAge' | translate }}</dt>
-                  <dd class="wizard-summary__value">{{ ageRangeText() }} {{ 'listings.createForm.ageYearsShort' | translate }}</dd>
-                  <button type="button" class="wizard-summary__edit" (click)="jumpToStep(2)">{{ 'listings.createPage.wizard.edit' | translate }}</button>
-                </div>
-                <div class="wizard-summary__row">
-                  <dt class="wizard-summary__label">{{ 'listings.createPage.wizard.summaryPhotos' | translate }}</dt>
-                  <dd class="wizard-summary__value">
-                    @if (displayPhotoCount() > 0) {
-                      {{ 'listings.createPage.wizard.photosAdded' | translate: { count: displayPhotoCount() } }}
-                    } @else {
-                      {{ 'listings.createPage.wizard.reviewNoPhotos' | translate }}
-                    }
-                  </dd>
-                  <button type="button" class="wizard-summary__edit" (click)="jumpToStep(1)">{{ 'listings.createPage.wizard.edit' | translate }}</button>
-                </div>
-                <div class="wizard-summary__row">
-                  <dt class="wizard-summary__label">{{ 'listings.createPage.wizard.summaryPrice' | translate }}</dt>
-                  <dd class="wizard-summary__value wizard-summary__value--price">
-                    {{ createListingForm.controls.pricePerDay.value | dram }} {{ priceUnitSuffixKey() | translate }}
-                  </dd>
-                  <button type="button" class="wizard-summary__edit" (click)="jumpToStep(3)">{{ 'listings.createPage.wizard.edit' | translate }}</button>
-                </div>
-                <div class="wizard-summary__row">
-                  <dt class="wizard-summary__label">{{ 'listings.createPage.wizard.summaryPickup' | translate }}</dt>
-                  <dd class="wizard-summary__value">{{ getPickupSummary() }}</dd>
-                  <button type="button" class="wizard-summary__edit" (click)="jumpToStep(3)">{{ 'listings.createPage.wizard.edit' | translate }}</button>
-                </div>
-                <div class="wizard-summary__row">
-                  <dt class="wizard-summary__label">{{ 'listings.createPage.wizard.summarySafety' | translate }}</dt>
-                  <dd class="wizard-summary__value">
-                    {{
-                      'listings.createPage.wizard.summarySafetyValue'
-                        | translate: { done: cleaningStepsDone(), total: cleaningStepsTotal }
-                    }}
-                  </dd>
-                  <button type="button" class="wizard-summary__edit" (click)="jumpToStep(4)">{{ 'listings.createPage.wizard.edit' | translate }}</button>
-                </div>
-              </dl>
-
-              <p class="wizard-submit-note">
-                <i class="pi pi-shield" aria-hidden="true"></i>
-                <span>{{ 'listings.createPage.wizard.submitNote' | translate }}</span>
-              </p>
+            <!-- DLPreview's two closing tiles — a static confirmation (never a
+               submit gate) and the review-time note, replacing the old
+               `.wizard-submit-note` / footer "ready" hint respectively. -->
+            <div class="wizard-confirm-tiles">
+              <div class="wizard-confirm-tile">
+                <span class="wizard-confirm-tile__icon"
+                  ><i class="pi pi-check" aria-hidden="true"></i
+                ></span>
+                <span class="wizard-confirm-tile__text">
+                  {{ 'listings.createPage.wizard.communityNote.before' | translate }}
+                  <a routerLink="/terms" class="wizard-confirm-tile__link">{{
+                    'listings.createPage.wizard.communityNote.linkLabel' | translate
+                  }}</a>
+                  {{ 'listings.createPage.wizard.communityNote.after' | translate }}
+                </span>
+              </div>
+              <div class="wizard-confirm-tile">
+                <span class="wizard-confirm-tile__icon"
+                  ><i class="pi pi-clock" aria-hidden="true"></i
+                ></span>
+                <span class="wizard-confirm-tile__text">{{
+                  'listings.createPage.wizard.readyHint' | translate
+                }}</span>
+              </div>
             </div>
           </div>
         }
-
-      </div><!-- /wizard__body -->
-    </div><!-- /wizard__content -->
-  </div><!-- /wizard__layout -->
-
-  <!-- ── Sticky footer ────────────────────────────────────────── -->
-  <div class="wizard__footer">
-    <div class="wizard__footer-inner">
-      <button
-        type="button"
-        class="wizard__btn wizard__btn--back"
-        [class.wizard__btn--hidden]="currentStep() === 1"
-        (click)="goToPrevStep()"
-        [disabled]="isSubmitting || currentStep() === 1"
-      >
-        <i class="pi pi-chevron-left" aria-hidden="true"></i>
-        {{ 'listings.createPage.wizard.back' | translate }}
-      </button>
-
-      <div class="wizard__footer-hint">
-        @if (currentStep() === totalSteps) {
-          {{ 'listings.createPage.wizard.readyHint' | translate }}
-        }
       </div>
+      <!-- /wizard__body -->
 
-      @if (currentStep() < totalSteps) {
-        <button
-          type="button"
-          class="wizard__btn wizard__btn--primary"
-          [class.wizard__btn--full]="currentStep() === 1"
-          (click)="goToNextStep()"
-        >
-          {{ getContinueLabelKey() | translate }}
-          <i class="pi pi-arrow-right" aria-hidden="true"></i>
-        </button>
-      } @else {
-        <button
-          type="submit"
-          class="wizard__btn wizard__btn--primary"
-          [disabled]="!canSubmit()"
-        >
-          @if (isSubmitting) { <i class="pi pi-spin pi-spinner" aria-hidden="true"></i> }
-          @if (isSubmitting && uploadProgress !== null) {
-            {{ 'listings.createForm.upload.uploading' | translate: { percent: uploadProgress } }}
+      <!-- ── Nav footer — sticky bar below 1024px (FAWizardFooter pins it
+           `position:absolute; bottom:0`); inline row after the step content
+           at ≥1024px (listing-desktop.jsx renders it under the body with
+           `marginTop:24`, not in a floating bar) — desktop.scss retargets
+           `.wizard__footer` to `position:static` there. ───────────────── -->
+      <div class="wizard__footer">
+        <div class="wizard__footer-inner">
+          <button
+            type="button"
+            class="wizard__btn wizard__btn--back"
+            [class.wizard__btn--hidden]="currentStep() === 1"
+            (click)="goToPrevStep()"
+            [disabled]="isSubmitting || currentStep() === 1"
+          >
+            <i class="pi pi-chevron-left" aria-hidden="true"></i>
+            <span class="wizard__btn-mobile-label">{{
+              'listings.createPage.wizard.back' | translate
+            }}</span>
+            <span class="wizard__btn-stack">
+              <span class="wizard__btn-sub">{{
+                'listings.createPage.wizard.back' | translate
+              }}</span>
+              @if (currentStep() > 1) {
+                <span class="wizard__btn-step">{{ prevStepShortKey() | translate }}</span>
+              }
+            </span>
+          </button>
+
+          @if (currentStep() < totalSteps) {
+            <button
+              type="button"
+              class="wizard__btn wizard__btn--primary"
+              [class.wizard__btn--full]="currentStep() === 1"
+              (click)="goToNextStep()"
+            >
+              <span class="wizard__btn-mobile-label">{{ getContinueLabelKey() | translate }}</span>
+              <span class="wizard__btn-stack wizard__btn-stack--end">
+                <span class="wizard__btn-sub">{{
+                  'listings.createPage.wizard.nextLabel' | translate
+                }}</span>
+                <span class="wizard__btn-step">{{ nextStepShortKey() | translate }}</span>
+              </span>
+              <i class="pi pi-arrow-right" aria-hidden="true"></i>
+            </button>
           } @else {
-            <i class="pi pi-check" aria-hidden="true"></i>
-            {{ submitLabelKey | translate }}
+            <button
+              type="submit"
+              class="wizard__btn wizard__btn--primary wizard__btn--submit"
+              [disabled]="!canSubmit()"
+            >
+              @if (isSubmitting) {
+                <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+              }
+              @if (isSubmitting && uploadProgress !== null) {
+                {{
+                  'listings.createForm.upload.uploading' | translate: { percent: uploadProgress }
+                }}
+              } @else {
+                <i class="pi pi-check" aria-hidden="true"></i>
+                {{ submitLabelKey | translate }}
+              }
+            </button>
           }
-        </button>
-      }
+        </div>
+      </div>
     </div>
+    <!-- /wizard__content -->
   </div>
+  <!-- /wizard__layout -->
 
   <!-- Upload progress bar -->
   @if (isSubmitting && uploadProgress !== null) {
-    <div class="wizard__upload-progress" role="progressbar" [attr.aria-valuenow]="uploadProgress" aria-valuemin="0" aria-valuemax="100">
+    <div
+      class="wizard__upload-progress"
+      role="progressbar"
+      [attr.aria-valuenow]="uploadProgress"
+      aria-valuemin="0"
+      aria-valuemax="100"
+    >
       <div class="wizard__upload-progress-fill" [style.width.%]="uploadProgress"></div>
     </div>
   }
-
 </form>

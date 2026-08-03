@@ -617,7 +617,14 @@
         "previewEyebrow": "How renters see it",
         "reviewTitle": "Review & submit",
         "nextHint": "Next: {{next}}",
+        "nextLabel": "Next",
         "readyHint": "Ready to publish — we'll review within ~4 hours.",
+        "hygieneCheckedBadge": "Hygiene checked",
+        "communityNote": {
+          "before": "I agree to DoRent's",
+          "linkLabel": "community rules",
+          "after": "and confirm this listing is accurate."
+        },
         "step1Short": "Photos",
         "step2Short": "Basics",
         "step3Short": "Pricing",
@@ -673,7 +680,10 @@
         "confirm": "Confirm location",
         "cancel": "Cancel",
         "privacyNote": "We publish only the approximate area on the map — your exact address is never shown to renters.",
-        "pinSetHint": "Pin set. Only the approximate area is ever shown to renters."
+        "pinSetHint": "Pin set. Only the approximate area is ever shown to renters.",
+        "mapLabel": "Where the toy is",
+        "mapHelper": "Renters see this map with an approximate circle — your exact address stays private until a booking is confirmed.",
+        "approximateChip": "Approximate area"
       },
       "images": "Toy photos",
       "imagesSelected": "photos selected",

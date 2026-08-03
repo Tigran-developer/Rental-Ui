@@ -1,0 +1,88 @@
+/* Step 5 (Preview & Submit) styles split out of create-listing-form.component.scss
+   purely to stay under Angular's per-file component-style budget — the same
+   reason create-listing-form.menu.scss exists as its own file. Loaded after
+   the base sheet via styleUrls. */
+
+/* DLPreview badge row (above the title) — "Hygiene checked" only, see the
+   template's gating comment for why "Verified" is omitted entirely. */
+.wizard-preview__status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-6);
+  margin-bottom: var(--ui-space-6);
+}
+
+.wizard-preview__status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px var(--ui-space-8);
+  border-radius: var(--ui-radius-pill);
+  font-size: 0.7rem;
+  font-weight: 700;
+
+  .pi {
+    font-size: 0.65rem;
+  }
+}
+
+.wizard-preview__status-badge--info {
+  background: var(--ui-color-info-surface);
+  color: var(--ui-color-info);
+}
+
+/* DLPreview's two closing tiles (community-rules confirmation + review-time
+   note) — full width, centred, capped at 520px regardless of the two-column
+   grid above them. Replaces `.wizard-submit-note` and the footer's
+   `.wizard__footer-hint` (readyHint), both removed. */
+.wizard-confirm-tiles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-10);
+  max-width: 520px;
+  width: 100%;
+  margin-inline: auto;
+}
+
+.wizard-confirm-tile {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: var(--ui-space-14);
+  background: var(--ui-color-background);
+  border: 1px dashed var(--ui-color-border);
+  border-radius: 13px;
+}
+
+.wizard-confirm-tile__icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-color-primary);
+  color: #fff;
+  font-size: 0.7rem;
+}
+
+.wizard-confirm-tile__text {
+  flex: 1;
+  font-size: var(--ui-font-size-caption);
+  color: var(--ui-color-text-primary);
+  line-height: 1.55;
+}
+
+.wizard-confirm-tile__link {
+  color: var(--ui-color-primary);
+  font-weight: 800;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+  &:focus-visible {
+    outline: 2px solid var(--ui-color-primary);
+    outline-offset: 2px;
+  }
+}

@@ -15,13 +15,12 @@ import {
 import { Location } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import type { AbstractControl, ValidationErrors } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { InputNumberModule } from 'primeng/inputnumber';
 
 import { AgeRangeSliderComponent } from '../../../../shared/ui/age-range-slider/age-range-slider.component';
-import {
-  CategorySelectorComponent,
-} from '../../../../shared/ui/category-selector/category-selector.component';
+import { CategorySelectorComponent } from '../../../../shared/ui/category-selector/category-selector.component';
 import { UiInputComponent } from '../../../../shared/ui/input/ui-input.component';
 import { MapComponent } from '../../../../shared/ui/map/map.component';
 import type { MapLatLng } from '../../../../shared/ui/map/map.component';
@@ -37,7 +36,10 @@ import { PRICE_UNITS } from '../../models/create-listing.model';
 import type { ListingDistrict } from '../../models/district.model';
 import { districtDisplayName } from '../../models/district-ui.util';
 import type { ListingImage } from '../../models/listing.model';
-import { LocationPickerComponent, YEREVAN_CENTER } from '../location-picker/location-picker.component';
+import {
+  LocationPickerComponent,
+  YEREVAN_CENTER,
+} from '../location-picker/location-picker.component';
 
 /** Whether the wizard creates a new listing or edits an existing one. */
 export type ListingFormMode = 'create' | 'edit';
@@ -101,18 +103,43 @@ interface WizardStep {
 }
 
 const CONDITION_CHIPS: readonly ConditionChip[] = [
-  { value: 'New',     labelKey: 'listings.createForm.conditionOptions.new'     },
+  { value: 'New', labelKey: 'listings.createForm.conditionOptions.new' },
   { value: 'LikeNew', labelKey: 'listings.createForm.conditionOptions.likeNew' },
-  { value: 'Good',    labelKey: 'listings.createForm.conditionOptions.good'    },
-  { value: 'Fair',    labelKey: 'listings.createForm.conditionOptions.fair'    },
+  { value: 'Good', labelKey: 'listings.createForm.conditionOptions.good' },
+  { value: 'Fair', labelKey: 'listings.createForm.conditionOptions.fair' },
 ];
 
 const WIZARD_STEPS: readonly WizardStep[] = [
-  { labelKey: 'listings.createPage.wizard.step1Label', shortLabelKey: 'listings.createPage.wizard.step1Short', subKey: 'listings.createPage.wizard.step1Sub', icon: 'pi-camera' },
-  { labelKey: 'listings.createPage.wizard.step2Label', shortLabelKey: 'listings.createPage.wizard.step2Short', subKey: 'listings.createPage.wizard.step2Sub', icon: 'pi-tag' },
-  { labelKey: 'listings.createPage.wizard.step3Label', shortLabelKey: 'listings.createPage.wizard.step3Short', subKey: 'listings.createPage.wizard.step3Sub', icon: 'pi-map-marker' },
-  { labelKey: 'listings.createPage.wizard.step4Label', shortLabelKey: 'listings.createPage.wizard.step4Short', subKey: 'listings.createPage.wizard.step4Sub', icon: 'pi-shield' },
-  { labelKey: 'listings.createPage.wizard.step5Label', shortLabelKey: 'listings.createPage.wizard.step5Short', subKey: 'listings.createPage.wizard.step5Sub', icon: 'pi-check' },
+  {
+    labelKey: 'listings.createPage.wizard.step1Label',
+    shortLabelKey: 'listings.createPage.wizard.step1Short',
+    subKey: 'listings.createPage.wizard.step1Sub',
+    icon: 'pi-camera',
+  },
+  {
+    labelKey: 'listings.createPage.wizard.step2Label',
+    shortLabelKey: 'listings.createPage.wizard.step2Short',
+    subKey: 'listings.createPage.wizard.step2Sub',
+    icon: 'pi-tag',
+  },
+  {
+    labelKey: 'listings.createPage.wizard.step3Label',
+    shortLabelKey: 'listings.createPage.wizard.step3Short',
+    subKey: 'listings.createPage.wizard.step3Sub',
+    icon: 'pi-map-marker',
+  },
+  {
+    labelKey: 'listings.createPage.wizard.step4Label',
+    shortLabelKey: 'listings.createPage.wizard.step4Short',
+    subKey: 'listings.createPage.wizard.step4Sub',
+    icon: 'pi-shield',
+  },
+  {
+    labelKey: 'listings.createPage.wizard.step5Label',
+    shortLabelKey: 'listings.createPage.wizard.step5Short',
+    subKey: 'listings.createPage.wizard.step5Sub',
+    icon: 'pi-check',
+  },
 ];
 
 const MIN_RENTAL_DAYS = [1, 3, 7, 14] as const;
@@ -133,16 +160,16 @@ const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const AGE_MAX_YEARS = 12;
 
 const STEP_CONTROLS: readonly string[][] = [
-  [],                                          // 1 Photos (gated on photo count)
-  ['title', 'categoryId', 'description'],      // 2 Basics
-  ['pricePerDay', 'priceUnit', 'city'],        // 3 Pricing & Location
-  [],                                          // 4 Safety
-  [],                                          // 5 Preview
+  [], // 1 Photos (gated on photo count)
+  ['title', 'categoryId', 'description'], // 2 Basics
+  ['pricePerDay', 'priceUnit', 'city'], // 3 Pricing & Location
+  [], // 4 Safety
+  [], // 5 Preview
 ];
 
 function ageRangeValidator(control: AbstractControl): ValidationErrors | null {
   const from = control.get('ageFromMonths')?.value;
-  const to   = control.get('ageToMonths')?.value;
+  const to = control.get('ageToMonths')?.value;
   if (typeof from === 'number' && typeof to === 'number' && to < from) {
     return { ageRangeInvalid: true };
   }
@@ -160,6 +187,7 @@ function ageRangeValidator(control: AbstractControl): ValidationErrors | null {
     LocationPickerComponent,
     MapComponent,
     ReactiveFormsModule,
+    RouterLink,
     TranslatePipe,
     UiInputComponent,
   ],
@@ -167,13 +195,14 @@ function ageRangeValidator(control: AbstractControl): ValidationErrors | null {
   styleUrls: [
     './create-listing-form.component.scss',
     './create-listing-form.menu.scss',
+    './create-listing-form.step5.scss',
     './create-listing-form.desktop.scss',
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CreateListingFormComponent implements OnInit {
-  private readonly fb              = inject(FormBuilder);
-  private readonly location        = inject(Location);
+  private readonly fb = inject(FormBuilder);
+  private readonly location = inject(Location);
   private readonly languageService = inject(LanguageService);
 
   constructor() {
@@ -216,42 +245,43 @@ export class CreateListingFormComponent implements OnInit {
   readonly editGallery = signal<EditPhoto[]>([]);
   @Input() set existingImageUrls(images: ListingImage[] | null | undefined) {
     const imgs = images ?? [];
-    this.editGallery.set(imgs.map(i => ({ url: i.url, existingId: i.id || null, file: null })));
+    this.editGallery.set(imgs.map((i) => ({ url: i.url, existingId: i.id || null, file: null })));
   }
 
   /** Pre-fills every field in edit mode. Applied once a value is bound. */
   @Input() set prefill(value: ListingFormPrefill | null) {
     if (!value) return;
     this.createListingForm.patchValue({
-      title:         value.title,
-      description:   value.description,
-      categoryId:    value.categoryId,
-      pricePerDay:   value.pricePerDay,
-      priceUnit:     value.priceUnit ?? 'Daily',
-      city:          value.city,
+      title: value.title,
+      description: value.description,
+      categoryId: value.categoryId,
+      pricePerDay: value.pricePerDay,
+      priceUnit: value.priceUnit ?? 'Daily',
+      city: value.city,
       ageFromMonths: value.ageFromMonths,
-      ageToMonths:   value.ageToMonths,
-      condition:     (value.condition as ConditionChip['value'] | null) ?? '',
-      hygieneNotes:  value.hygieneNotes ?? '',
-      safetyNotes:   value.safetyNotes ?? '',
+      ageToMonths: value.ageToMonths,
+      condition: (value.condition as ConditionChip['value'] | null) ?? '',
+      hygieneNotes: value.hygieneNotes ?? '',
+      safetyNotes: value.safetyNotes ?? '',
       // Listings created before these fields existed carry null — fall back to
       // the same defaults a fresh wizard starts with.
       minRentalDays: value.minRentalDays ?? 1,
-      deliveryType:  value.deliveryType ?? 'Pickup',
+      deliveryType: value.deliveryType ?? 'Pickup',
     });
     if (typeof value.ageFromMonths === 'number' && typeof value.ageToMonths === 'number') {
-      this.ageYears.set([
-        Math.round(value.ageFromMonths / 12),
-        Math.round(value.ageToMonths / 12),
-      ]);
+      this.ageYears.set([Math.round(value.ageFromMonths / 12), Math.round(value.ageToMonths / 12)]);
     }
     const cond = value.condition as ConditionChip['value'] | null;
-    if (cond && CONDITION_CHIPS.some(c => c.value === cond)) {
+    if (cond && CONDITION_CHIPS.some((c) => c.value === cond)) {
       this.selectedCond.set(cond);
     }
   }
 
-  @Output() readonly submitted = new EventEmitter<{ payload: CreateListingRequest; files: File[]; imageOrder: ListingImageOrderItem[] | null }>();
+  @Output() readonly submitted = new EventEmitter<{
+    payload: CreateListingRequest;
+    files: File[];
+    imageOrder: ListingImageOrderItem[] | null;
+  }>();
   @Output() readonly cancelled = new EventEmitter<void>();
   @Output() readonly retryUpload = new EventEmitter<File[]>();
 
@@ -265,15 +295,15 @@ export class CreateListingFormComponent implements OnInit {
   }
 
   // ── Constants exposed to template ─────────────────────────────
-  readonly minPrice     = MIN_PRICE_PER_DAY;
-  readonly minPhotos    = MIN_PHOTOS;
-  readonly maxPhotos    = MAX_PHOTOS;
-  readonly steps        = WIZARD_STEPS;
+  readonly minPrice = MIN_PRICE_PER_DAY;
+  readonly minPhotos = MIN_PHOTOS;
+  readonly maxPhotos = MAX_PHOTOS;
+  readonly steps = WIZARD_STEPS;
   readonly yerevanCenter = YEREVAN_CENTER;
 
   // ── Wizard ───────────────────────────────────────────────────
   readonly currentStep = signal(1);
-  readonly totalSteps  = 5;
+  readonly totalSteps = 5;
   readonly stepIndices = [1, 2, 3, 4, 5] as const;
   readonly progressPct = computed(() => (this.currentStep() / this.totalSteps) * 100);
   // Vertical desktop stepper fill: 0% at step 1 → 100% at the last step.
@@ -283,8 +313,8 @@ export class CreateListingFormComponent implements OnInit {
 
   // ── Chip data ─────────────────────────────────────────────────
   readonly conditionChips = CONDITION_CHIPS;
-  readonly minRentalDays  = MIN_RENTAL_DAYS;
-  readonly priceUnits     = PRICE_UNITS;
+  readonly minRentalDays = MIN_RENTAL_DAYS;
+  readonly priceUnits = PRICE_UNITS;
 
   // ── Chip / selection state ────────────────────────────────────
   // Minimum rental and delivery live in `createListingForm` — they are payload
@@ -292,31 +322,31 @@ export class CreateListingFormComponent implements OnInit {
   readonly selectedCond = signal<ConditionChip['value'] | null>(null);
 
   // ── Age range (years) ─────────────────────────────────────────
-  readonly ageYears   = signal<[number, number]>([2, 5]);
+  readonly ageYears = signal<[number, number]>([2, 5]);
   readonly ageRangeText = computed(() => {
     const [lo, hi] = this.ageYears();
     return `${this.fmtAge(lo)}–${this.fmtAge(hi)}`;
   });
 
   // ── Safety state ──────────────────────────────────────────────
-  readonly cleanWashed      = signal(false);
+  readonly cleanWashed = signal(false);
   readonly cleanDisinfected = signal(false);
-  readonly cleanUV          = signal(false);
+  readonly cleanUV = signal(false);
   /** Total cleaning steps offered — drives the "N of 3" summary row. */
   readonly cleaningStepsTotal = 3;
-  readonly cleaningStepsDone  = computed(
+  readonly cleaningStepsDone = computed(
     () => [this.cleanWashed(), this.cleanDisinfected(), this.cleanUV()].filter(Boolean).length,
   );
 
   // ── Images ────────────────────────────────────────────────────
   selectedFiles: File[] = [];
   readonly imagePreviews = signal<string[]>([]);
-  readonly photoError    = signal<string | null>(null);
-  readonly dragSrcIdx    = signal<number | null>(null);
-  readonly dragOverIdx   = signal<number | null>(null);
+  readonly photoError = signal<string | null>(null);
+  readonly dragSrcIdx = signal<number | null>(null);
+  readonly dragOverIdx = signal<number | null>(null);
   readonly coverDragOver = signal(false);
-  readonly photoCount    = computed(() => this.imagePreviews().length);
-  readonly photosValid   = computed(() => {
+  readonly photoCount = computed(() => this.imagePreviews().length);
+  readonly photosValid = computed(() => {
     if (this.mode === 'edit') {
       // The listing must keep at least one photo and stay within the cap.
       const n = this.editGallery().length;
@@ -340,18 +370,14 @@ export class CreateListingFormComponent implements OnInit {
       .slice(1),
   );
   // Number of freshly picked photos in edit mode (drives the "added" hint).
-  readonly newPhotoCount = computed(() =>
-    this.editGallery().filter(i => i.file !== null).length,
-  );
+  readonly newPhotoCount = computed(() => this.editGallery().filter((i) => i.file !== null).length);
   // Whether the grid has any non-cover photos (drives the drag-to-reorder hint).
   readonly hasGridPhotos = computed(() =>
     this.mode === 'edit' ? this.editGridItems().length > 0 : this.gridIndices().length > 0,
   );
   // Preview card image: the cover is the first gallery photo in edit mode.
   readonly coverImageUrl = computed(() =>
-    this.mode === 'edit'
-      ? (this.editGallery()[0]?.url ?? null)
-      : (this.imagePreviews()[0] ?? null),
+    this.mode === 'edit' ? (this.editGallery()[0]?.url ?? null) : (this.imagePreviews()[0] ?? null),
   );
   // Total photos that will exist after save.
   readonly displayPhotoCount = computed(() =>
@@ -359,36 +385,48 @@ export class CreateListingFormComponent implements OnInit {
   );
   // Decorative empty slots to round the desktop photo grid out to 4 cells.
   readonly fillerSlots = computed(() => {
-    const gridItems = this.mode === 'edit'
-      ? this.editGridItems().length
-      : Math.max(this.imagePreviews().length - 1, 0);
-    const gridUsed  = gridItems + 1; // +1 for the add slot
+    const gridItems =
+      this.mode === 'edit'
+        ? this.editGridItems().length
+        : Math.max(this.imagePreviews().length - 1, 0);
+    const gridUsed = gridItems + 1; // +1 for the add slot
     return Array.from({ length: Math.max(0, 4 - gridUsed) }, (_, i) => i);
   });
 
   // ── Form ──────────────────────────────────────────────────────
   readonly createListingForm = this.fb.group(
     {
-      title:         this.fb.nonNullable.control('', [Validators.required, Validators.minLength(3), Validators.maxLength(200)]),
-      description:   this.fb.nonNullable.control('', [Validators.required, Validators.minLength(20), Validators.maxLength(4000)]),
-      categoryId:    this.fb.nonNullable.control('', [Validators.required]),
-      pricePerDay:   this.fb.control<number | null>(null, [Validators.required, Validators.min(MIN_PRICE_PER_DAY)]),
-      priceUnit:     this.fb.nonNullable.control<PriceUnit>('Daily', [Validators.required]),
-      city:          this.fb.nonNullable.control('', [Validators.required]),
-      addressLine:   this.fb.nonNullable.control(''),
-      latitude:      this.fb.control<number | null>(null),
-      longitude:     this.fb.control<number | null>(null),
+      title: this.fb.nonNullable.control('', [
+        Validators.required,
+        Validators.minLength(3),
+        Validators.maxLength(200),
+      ]),
+      description: this.fb.nonNullable.control('', [
+        Validators.required,
+        Validators.minLength(20),
+        Validators.maxLength(4000),
+      ]),
+      categoryId: this.fb.nonNullable.control('', [Validators.required]),
+      pricePerDay: this.fb.control<number | null>(null, [
+        Validators.required,
+        Validators.min(MIN_PRICE_PER_DAY),
+      ]),
+      priceUnit: this.fb.nonNullable.control<PriceUnit>('Daily', [Validators.required]),
+      city: this.fb.nonNullable.control('', [Validators.required]),
+      addressLine: this.fb.nonNullable.control(''),
+      latitude: this.fb.control<number | null>(null),
+      longitude: this.fb.control<number | null>(null),
       // Optional owner override; the backend derives this from the pin when null.
-      districtId:    this.fb.control<string | null>(null),
+      districtId: this.fb.control<string | null>(null),
       ageFromMonths: this.fb.control<number | null>(24, [Validators.min(0)]),
-      ageToMonths:   this.fb.control<number | null>(60, [Validators.min(0)]),
-      condition:     this.fb.nonNullable.control<'' | ConditionChip['value']>(''),
-      hygieneNotes:  this.fb.nonNullable.control(''),
-      safetyNotes:   this.fb.nonNullable.control(''),
+      ageToMonths: this.fb.control<number | null>(60, [Validators.min(0)]),
+      condition: this.fb.nonNullable.control<'' | ConditionChip['value']>(''),
+      hygieneNotes: this.fb.nonNullable.control(''),
+      safetyNotes: this.fb.nonNullable.control(''),
       // Shortest bookable period in days; one of MIN_RENTAL_DAYS.
       minRentalDays: this.fb.nonNullable.control<number>(1),
       // Single-select: the toy is handed over one way or the other.
-      deliveryType:  this.fb.nonNullable.control<DeliveryType>('Pickup'),
+      deliveryType: this.fb.nonNullable.control<DeliveryType>('Pickup'),
     },
     { validators: ageRangeValidator },
   );
@@ -405,16 +443,16 @@ export class CreateListingFormComponent implements OnInit {
       return;
     }
     const names = STEP_CONTROLS[step - 1] ?? [];
-    names.forEach(n => this.createListingForm.get(n)?.markAsTouched());
-    const valid = names.every(n => this.createListingForm.get(n)?.valid !== false);
+    names.forEach((n) => this.createListingForm.get(n)?.markAsTouched());
+    const valid = names.every((n) => this.createListingForm.get(n)?.valid !== false);
     if (valid) {
-      this.currentStep.update(s => Math.min(s + 1, this.totalSteps));
+      this.currentStep.update((s) => Math.min(s + 1, this.totalSteps));
       this.scrollToTop();
     }
   }
 
   goToPrevStep(): void {
-    this.currentStep.update(s => Math.max(s - 1, 1));
+    this.currentStep.update((s) => Math.max(s - 1, 1));
     this.scrollToTop();
   }
 
@@ -432,7 +470,7 @@ export class CreateListingFormComponent implements OnInit {
     this.ageYears.set(value);
     this.createListingForm.patchValue({
       ageFromMonths: value[0] * 12,
-      ageToMonths:   value[1] * 12,
+      ageToMonths: value[1] * 12,
     });
   }
 
@@ -449,7 +487,7 @@ export class CreateListingFormComponent implements OnInit {
   }
 
   protected toggleUnitMenu(): void {
-    this.unitMenuOpen.update(o => !o);
+    this.unitMenuOpen.update((o) => !o);
   }
 
   protected selectUnit(unit: PriceUnit): void {
@@ -619,20 +657,20 @@ export class CreateListingFormComponent implements OnInit {
       ...this.selectedFiles.slice(0, index),
       ...this.selectedFiles.slice(index + 1),
     ];
-    this.imagePreviews.update(prev => prev.filter((_, i) => i !== index));
+    this.imagePreviews.update((prev) => prev.filter((_, i) => i !== index));
     if (this.photosValid()) this.photoError.set(null);
   }
 
   // Edit mode: remove one gallery photo (existing or newly added) by index.
   protected removeGalleryItem(index: number): void {
-    this.editGallery.update(g => g.filter((_, i) => i !== index));
+    this.editGallery.update((g) => g.filter((_, i) => i !== index));
     if (this.photosValid()) this.photoError.set(null);
   }
 
   // Edit mode: promote any gallery photo to cover (index 0).
   protected setGalleryCover(index: number): void {
     if (index <= 0) return;
-    this.editGallery.update(g => {
+    this.editGallery.update((g) => {
       const copy = [...g];
       const [item] = copy.splice(index, 1);
       return [item, ...copy];
@@ -641,7 +679,7 @@ export class CreateListingFormComponent implements OnInit {
 
   // Edit mode: move a gallery photo from one position to another.
   private reorderGallery(from: number, to: number): void {
-    this.editGallery.update(g => {
+    this.editGallery.update((g) => {
       const copy = [...g];
       const [item] = copy.splice(from, 1);
       copy.splice(to, 0, item);
@@ -651,7 +689,7 @@ export class CreateListingFormComponent implements OnInit {
 
   // Edit mode: discard the freshly picked photos and keep the existing ones.
   protected clearNewImages(): void {
-    this.editGallery.update(g => g.filter(i => i.existingId !== null));
+    this.editGallery.update((g) => g.filter((i) => i.existingId !== null));
     this.photoError.set(null);
     this.dragSrcIdx.set(null);
     this.dragOverIdx.set(null);
@@ -679,7 +717,9 @@ export class CreateListingFormComponent implements OnInit {
       }
       return;
     }
-    const files = Array.from(event.dataTransfer?.files ?? []).filter(f => f.type.startsWith('image/'));
+    const files = Array.from(event.dataTransfer?.files ?? []).filter((f) =>
+      f.type.startsWith('image/'),
+    );
     if (files.length) this.appendFiles(files);
   }
 
@@ -735,11 +775,11 @@ export class CreateListingFormComponent implements OnInit {
     // Edit mode: append each new photo to the end of the unified gallery so it
     // behaves like any other photo (reorderable, removable, promotable to cover).
     if (this.mode === 'edit') {
-      accepted.forEach(file => {
+      accepted.forEach((file) => {
         const reader = new FileReader();
-        reader.onload = e => {
+        reader.onload = (e) => {
           const url = e.target?.result as string;
-          this.editGallery.update(g => [...g, { url, existingId: null, file }]);
+          this.editGallery.update((g) => [...g, { url, existingId: null, file }]);
         };
         reader.readAsDataURL(file);
       });
@@ -753,17 +793,25 @@ export class CreateListingFormComponent implements OnInit {
 
   /** Validates type/size/count, sets photoError, returns the accepted files. */
   private acceptFiles(incoming: File[], replacing: boolean): File[] {
-    const baseCount = this.mode === 'edit'
-      ? this.editGallery().length
-      : (replacing ? 0 : this.selectedFiles.length);
+    const baseCount =
+      this.mode === 'edit' ? this.editGallery().length : replacing ? 0 : this.selectedFiles.length;
     const accepted: File[] = [];
     let typeError = false;
     let sizeError = false;
     let maxError = false;
     for (const file of incoming) {
-      if (!file.type.startsWith('image/')) { typeError = true; continue; }
-      if (file.size > MAX_IMAGE_BYTES) { sizeError = true; continue; }
-      if (baseCount + accepted.length >= MAX_PHOTOS) { maxError = true; continue; }
+      if (!file.type.startsWith('image/')) {
+        typeError = true;
+        continue;
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        sizeError = true;
+        continue;
+      }
+      if (baseCount + accepted.length >= MAX_PHOTOS) {
+        maxError = true;
+        continue;
+      }
       accepted.push(file);
     }
     if (typeError) this.photoError.set('listings.createForm.validation.photoWrongType');
@@ -778,7 +826,7 @@ export class CreateListingFormComponent implements OnInit {
     let done = 0;
     files.forEach((file, i) => {
       const reader = new FileReader();
-      reader.onload = e => {
+      reader.onload = (e) => {
         previews[startIdx + i] = e.target?.result as string;
         if (++done === files.length) this.imagePreviews.set([...previews]);
       };
@@ -789,7 +837,7 @@ export class CreateListingFormComponent implements OnInit {
   // ── Helpers ───────────────────────────────────────────────────
   protected getCategoryName(): string {
     const id = this.createListingForm.controls.categoryId.value;
-    return this.categories.find(c => c.id === id)?.name ?? id;
+    return this.categories.find((c) => c.id === id)?.name ?? id;
   }
 
   protected getPickupSummary(): string {
@@ -807,6 +855,20 @@ export class CreateListingFormComponent implements OnInit {
 
   protected getStepNameKey(): string {
     return this.steps[this.currentStep() - 1]?.labelKey ?? '';
+  }
+
+  /** Short label of the PREVIOUS step, for the desktop Back button's two-line
+   *  stack (small "Back" caption over the step it returns to). Empty before
+   *  step 1 exists — the template only renders this line when `currentStep() > 1`. */
+  protected prevStepShortKey(): string {
+    return this.steps[this.currentStep() - 2]?.shortLabelKey ?? '';
+  }
+
+  /** Short label of the NEXT step, for the desktop Next button's two-line
+   *  stack (small "Next" caption over the step it advances to). Only read on
+   *  steps 1–4 — the last step renders the single-line Submit button instead. */
+  protected nextStepShortKey(): string {
+    return this.steps[this.currentStep()]?.shortLabelKey ?? '';
   }
 
   protected getContinueLabelKey(): string {
@@ -852,43 +914,45 @@ export class CreateListingFormComponent implements OnInit {
     if (raw.pricePerDay === null) return;
 
     const checks: string[] = [];
-    if (this.cleanWashed())      checks.push('Washed with soap & water');
+    if (this.cleanWashed()) checks.push('Washed with soap & water');
     if (this.cleanDisinfected()) checks.push('Disinfected with safe wipes');
-    if (this.cleanUV())          checks.push('UV-sanitized');
-    const rawHygiene   = raw.hygieneNotes.trim();
+    if (this.cleanUV()) checks.push('UV-sanitized');
+    const rawHygiene = raw.hygieneNotes.trim();
     const hygieneNotes = checks.length
-      ? (rawHygiene ? `${checks.join(', ')}. ${rawHygiene}` : checks.join(', '))
-      : (rawHygiene || null);
+      ? rawHygiene
+        ? `${checks.join(', ')}. ${rawHygiene}`
+        : checks.join(', ')
+      : rawHygiene || null;
 
     const payload: CreateListingRequest = {
-      title:         raw.title.trim(),
-      description:   raw.description.trim(),
-      categoryId:    raw.categoryId.trim(),
-      pricePerDay:   raw.pricePerDay,
-      priceUnit:     raw.priceUnit,
-      country:       DEFAULT_COUNTRY,
-      city:          raw.city.trim(),
-      addressLine:   this.toNullStr(raw.addressLine),
-      latitude:      raw.latitude,
-      longitude:     raw.longitude,
-      districtId:    raw.districtId,
+      title: raw.title.trim(),
+      description: raw.description.trim(),
+      categoryId: raw.categoryId.trim(),
+      pricePerDay: raw.pricePerDay,
+      priceUnit: raw.priceUnit,
+      country: DEFAULT_COUNTRY,
+      city: raw.city.trim(),
+      addressLine: this.toNullStr(raw.addressLine),
+      latitude: raw.latitude,
+      longitude: raw.longitude,
+      districtId: raw.districtId,
       ageFromMonths: raw.ageFromMonths,
-      ageToMonths:   raw.ageToMonths,
-      condition:     raw.condition === '' ? null : raw.condition,
+      ageToMonths: raw.ageToMonths,
+      condition: raw.condition === '' ? null : raw.condition,
       hygieneNotes,
-      safetyNotes:   this.toNullStr(raw.safetyNotes),
+      safetyNotes: this.toNullStr(raw.safetyNotes),
       minRentalDays: raw.minRentalDays,
-      deliveryType:  raw.deliveryType,
+      deliveryType: raw.deliveryType,
     };
 
     if (this.mode === 'edit') {
       // Walk the gallery once, keeping only real photos (existing id or a file).
       // New photos get a sequential index into the emitted files array so the
       // page can swap in their server ids after upload and reorder the full set.
-      const emittable = this.editGallery().filter(i => i.existingId !== null || i.file !== null);
-      const files = emittable.filter(i => i.file !== null).map(i => i.file!);
+      const emittable = this.editGallery().filter((i) => i.existingId !== null || i.file !== null);
+      const files = emittable.filter((i) => i.file !== null).map((i) => i.file!);
       let newFileIndex = 0;
-      const imageOrder: ListingImageOrderItem[] = emittable.map(i =>
+      const imageOrder: ListingImageOrderItem[] = emittable.map((i) =>
         i.existingId !== null
           ? { existingId: i.existingId, newFileIndex: null }
           : { existingId: null, newFileIndex: newFileIndex++ },
