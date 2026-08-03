@@ -281,4 +281,30 @@ export const listingsReducer = createReducer(
       selectedListing: setFavoriteOnDetails(state.selectedListing, listingId, true),
     }),
   ),
+  on(
+    ListingsActions.loadMapPins,
+    (state): ListingsState => ({
+      ...state,
+      mapPinsLoading: true,
+      mapPinsError: null,
+    }),
+  ),
+  on(
+    ListingsActions.loadMapPinsSuccess,
+    (state, { result }): ListingsState => ({
+      ...state,
+      mapPins: [...result.items],
+      mapPinsTruncated: result.isTruncated,
+      mapPinsLoading: false,
+      mapPinsError: null,
+    }),
+  ),
+  on(
+    ListingsActions.loadMapPinsFailure,
+    (state, { error }): ListingsState => ({
+      ...state,
+      mapPinsLoading: false,
+      mapPinsError: error,
+    }),
+  ),
 );

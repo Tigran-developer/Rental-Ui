@@ -33,6 +33,17 @@
     </div>
   }
 
+  <!-- Projection slot for the parent's OWN popup UI (Maps P2-2), positioned
+       from the `MapMarkerAnchor` pixel coordinates `markerHovered` emits —
+       see map.component.ts's class doc comment for why a real `L.popup`
+       isn't used instead (routerLink/translate/image/card-stack). Sits
+       above every Leaflet-owned pane/control but below this component's own
+       chrome (zoom stack, scroll/touch gate) — see map.component.scss's
+       `.app-map__overlay` rule for the z-index reasoning. -->
+  <div class="app-map__overlay">
+    <ng-content select="[app-map-overlay]" />
+  </div>
+
   <!-- Projection slot for caller-owned buttons docked to the map (e.g.
        "expand to full-screen", "my location") — bottom-right, clear of
        Leaflet's attribution control below it. Callers wanting the same

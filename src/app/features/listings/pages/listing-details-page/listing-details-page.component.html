@@ -270,6 +270,7 @@
                     {{ 'listings.details.location.heading' | translate }}
                   </h2>
                   <app-listing-location
+                    [listingId]="listing.id"
                     [city]="listing.city"
                     [district]="listing.district ?? null"
                     [latitude]="listing.latitude ?? null"

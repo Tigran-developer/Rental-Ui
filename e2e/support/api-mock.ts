@@ -30,6 +30,10 @@ export interface ApiSeed {
   login?: { token?: string; status?: number; body?: unknown };
   /** POST /api/listings outcome — defaults to a successful creation. */
   createListing?: { status?: number; body?: unknown };
+  /** GET /api/listings/map-pins — items for the catalogue map view (Maps P2-2). */
+  mapPins?: unknown[];
+  /** GET /api/listings/map-pins — `isTruncated` flag on the same envelope. */
+  mapPinsTruncated?: boolean;
 }
 
 function json(route: Route, status: number, body: unknown): Promise<void> {
@@ -81,10 +85,22 @@ export async function mockApi(page: Page, seed: ApiSeed = {}): Promise<void> {
       );
     }
 
+    // GET /api/listings/map-pins — Maps P2-2 catalogue map view. Must be
+    // checked BEFORE the singleListingId regex below, which would otherwise
+    // match "map-pins" as if it were a listing id (same reason "mine" is
+    // excluded there).
+    if (pathname.endsWith('/api/listings/map-pins') && method === 'GET') {
+      return json(route, 200, {
+        items: seed.mapPins ?? [],
+        isTruncated: seed.mapPinsTruncated ?? false,
+      });
+    }
+
     // GET /api/listings/{id} — a single listing's detail payload. Excludes
-    // /api/listings/mine, which has its own (list-shaped) response elsewhere.
+    // /api/listings/mine and /api/listings/map-pins, which have their own
+    // (list-shaped) responses elsewhere.
     const singleListingId = pathname.match(/^\/api\/listings\/([^/]+)$/)?.[1];
-    if (singleListingId && singleListingId !== 'mine' && method === 'GET') {
+    if (singleListingId && singleListingId !== 'mine' && singleListingId !== 'map-pins' && method === 'GET') {
       return json(route, 200, seed.listingDetails ?? {});
     }
 

@@ -24,6 +24,7 @@ import {
   selectListingsPage,
   selectListingsPageSize,
 } from './listings.selectors';
+import { initialListingsState } from './listings.state';
 
 function toErrorMessage(error: unknown): string {
   return toApiErrorMessage(error);
@@ -95,6 +96,39 @@ export class ListingsEffects {
           ),
         ),
       ),
+    ),
+  );
+
+  readonly loadMapPins$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(ListingsActions.loadMapPins),
+      withLatestFrom(
+        this.store.select(selectListingsFilters),
+        this.store.select(selectListingsOriginCoords),
+      ),
+      // switchMap (not mergeMap/concatMap): the map re-dispatches on every
+      // pan/zoom, so a stale in-flight viewport response must be cancelled,
+      // not raced against a newer one.
+      switchMap(([{ bounds, scope }, filters, originCoords]) => {
+        // `scope: 'all'` (listing-detail maps) ignores whatever
+        // filter/origin is currently in the store — a listing-detail page
+        // must show every toy, not whatever the visitor last searched on
+        // `/listings`. Reads the REDUCER's own initial (empty) filter,
+        // rather than hand-building one here, so this can never drift from
+        // what "no filter" actually means.
+        const effectiveFilters = scope === 'all' ? initialListingsState.filters : filters;
+        const effectiveOrigin = scope === 'all' ? null : originCoords;
+        return this.listingsApi.getMapPins(effectiveFilters, bounds, effectiveOrigin).pipe(
+          map((result) => ListingsActions.loadMapPinsSuccess({ result })),
+          catchError((error: unknown) =>
+            of(
+              ListingsActions.loadMapPinsFailure({
+                error: toErrorMessage(error),
+              }),
+            ),
+          ),
+        );
+      }),
     ),
   );
 

@@ -1,0 +1,110 @@
+<div class="listings-map" (keydown.escape)="onEscape()">
+  <div class="listings-map__map-wrap" [style.height]="height()" #mapWrapper>
+    <app-map
+      class="listings-map__map"
+      [center]="center()"
+      [zoom]="zoom()"
+      [interactive]="true"
+      [scrollGate]="scrollGate()"
+      [pin]="anchorPin()"
+      [showPin]="false"
+      [userPin]="userPin()"
+      [userAccuracyMeters]="userAccuracyMeters()"
+      [markers]="markers()"
+      [markerRadiusMeters]="markerRadiusMeters"
+      [activeMarkerKey]="openKey()"
+      [highlightedMarkerKey]="highlightedMarkerKey()"
+      [markerLabel]="'listings.map.marker.single' | translate"
+      [markerGroupLabel]="'listings.map.marker.group' | translate"
+      [fitPins]="autoFit() ? fitPinsPulse() : fitAnchorPulse()"
+      [fitIncludesMarkers]="autoFit()"
+      [zoomInLabel]="'listings.details.location.zoomIn' | translate"
+      [zoomOutLabel]="'listings.details.location.zoomOut' | translate"
+      height="100%"
+      (markerHovered)="onMarkerHovered($event)"
+      (markerActivated)="onMarkerActivated($event)"
+      (viewportChanged)="onViewportChanged($event)"
+      (mapClicked)="onMapClicked()"
+      (mapError)="mapError.emit()"
+    >
+      <!-- Re-projects whatever the CALLER of `app-listings-map` itself
+           projected with these attributes down into the wrapped `app-map`'s
+           own matching slots. `ngProjectAs` is load-bearing here, NOT
+           decoration: Angular's content-distribution buckets a component's
+           children against its `<ng-content select>`s using the STATIC
+           template structure at the call site, not a runtime DOM scan — so
+           `app-map`'s own `<ng-content select="[app-map-actions]">`
+           buckets against what's literally written as a child of `<app-map>`
+           in THIS template, which is the `<ng-content>` tag below, not
+           whatever element eventually renders through it. Without
+           `ngProjectAs` telling it to be treated as `[app-map-actions]` for
+           that outer bucketing, the tag matches nothing and the projected
+           button/hint silently vanishes (confirmed live — `.app-map__actions`
+           rendered, but empty). Only used by the listing-detail maps today
+           (the "expand"/"my location" buttons, scroll/touch gate hints); the
+           catalogue usage projects nothing here. -->
+      <ng-content select="[app-map-actions]" ngProjectAs="[app-map-actions]" />
+      <ng-content select="[app-map-scroll-hint]" ngProjectAs="[app-map-scroll-hint]" />
+      <ng-content select="[app-map-gate-hint]" ngProjectAs="[app-map-gate-hint]" />
+
+      <div app-map-overlay>
+        @if (openGroup(); as group) {
+          @if (popupStyle(); as pos) {
+            <div
+              class="listings-map__popup-anchor"
+              [style.left]="pos.left"
+              [style.top]="pos.top"
+              (mouseenter)="onPopupMouseEnter()"
+              (mouseleave)="onPopupMouseLeave()"
+            >
+              @if (group.pins.length > 1) {
+                <div class="listings-map__popup-stack">
+                  <p class="listings-map__popup-stack-heading">
+                    {{ 'listings.map.stack.heading' | translate: { count: group.pins.length } }}
+                  </p>
+                  <div class="listings-map__popup-stack-body">
+                    @for (pin of group.pins; track pin.id) {
+                      <app-listings-map-popup [pin]="pin" (closeRequested)="closePopup()" />
+                    }
+                  </div>
+                </div>
+              } @else {
+                <app-listings-map-popup [pin]="group.pins[0]" (closeRequested)="closePopup()" />
+              }
+            </div>
+          }
+        }
+      </div>
+    </app-map>
+
+    <div class="listings-map__status-stack">
+      @if (loading()) {
+        <div class="listings-map__status listings-map__status--loading" aria-live="polite">
+          {{ 'listings.map.loading' | translate }}
+        </div>
+      }
+
+      @if (error()) {
+        <div class="listings-map__status listings-map__status--error" role="alert">
+          <span>{{ 'listings.map.error.message' | translate }}</span>
+          <button type="button" class="listings-map__retry" (click)="retry()">
+            {{ 'listings.map.error.retry' | translate }}
+          </button>
+        </div>
+      }
+
+      @if (showEmptyBanner() && isEmpty()) {
+        <div class="listings-map__status listings-map__status--empty">
+          {{ 'listings.map.empty' | translate }}
+        </div>
+      }
+    </div>
+
+    @if (showTruncatedBanner() && truncated()) {
+      <div class="listings-map__banner listings-map__banner--truncated" role="status">
+        <strong class="listings-map__banner-title">{{ 'listings.map.truncated.title' | translate }}</strong>
+        <span class="listings-map__banner-desc">{{ 'listings.map.truncated.description' | translate }}</span>
+      </div>
+    }
+  </div>
+</div>

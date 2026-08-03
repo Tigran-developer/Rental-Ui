@@ -14,9 +14,16 @@ import { defineConfig, devices } from '@playwright/test';
  * Every real spec starts with the stack guard in e2e/support/real-stack.ts,
  * which hard-fails when :4200 is not the docker nginx bundle (M-011: a stale
  * `ng serve` or docker image is indistinguishable from fresh by eye).
+ *
+ * `globalSetup` runs the inverse check once, automatically, for every mocked
+ * (`chromium`) run: `webServer` below reuses whatever already answers on
+ * :4200 (reuseExistingServer), including a stale docker `ui` container — see
+ * e2e/support/global-setup.ts for why this can't live inside `webServer`
+ * itself and isn't a per-spec-file call the way the real tier's guard is.
  */
 export default defineConfig({
   testDir: './e2e',
+  globalSetup: './e2e/support/global-setup.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,

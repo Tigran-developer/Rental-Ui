@@ -6,7 +6,9 @@ import {
 import { TestBed } from '@angular/core/testing';
 
 import { ApiContract, toApiUrl } from '../../../api/api-contract';
+import { makeListingMapPin } from '../../../../testing/fixtures';
 import type { ListingsFilter } from '../models/listings-filter.model';
+import type { MapPinsBounds } from '../models/map-pins-bounds.model';
 import { ListingsApiService } from './listings-api.service';
 
 // These filters were silently dropped on the way to the API (contract drift,
@@ -175,5 +177,143 @@ describe('ListingsApiService — buildListingsQueryParams', () => {
     expect(req.request.params.get('page')).toBe('2');
     expect(req.request.params.get('pageSize')).toBe('20');
     req.flush({ items: [], totalCount: 0, page: 2, pageSize: 20, hasMore: false });
+  });
+});
+
+describe('ListingsApiService — getMapPins', () => {
+  let service: ListingsApiService;
+  let httpMock: HttpTestingController;
+
+  const BOUNDS: MapPinsBounds = {
+    minLat: 40.1,
+    maxLat: 40.3,
+    minLng: 44.4,
+    maxLng: 44.6,
+  };
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    service = TestBed.inject(ListingsApiService);
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    httpMock.verify();
+  });
+
+  it('hits ApiContract.listings.mapPins, not the paged root', () => {
+    service.getMapPins(BASE_FILTER, null, null).subscribe();
+
+    const req = httpMock.expectOne(
+      (r) => r.url === toApiUrl(ApiContract.listings.mapPins),
+    );
+    req.flush({ items: [], isTruncated: false });
+  });
+
+  it('sends all four viewport params when bounds is fully present', () => {
+    service.getMapPins(BASE_FILTER, BOUNDS, null).subscribe();
+
+    const req = httpMock.expectOne(
+      (r) => r.url === toApiUrl(ApiContract.listings.mapPins),
+    );
+    expect(req.request.params.get('minLat')).toBe('40.1');
+    expect(req.request.params.get('maxLat')).toBe('40.3');
+    expect(req.request.params.get('minLng')).toBe('44.4');
+    expect(req.request.params.get('maxLng')).toBe('44.6');
+    req.flush({ items: [], isTruncated: false });
+  });
+
+  it('omits all viewport params when bounds is null', () => {
+    service.getMapPins(BASE_FILTER, null, null).subscribe();
+
+    const req = httpMock.expectOne(
+      (r) => r.url === toApiUrl(ApiContract.listings.mapPins),
+    );
+    expect(req.request.params.has('minLat')).toBe(false);
+    expect(req.request.params.has('maxLat')).toBe(false);
+    expect(req.request.params.has('minLng')).toBe(false);
+    expect(req.request.params.has('maxLng')).toBe(false);
+    req.flush({ items: [], isTruncated: false });
+  });
+
+  it('never sends page or pageSize', () => {
+    service.getMapPins(BASE_FILTER, BOUNDS, null).subscribe();
+
+    const req = httpMock.expectOne(
+      (r) => r.url === toApiUrl(ApiContract.listings.mapPins),
+    );
+    expect(req.request.params.has('page')).toBe(false);
+    expect(req.request.params.has('pageSize')).toBe(false);
+    req.flush({ items: [], isTruncated: false });
+  });
+
+  it('still serializes the shared filters (search/city/districtIds/radius) the same as getListings', () => {
+    service
+      .getMapPins(
+        {
+          ...BASE_FILTER,
+          query: 'lego',
+          city: 'Yerevan',
+          districtIds: ['d1', 'd2'],
+          radiusKm: 5,
+        },
+        null,
+        { lat: 40.1, lng: 44.5 },
+      )
+      .subscribe();
+
+    const req = httpMock.expectOne(
+      (r) => r.url === toApiUrl(ApiContract.listings.mapPins),
+    );
+    expect(req.request.params.get('search')).toBe('lego');
+    expect(req.request.params.get('city')).toBe('Yerevan');
+    expect(req.request.params.getAll('districtIds')).toEqual(['d1', 'd2']);
+    expect(req.request.params.get('originLat')).toBe('40.1');
+    expect(req.request.params.get('originLng')).toBe('44.5');
+    expect(req.request.params.get('radiusKm')).toBe('5');
+    req.flush({ items: [], isTruncated: false });
+  });
+
+  it('normalizes items and preserves isTruncated', () => {
+    const pin = makeListingMapPin({ id: 'p1', rating: 4.5, reviewCount: 3 });
+    let result: { items: unknown[]; isTruncated: boolean } | undefined;
+    service.getMapPins(BASE_FILTER, null, null).subscribe((r) => (result = r));
+
+    const req = httpMock.expectOne(
+      (r) => r.url === toApiUrl(ApiContract.listings.mapPins),
+    );
+    req.flush({ items: [pin], isTruncated: true });
+
+    expect(result).toEqual({ items: [pin], isTruncated: true });
+  });
+
+  it('keeps rating as null rather than coercing it to 0', () => {
+    let result: { items: { rating: number | null }[] } | undefined;
+    service.getMapPins(BASE_FILTER, null, null).subscribe((r) => (result = r as never));
+
+    const req = httpMock.expectOne(
+      (r) => r.url === toApiUrl(ApiContract.listings.mapPins),
+    );
+    req.flush({
+      items: [
+        {
+          id: 'p1',
+          latitude: 40.1,
+          longitude: 44.5,
+          title: 'Toy',
+          pricePerDay: 5,
+          priceUnit: 'Daily',
+          currency: 'AMD',
+          primaryImageUrl: null,
+          rating: null,
+          reviewCount: 1,
+        },
+      ],
+      isTruncated: false,
+    });
+
+    expect(result?.items[0].rating).toBeNull();
   });
 });

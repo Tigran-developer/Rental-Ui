@@ -52,17 +52,17 @@
           </span>
         </span>
 
-        <app-map
+        <app-listings-map
+          [scope]="'all'"
+          [activeListingId]="listingId()"
           [center]="p"
-          [pin]="p"
-          [userPin]="userPin()"
-          [fitPins]="hasUserPin()"
+          [anchorPin]="p"
           [zoom]="mapZoom"
-          [interactive]="true"
-          [scrollGate]="true"
-          [circleRadiusMeters]="circleRadiusMeters"
-          [zoomInLabel]="'listings.details.location.zoomIn' | translate"
-          [zoomOutLabel]="'listings.details.location.zoomOut' | translate"
+          [userPin]="userPin()"
+          [userAccuracyMeters]="userAccuracyMeters()"
+          [autoFit]="false"
+          [showEmptyBanner]="false"
+          [showTruncatedBanner]="false"
           height="var(--listing-location-map-height)"
           (mapError)="onMapError()"
         >
@@ -78,7 +78,7 @@
           </button>
           <span app-map-scroll-hint>{{ 'listings.details.location.scrollGateHint' | translate }}</span>
           <span app-map-gate-hint>{{ 'listings.details.location.touchGateHint' | translate }}</span>
-        </app-map>
+        </app-listings-map>
       </div>
 
       @switch (geoState()) {
@@ -95,8 +95,35 @@
                 }}
               </b>
               <small>{{ 'listings.details.location.distanceLegend' | translate }}</small>
+              @if (!lowAccuracy() && accuracyDisplay(); as accuracy) {
+                <small>
+                  {{ 'listings.details.location.accuracyLabel' | translate: { accuracy } }}
+                </small>
+              }
             </span>
           </div>
+
+          @if (lowAccuracy()) {
+            <div class="listing-location__geo-denied">
+              <div class="listing-location__geo-denied-msg">
+                <i class="pi pi-info-circle" aria-hidden="true"></i>
+                <span>
+                  {{ 'listings.details.location.lowAccuracyMessage' | translate }}
+                  @if (accuracyDisplay(); as accuracy) {
+                    {{ 'listings.details.location.accuracyLabel' | translate: { accuracy } }}
+                  }
+                </span>
+              </div>
+              <button
+                type="button"
+                class="listing-location__pick-btn"
+                (click)="openManualPicker()"
+              >
+                <i class="pi pi-map-marker" aria-hidden="true"></i>
+                {{ 'listings.details.location.pickPointButton' | translate }}
+              </button>
+            </div>
+          }
         }
         @case ('denied') {
           <div class="listing-location__geo-denied">
@@ -150,10 +177,12 @@
 
       <app-listing-location-map
         [open]="expanded()"
+        [listingId]="listingId()"
         [center]="p"
         [circleRadiusMeters]="circleRadiusMeters"
         [zoom]="mapZoom"
         [userPin]="userPin()"
+        [userAccuracyMeters]="userAccuracyMeters()"
         [distanceDisplay]="distanceDisplay()"
         [title]="title()"
         [imageUrl]="imageUrl()"

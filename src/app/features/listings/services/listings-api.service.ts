@@ -19,9 +19,12 @@ import type {
   ListingOwner,
   ListingPreview,
 } from '../models/listing.model';
+import type { ListingMapPin, ListingMapPinsResult } from '../models/listing-map-pin.model';
+import type { MapPinsBounds } from '../models/map-pins-bounds.model';
 import type { ListingsFilter, ListingsOriginCoords } from '../models/listings-filter.model';
 import { clampRadiusKm, parseAgeGroupToMonths } from '../models/listings-filter.model';
 import type { PagedResult } from '../models/paged-result.model';
+import type { PriceUnit } from '../models/create-listing.model';
 
 export function normalizeListingPreview(
   item: Partial<ListingPreview> & {
@@ -106,6 +109,44 @@ function normalizeToyCondition(value: unknown): ToyCondition | null {
   return typeof value === 'string' && TOY_CONDITIONS.has(value as ToyCondition)
     ? (value as ToyCondition)
     : null;
+}
+
+const PRICE_UNITS = new Set<PriceUnit>(['Hourly', 'Daily', 'Weekly', 'Monthly', 'Yearly']);
+
+/** Narrows an untrusted backend value to a known PriceUnit, defaulting to 'Daily'. */
+function normalizePriceUnit(value: unknown): PriceUnit {
+  return typeof value === 'string' && PRICE_UNITS.has(value as PriceUnit)
+    ? (value as PriceUnit)
+    : 'Daily';
+}
+
+/**
+ * Maps P2-2: normalizes one `GET /api/listings/map-pins` item. `rating` must
+ * survive as `null` (below the `reviewCount < 2` aggregate threshold) rather
+ * than being coerced to `0` — `normalizeFiniteNumber` already gives us that
+ * for free since it only accepts real finite numbers.
+ */
+export function normalizeListingMapPin(
+  item: Partial<ListingMapPin> & { id: string },
+): ListingMapPin {
+  return {
+    id: String(item.id),
+    latitude: normalizeFiniteNumber(item.latitude) ?? 0,
+    longitude: normalizeFiniteNumber(item.longitude) ?? 0,
+    title: typeof item.title === 'string' ? item.title : '',
+    pricePerDay:
+      typeof item.pricePerDay === 'number' && Number.isFinite(item.pricePerDay)
+        ? item.pricePerDay
+        : 0,
+    priceUnit: normalizePriceUnit(item.priceUnit),
+    currency: typeof item.currency === 'string' ? item.currency : '',
+    primaryImageUrl: normalizeNonEmptyString(item.primaryImageUrl),
+    rating: normalizeFiniteNumber(item.rating),
+    reviewCount:
+      typeof item.reviewCount === 'number' && Number.isFinite(item.reviewCount)
+        ? item.reviewCount
+        : 0,
+  };
 }
 
 @Injectable({ providedIn: 'root' })
@@ -251,15 +292,67 @@ export class ListingsApiService {
     return this.http.delete<void>(toApiUrl(ApiContract.favorites.byListingId(listingId)));
   }
 
-  private buildListingsQueryParams(
+  /**
+   * Maps P2-2: viewport pins for the catalog map view, same `ListingsFilter`
+   * shape as `getListings` minus paging. `bounds` is sent all-or-nothing
+   * (`minLat`/`maxLat`/`minLng`/`maxLng`) — the backend only applies the box
+   * when all four are present, and rejects `minLng > maxLng` (antimeridian)
+   * with a 400. Callers (the map component, step 3) must never construct
+   * such a viewport.
+   */
+  getMapPins(
     filter: ListingsFilter,
-    page: number,
-    pageSize: number,
+    bounds: MapPinsBounds | null,
+    originCoords: ListingsOriginCoords | null,
+  ): Observable<ListingMapPinsResult> {
+    let params = this.buildSharedFilterParams(filter, originCoords);
+    if (bounds !== null) {
+      params = params
+        .set('minLat', String(bounds.minLat))
+        .set('maxLat', String(bounds.maxLat))
+        .set('minLng', String(bounds.minLng))
+        .set('maxLng', String(bounds.maxLng));
+    }
+
+    return this.http
+      .get<{ items?: unknown; isTruncated?: unknown }>(
+        toApiUrl(ApiContract.listings.mapPins),
+        { params },
+      )
+      .pipe(map((result) => this.normalizeMapPinsResult(result)));
+  }
+
+  private normalizeMapPinsResult(result: {
+    items?: unknown;
+    isTruncated?: unknown;
+  }): ListingMapPinsResult {
+    const rawItems = Array.isArray(result.items) ? result.items : [];
+    const items = rawItems
+      .filter(
+        (item): item is Partial<ListingMapPin> & { id: string } =>
+          item !== null &&
+          typeof item === 'object' &&
+          typeof (item as { id?: unknown }).id === 'string',
+      )
+      .map((item) => normalizeListingMapPin(item));
+
+    return {
+      items,
+      isTruncated: result.isTruncated === true,
+    };
+  }
+
+  /**
+   * Shared filter serialization for both `getListings` (paged search) and
+   * `getMapPins` (viewport pins) — a single code path so the two never drift
+   * apart (M-020 was exactly this kind of drift: a filter silently dropped
+   * on one of two divergent serializers).
+   */
+  private buildSharedFilterParams(
+    filter: ListingsFilter,
     originCoords: ListingsOriginCoords | null,
   ): HttpParams {
-    let params = new HttpParams()
-      .set('page', String(page))
-      .set('pageSize', String(pageSize));
+    let params = new HttpParams();
 
     const query = filter.query?.trim();
     if (query) {
@@ -316,6 +409,18 @@ export class ListingsApiService {
     }
 
     return params;
+  }
+
+  /** Adds paging on top of `buildSharedFilterParams` for the paged search call. */
+  private buildListingsQueryParams(
+    filter: ListingsFilter,
+    page: number,
+    pageSize: number,
+    originCoords: ListingsOriginCoords | null,
+  ): HttpParams {
+    return this.buildSharedFilterParams(filter, originCoords)
+      .set('page', String(page))
+      .set('pageSize', String(pageSize));
   }
 
   private normalizePagedResult<T>(

@@ -1,0 +1,122 @@
+// ══════════════════════════════════════════════════════════════════════════
+// Shared bounce/shadow motion for the DoRent brand ball (ADR-011, M-024).
+//
+// Consumed by TWO stylesheets that can never share Angular style
+// encapsulation with each other:
+//  - `dorent-symbol.component.scss` — the header/boot-screen/mobile-topbar
+//    ball, `ViewEncapsulation.Emulated`, calls this with `:host(.is-animating)`.
+//  - `map.component.scss` — the catalog map's pin marker, raw HTML injected
+//    into a Leaflet `divIcon` (never part of Angular's template, so it can
+//    never match `[_ngcontent-*]`-scoped rules at all — see
+//    `map.component.ts`'s `ViewEncapsulation.None` class doc comment for why
+//    that file's own CSS ships completely unscoped), calls this with
+//    `.app-map__pin.is-animating`.
+//
+// `$animating` is the ONLY thing that differs between callers. Everything
+// else — rest-state geometry, the reduced-motion-gated loop, both
+// `@keyframes` — must stay byte-for-byte identical, because ADR-011's
+// central invariant (rest state IS the animation's 0% keyframe, so
+// starting/stopping the loop never pops) only holds if both callers agree on
+// exactly the same transform values. Emitting the same rules into two
+// compiled stylesheets is deliberate duplication, not a mistake — see the
+// mixin's two call sites for why it can't be a single shared selector
+// instead (encapsulation boundaries can't be crossed by a selector alone).
+//
+// M-024 defect 2 (the reduced-motion trap) governs HOW a caller may clear
+// `$animating` on the falling edge: `.dr-symbol__shadow-fade`'s opacity
+// rule lives OUTSIDE the `@media (prefers-reduced-motion: no-preference)`
+// block below (rest-state), so under `reduce` a caller that only clears the
+// class via the (never-firing) `animationiteration` event leaves a
+// permanent shadow. Every caller of this mixin must branch: clear
+// immediately when `prefers-reduced-motion: reduce` is active (there is no
+// loop to defer to), otherwise defer to `animationiteration` so the loop
+// eases itself back through its own rest keyframe first. See
+// `dorent-symbol.component.ts` for the reference implementation of that
+// branch and `map.component.ts` for the second one.
+@mixin dr-symbol-motion($animating) {
+  .dr-symbol__svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    // SVG clips its own bounds by default — the bounce and the shadow both
+    // paint outside `viewBox="0 0 100 100"`, so this must be explicit.
+    overflow: visible;
+  }
+
+  // ── Ball (rest state) ────────────────────────────────────────────────────
+  // Rest === the animation's 0%/100% keyframe exactly, so starting the loop
+  // never pops and — once the loop has eased back through 0% — removing the
+  // animation class never snaps.
+  .dr-symbol__ball {
+    transform-box: fill-box;
+    transform-origin: bottom center;
+    transform: translateY(0) scale(1, 1);
+  }
+
+  .dr-symbol__ball-fill {
+    fill: var(--ui-color-primary);
+  }
+
+  .dr-symbol__wave {
+    fill: #fff;
+  }
+
+  // ── Shadow (rest state) — invisible until the loop starts ───────────────
+  .dr-symbol__shadow-fade {
+    opacity: 0;
+    transition: opacity 180ms ease;
+  }
+
+  #{$animating} .dr-symbol__shadow-fade {
+    opacity: 1;
+  }
+
+  .dr-symbol__shadow {
+    fill: rgba(0, 0, 0, 0.12);
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  // ── Motion — opt-in only, matches the app-header/map pattern ────────────
+  @media (prefers-reduced-motion: no-preference) {
+    .dr-symbol__ball {
+      transition: transform 180ms ease;
+    }
+
+    #{$animating} .dr-symbol__ball {
+      animation: dr-symbol-ball-bounce 0.9s cubic-bezier(0.28, 0.84, 0.42, 1) infinite;
+    }
+
+    #{$animating} .dr-symbol__shadow {
+      animation: dr-symbol-shadow-loop 0.9s cubic-bezier(0.28, 0.84, 0.42, 1) infinite;
+    }
+
+    @keyframes dr-symbol-ball-bounce {
+      0%,
+      100% {
+        transform: translateY(0) scale(1, 1);
+      }
+      10% {
+        transform: translateY(0) scale(1.05, 0.95);
+      }
+      45% {
+        transform: translateY(-70px) scale(0.9, 1.1);
+      }
+      90% {
+        transform: translateY(0) scale(1.05, 0.95);
+      }
+    }
+
+    // Counterpoint to the ball: darkest/largest while the ball is on the
+    // ground (0%/10%/90%/100%), smallest at the apex (45%).
+    @keyframes dr-symbol-shadow-loop {
+      0%,
+      100% {
+        transform: scale(1);
+      }
+      45% {
+        transform: scale(0.5);
+      }
+    }
+  }
+}

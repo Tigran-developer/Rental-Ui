@@ -1,5 +1,6 @@
 import type { ListingDetails } from '../models/listing-details.model';
 import type { ListingCategoryOption } from '../models/create-listing.model';
+import type { ListingMapPin } from '../models/listing-map-pin.model';
 import type { ListingPreview } from '../models/listing.model';
 import type {
   ListingsFilter,
@@ -42,6 +43,14 @@ export interface ListingsState {
   createListingImageUploadError: string | null;
   createListingImageUploadProgress: number | null;
   error: string | null;
+  /** Maps P2-2: catalog map view pins for the current viewport + filters. */
+  mapPins: ListingMapPin[];
+  mapPinsLoading: boolean;
+  mapPinsError: string | null;
+  /** `true` when the backend cut the pin result off at its cap — drives a
+   *  "zoom in to see all pins" prompt rather than silently under-representing
+   *  the viewport's listings. */
+  mapPinsTruncated: boolean;
 }
 
 export const initialListingsState: ListingsState = {
@@ -73,4 +82,8 @@ export const initialListingsState: ListingsState = {
   createListingImageUploadError: null,
   createListingImageUploadProgress: null,
   error: null,
+  mapPins: [],
+  mapPinsLoading: false,
+  mapPinsError: null,
+  mapPinsTruncated: false,
 };

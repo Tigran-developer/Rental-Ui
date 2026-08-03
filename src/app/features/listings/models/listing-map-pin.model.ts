@@ -6,9 +6,7 @@ import type { PriceUnit } from './create-listing.model';
  * same `ListingsQueryFilter` query params as `GET /api/listings`). Backend:
  * `ListingMapPinResponse`.
  *
- * No consumer yet — Maps P2-2 (the actual map + clustering UI) is a separate,
- * later card. This file exists only so P2-2 can start from an already-agreed
- * shape instead of inventing one under time pressure.
+ * Consumer: `features/listings/components/listings-map/` (Maps P2-2, in progress).
  *
  * !! `latitude`/`longitude` do NOT mean the same thing here as on `ListingDetails` !!
  *
@@ -32,6 +30,13 @@ export interface ListingMapPin {
   priceUnit: PriceUnit;
   currency: string;
   primaryImageUrl: string | null;
+  /**
+   * Average toy rating, or `null` below the aggregate threshold — same rule as
+   * `ListingPreview.rating`: `null` whenever `reviewCount < 2`, not merely when it
+   * is 0. A listing with exactly one review still reports `rating: null` here.
+   */
+  rating: number | null;
+  reviewCount: number;
 }
 
 /**

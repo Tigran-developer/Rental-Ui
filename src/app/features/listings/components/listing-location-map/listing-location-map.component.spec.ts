@@ -1,8 +1,35 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { provideMockStore } from '@ngrx/store/testing';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { ListingLocationMapComponent } from './listing-location-map.component';
 import type { MapLatLng } from '../../../../shared/ui/map/map.component';
+import type { ListingsFilter } from '../../models/listings-filter.model';
+import {
+  selectListingsFilters,
+  selectMapPins,
+  selectMapPinsError,
+  selectMapPinsLoading,
+  selectMapPinsTruncated,
+} from '../../store/listings.selectors';
+
+/** This component now wraps `app-listings-map` (Maps P2-2 reuse), which
+ *  owns the NgRx `loadMapPins`/`selectMapPins` plumbing — `provideMockStore`
+ *  supplies default (empty/idle) values for every selector it reads so this
+ *  spec's OWN concerns (locate/close outputs, fallback degradation) stay
+ *  its focus, not the catalogue-map wiring `listings-map.component.spec.ts`
+ *  already covers directly. */
+const BASE_FILTERS: ListingsFilter = {
+  query: null,
+  city: null,
+  categoryId: null,
+  minPrice: null,
+  maxPrice: null,
+  ageGroup: null,
+  radiusKm: null,
+  districtIds: [],
+};
 
 /** Same reasoning as `listing-location.component.spec.ts` — these tests care
  *  about THIS component's own wiring (locate/close outputs, fallback
@@ -12,14 +39,32 @@ vi.mock('leaflet', () => ({
     setView: vi.fn(),
     on: vi.fn(),
     getCenter: vi.fn(() => ({ lat: 40.1776, lng: 44.5126 })),
+    // `MapComponent.syncMarkerGroupCircles()` reads the LIVE zoom
+    // unconditionally (this component always passes a non-null
+    // `markerRadiusMeters`, even with an empty `markers()`) — omitting this
+    // threw inside `init()`'s try/catch and was silently swallowed into
+    // `mapError`, which is why every test below used to fail as "the whole
+    // dialog surface disappeared" rather than a visible thrown error.
+    getZoom: vi.fn(() => 13),
+    getBounds: vi.fn(() => ({
+      getNorth: () => 41,
+      getSouth: () => 39,
+      getEast: () => 45,
+      getWest: () => 44,
+    })),
+    latLngToContainerPoint: vi.fn(() => ({ x: 0, y: 0 })),
     invalidateSize: vi.fn(),
     removeLayer: vi.fn(),
     remove: vi.fn(),
     fitBounds: vi.fn(),
+    zoomIn: vi.fn(),
+    zoomOut: vi.fn(),
+    dragging: { enable: vi.fn(), disable: vi.fn(), enabled: vi.fn(() => false) },
+    touchZoom: { enable: vi.fn(), disable: vi.fn(), enabled: vi.fn(() => false) },
   })),
   tileLayer: vi.fn(() => ({ addTo: vi.fn(() => ({ on: vi.fn() })), on: vi.fn() })),
-  marker: vi.fn(() => ({ addTo: vi.fn() })),
-  circle: vi.fn(() => ({ addTo: vi.fn() })),
+  marker: vi.fn(() => ({ addTo: vi.fn(), getElement: vi.fn(() => null), setLatLng: vi.fn() })),
+  circle: vi.fn(() => ({ addTo: vi.fn(), on: vi.fn() })),
   divIcon: vi.fn((options: unknown) => options),
   latLngBounds: vi.fn((points: unknown) => points),
 }));
@@ -34,6 +79,18 @@ async function createComponent(inputs: {
 }) {
   TestBed.configureTestingModule({
     imports: [ListingLocationMapComponent, TranslateModule.forRoot()],
+    providers: [
+      provideRouter([]),
+      provideMockStore({
+        selectors: [
+          { selector: selectListingsFilters, value: BASE_FILTERS },
+          { selector: selectMapPins, value: [] },
+          { selector: selectMapPinsLoading, value: false },
+          { selector: selectMapPinsError, value: null },
+          { selector: selectMapPinsTruncated, value: false },
+        ],
+      }),
+    ],
   });
   // Load just the interpolated strings this spec asserts on — the real
   // bundle (public/i18n/*.json) isn't wired into unit tests, so ngx-translate
@@ -57,6 +114,7 @@ async function createComponent(inputs: {
   translate.use('en');
   const fixture = TestBed.createComponent(ListingLocationMapComponent);
   fixture.componentRef.setInput('open', inputs.open ?? true);
+  fixture.componentRef.setInput('listingId', 'L1');
   fixture.componentRef.setInput('center', CENTER);
   fixture.componentRef.setInput('circleRadiusMeters', 150);
   fixture.componentRef.setInput('title', 'LEGO Duplo Town');

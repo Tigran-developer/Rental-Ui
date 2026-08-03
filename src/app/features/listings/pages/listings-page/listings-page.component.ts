@@ -28,6 +28,7 @@ import { selectMyBookings } from '../../../bookings/store/bookings.selectors';
 import { selectFavoriteIds } from '../../../favorites/store/favorites.selectors';
 import { ListingCardComponent } from '../../components/listing-card/listing-card.component';
 import { ListingsFiltersComponent } from '../../components/listings-filters/listings-filters.component';
+import { ListingsMapComponent } from '../../components/listings-map/listings-map.component';
 import { RadiusOriginFilterComponent } from '../../components/radius-origin-filter/radius-origin-filter.component';
 import { districtDisplayName } from '../../models/district-ui.util';
 import type { ListingDistrict } from '../../models/district.model';
@@ -126,6 +127,16 @@ interface ActiveFilterChip {
 
 type SortBy = '' | 'price_asc' | 'price_desc' | 'rating_desc' | 'newest';
 
+/**
+ * Maps P2-2: which surface the results area shows — `?view=map` in the URL,
+ * parsed SEPARATELY from `ListingsFilter` (see `viewMode` below for why:
+ * folding it into the filter model would leak `view` into
+ * `buildListingsQueryParams()` and send it to the backend, which has no
+ * such query parameter). Any value other than the literal `map` (including
+ * absent) means `list` — the page's default, unchanged surface.
+ */
+type ListingsViewMode = 'list' | 'map';
+
 interface SortOption {
   readonly value: SortBy;
   readonly labelKey: string;
@@ -162,6 +173,7 @@ const AGE_GROUPS = [
     EmptyStateComponent,
     ListingCardComponent,
     ListingsFiltersComponent,
+    ListingsMapComponent,
     LoadingSkeletonComponent,
     MessageModule,
     RadiusOriginFilterComponent,
@@ -218,6 +230,16 @@ export class ListingsPageComponent {
   protected readonly sortBy = signal<SortBy>('');
   protected readonly sortMenuOpen = signal(false);
   protected readonly sortOptions = SORT_OPTIONS;
+
+  /** `?view=map` — see `ListingsViewMode`'s own doc comment for why this is
+   *  parsed independently of `ListingsFilter`/`parseFiltersFromParams()`.
+   *  Absent/unrecognised ⇒ `'list'`. */
+  protected readonly viewMode = toSignal(
+    this.route.queryParamMap.pipe(
+      map((params): ListingsViewMode => (params.get('view') === 'map' ? 'map' : 'list')),
+    ),
+    { initialValue: 'list' as ListingsViewMode },
+  );
 
   protected readonly activeSortOption = computed(() =>
     SORT_OPTIONS.find(o => o.value === this.sortBy()) ?? null
@@ -397,6 +419,19 @@ export class ListingsPageComponent {
   protected selectSort(value: SortBy): void {
     this.sortBy.set(this.sortBy() === value ? '' : value);
     this.sortMenuOpen.set(false);
+  }
+
+  /** The List/Map toggle — merges `view` into the URL like every other
+   *  control on this page, rather than owning local state, so the mode
+   *  survives a reload/share the same way filters already do. `'list'`
+   *  clears the param entirely instead of writing `view=list`, keeping the
+   *  URL clean for the page's default mode. */
+  protected setViewMode(mode: ListingsViewMode): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { view: mode === 'map' ? 'map' : null },
+      queryParamsHandling: 'merge',
+    });
   }
 
   protected skeletonCount(vm: ListingsPageViewModel): number {

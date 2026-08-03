@@ -313,6 +313,17 @@
   color: var(--ui-color-text-primary);
   white-space: nowrap;
   flex-shrink: 0;
+
+  /* Below desktop, the toggle + sort controls must stay fully reachable —
+     this is the only toolbar item allowed to give up space, so let it
+     shrink and truncate instead of pushing siblings off-screen
+     (mobile-overflow fix for the Maps P2-2 view-toggle addition). */
+  @media (max-width: 960px) {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 /* Active filter chips — desktop sidebar chips in toolbar */
@@ -358,6 +369,65 @@
 
 .lp-active-chip__icon {
   font-size: 0.5rem !important;
+}
+
+/* ── List/Map toggle (Maps P2-2) ────────────────────────────── */
+.lp-view-toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-color-surface-muted);
+}
+
+.lp-view-toggle__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-6);
+  height: 1.75rem;
+  padding: 0 var(--ui-space-12);
+  border: none;
+  border-radius: var(--ui-radius-pill);
+  background: transparent;
+  color: var(--ui-color-text-secondary);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+
+  .pi {
+    font-size: 0.75rem;
+  }
+
+  &:hover:not(&--active) {
+    color: var(--ui-color-text-primary);
+  }
+
+  &--active {
+    background: var(--ui-color-surface);
+    color: var(--ui-color-text-primary);
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(16, 18, 30, 0.12);
+  }
+
+  /* Icon-only below the small-mobile breakpoint: the toolbar can't fit
+     count text + toggle labels + the sort control in one row at 375px.
+     The label is dropped visually; `aria-label` on the button (see .html)
+     keeps the accessible name. */
+  @media (max-width: 560px) {
+    padding: 0 var(--ui-space-10);
+  }
+}
+
+.lp-view-toggle__label {
+  @media (max-width: 560px) {
+    display: none;
+  }
 }
 
 /* ── Sort dropdown ──────────────────────────────────────────── */
@@ -513,6 +583,12 @@
   @media (max-width: 560px) {
     gap: 10px;
   }
+}
+
+/* ── Map view (Maps P2-2) ───────────────────────────────────── */
+.listings-page__map {
+  display: block;
+  padding-top: var(--ui-space-12);
 }
 
 /* ── Load more ──────────────────────────────────────────────── */

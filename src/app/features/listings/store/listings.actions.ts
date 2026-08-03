@@ -6,12 +6,14 @@ import type {
   ListingCategoryOption,
 } from '../models/create-listing.model';
 import type { ListingDetails } from '../models/listing-details.model';
+import type { ListingMapPinsResult } from '../models/listing-map-pin.model';
 import type { ListingPreview } from '../models/listing.model';
 import type {
   ListingsFilter,
   ListingsOriginCoords,
   ListingsOriginSource,
 } from '../models/listings-filter.model';
+import type { MapPinsBounds } from '../models/map-pins-bounds.model';
 
 export const loadListings = createAction('[Listings] Load Listings');
 
@@ -135,4 +137,32 @@ export const retryImageUploadFailure = createAction(
 
 export const clearCreateListingState = createAction(
   '[Listings] Clear Create Listing State',
+);
+
+/**
+ * Maps P2-2: fetches catalog map pins for `bounds` (the current map viewport)
+ * combined with the existing `ListingsState.filters`/`originCoords` — UNLESS
+ * `scope: 'all'` (listing-detail maps, later increment), which fetches with
+ * NO filter and NO origin regardless of what's currently in the store (see
+ * `ListingsEffects.loadMapPins$`): a listing-detail page must show every
+ * toy, not whatever the visitor last searched for on `/listings`. `'filtered'`
+ * is today's (and the catalogue map's) only behaviour. `bounds: null` is
+ * valid — the effect omits the viewport box entirely rather than sending a
+ * degenerate one (mirrors `ListingsApiService.getMapPins`'s all-or-nothing
+ * contract). Dispatched on every pan/zoom, so the effect must `switchMap`
+ * (not `mergeMap`/`concatMap`) to cancel a stale in-flight request.
+ */
+export const loadMapPins = createAction(
+  '[Listings] Load Map Pins',
+  props<{ bounds: MapPinsBounds | null; scope: 'filtered' | 'all' }>(),
+);
+
+export const loadMapPinsSuccess = createAction(
+  '[Listings] Load Map Pins Success',
+  props<{ result: ListingMapPinsResult }>(),
+);
+
+export const loadMapPinsFailure = createAction(
+  '[Listings] Load Map Pins Failure',
+  props<{ error: string }>(),
 );

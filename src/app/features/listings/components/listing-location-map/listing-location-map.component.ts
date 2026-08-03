@@ -10,13 +10,15 @@ import {
 import { TranslatePipe } from '@ngx-translate/core';
 import { DialogModule } from 'primeng/dialog';
 
-import { MapComponent } from '../../../../shared/ui/map/map.component';
+import { ListingsMapComponent } from '../listings-map/listings-map.component';
 import type { MapLatLng } from '../../../../shared/ui/map/map.component';
 
 /**
  * Full-viewport map (Maps "location + radius" design, Screen 2) — opened by
  * `ListingLocationComponent`'s "expand" button. A larger, purely presentational
- * sibling of the card map on the listing-detail page: same pin, same
+ * sibling of the card map on the listing-detail page: same `app-listings-map`
+ * reuse (`scope="all"`, `activeListingId` bouncing THIS listing among every
+ * other one shown — see `ListingLocationComponent`'s own doc comment), same
  * uncertainty circle, same optional visitor `userPin`, just filling the whole
  * viewport with its own zoom/locate controls and a bottom "plaque" summarising
  * the listing (thumbnail, title, district, distance) with a way back.
@@ -58,7 +60,7 @@ import type { MapLatLng } from '../../../../shared/ui/map/map.component';
 @Component({
   selector: 'app-listing-location-map',
   standalone: true,
-  imports: [DialogModule, MapComponent, TranslatePipe],
+  imports: [DialogModule, ListingsMapComponent, TranslatePipe],
   templateUrl: './listing-location-map.component.html',
   styleUrl: './listing-location-map.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -71,10 +73,20 @@ import type { MapLatLng } from '../../../../shared/ui/map/map.component';
 })
 export class ListingLocationMapComponent {
   readonly open = input.required<boolean>();
+  /** Fed to `app-listings-map`'s `[activeListingId]` — see
+   *  `ListingLocationComponent.listingId`'s own doc comment, which this
+   *  mirrors verbatim for the full-screen surface. */
+  readonly listingId = input.required<string>();
   readonly center = input.required<MapLatLng>();
   readonly circleRadiusMeters = input.required<number>();
   readonly zoom = input<number>(15);
   readonly userPin = input<MapLatLng | null>(null);
+  /** The browser's own confidence radius (metres) for `userPin`, forwarded
+   *  straight to this screen's own `app-map` — see `MapComponent`'s
+   *  `userAccuracyMeters` doc comment. `ListingLocationComponent` is still the
+   *  ONLY place that computes/holds this (same ownership split as `userPin`
+   *  itself, per the class doc comment); this component just renders it. */
+  readonly userAccuracyMeters = input<number | null>(null);
   /** Pre-formatted (already localized/rounded) distance string for
    *  interpolation into the `distanceFromYou` translation key — computed
    *  once by `ListingLocationComponent` so both map surfaces show the exact

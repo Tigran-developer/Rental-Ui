@@ -1,10 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { from, of, throwError } from 'rxjs';
+import { Subject, from, of, throwError } from 'rxjs';
 
 import { actionsHarness, collect } from '../../../../testing/ngrx.helpers';
-import { makeListingPreview } from '../../../../testing/fixtures';
+import { makeListingMapPin, makeListingPreview } from '../../../../testing/fixtures';
 import { selectFavoriteIds } from '../../favorites/store/favorites.selectors';
+import type { ListingMapPinsResult } from '../models/listing-map-pin.model';
 import type { ListingsFilter } from '../models/listings-filter.model';
 import { ListingsApiService } from '../services/listings-api.service';
 import * as ListingsActions from './listings.actions';
@@ -16,6 +17,7 @@ import {
   selectListingsPage,
   selectListingsPageSize,
 } from './listings.selectors';
+import { initialListingsState } from './listings.state';
 
 function setup(api: Partial<ListingsApiService> = {}) {
   const harness = actionsHarness();
@@ -199,6 +201,92 @@ describe('ListingsEffects', () => {
       expect(await result).toEqual([
         ListingsActions.retryImageUploadFailure({ error: 'still failing' }),
       ]);
+    });
+  });
+
+  describe('loadMapPins$', () => {
+    it('emits success with the normalized result', async () => {
+      const result: ListingMapPinsResult = {
+        items: [makeListingMapPin()],
+        isTruncated: false,
+      };
+      const getMapPins = vi.fn().mockReturnValue(of(result));
+      const { harness, effects } = setup({ getMapPins });
+
+      const collected = collect(effects.loadMapPins$);
+      harness.send(ListingsActions.loadMapPins({ bounds: null, scope: 'filtered' }));
+      harness.complete();
+
+      expect(await collected).toEqual([ListingsActions.loadMapPinsSuccess({ result })]);
+      expect(getMapPins).toHaveBeenCalledWith(expect.anything(), null, null);
+    });
+
+    it('emits failure when the request errors', async () => {
+      const getMapPins = vi.fn().mockReturnValue(throwError(() => new Error('boom')));
+      const { harness, effects } = setup({ getMapPins });
+
+      const collected = collect(effects.loadMapPins$);
+      harness.send(ListingsActions.loadMapPins({ bounds: null, scope: 'filtered' }));
+      harness.complete();
+
+      expect(await collected).toEqual([
+        ListingsActions.loadMapPinsFailure({ error: 'boom' }),
+      ]);
+    });
+
+    it('cancels a stale in-flight request when a second dispatch arrives (switchMap semantics)', async () => {
+      const firstResponse$ = new Subject<ListingMapPinsResult>();
+      const secondResult: ListingMapPinsResult = {
+        items: [makeListingMapPin({ id: 'second' })],
+        isTruncated: false,
+      };
+      const getMapPins = vi
+        .fn()
+        .mockReturnValueOnce(firstResponse$.asObservable())
+        .mockReturnValueOnce(of(secondResult));
+      const { harness, effects } = setup({ getMapPins });
+
+      const collected = collect(effects.loadMapPins$);
+      harness.send(ListingsActions.loadMapPins({ bounds: null, scope: 'filtered' }));
+      harness.send(
+        ListingsActions.loadMapPins({
+          bounds: { minLat: 1, maxLat: 2, minLng: 3, maxLng: 4 },
+          scope: 'filtered',
+        }),
+      );
+      harness.complete();
+
+      // The first request resolves AFTER the second dispatch — switchMap must
+      // have already unsubscribed from it, so this emission is dropped.
+      firstResponse$.next({ items: [makeListingMapPin({ id: 'stale' })], isTruncated: false });
+      firstResponse$.complete();
+
+      expect(await collected).toEqual([
+        ListingsActions.loadMapPinsSuccess({ result: secondResult }),
+      ]);
+      expect(getMapPins).toHaveBeenCalledTimes(2);
+    });
+
+    it('scope: "all" ignores the store\'s current filters/originCoords, fetching with the reducer\'s empty filter and no origin', async () => {
+      const result: ListingMapPinsResult = { items: [makeListingMapPin()], isTruncated: false };
+      const getMapPins = vi.fn().mockReturnValue(of(result));
+      const { harness, store, effects } = setup({ getMapPins });
+      // A non-empty filter/origin currently in the store — must NOT reach
+      // `getMapPins` for a `scope: 'all'` request, which is the whole point
+      // of the scope: a listing-detail page must show every toy regardless
+      // of whatever the visitor last searched on `/listings`.
+      store.overrideSelector(selectListingsFilters, {
+        query: 'lego',
+      } as unknown as ListingsFilter);
+      store.overrideSelector(selectListingsOriginCoords, { lat: 40.1, lng: 44.5 });
+      store.refreshState();
+
+      const collected = collect(effects.loadMapPins$);
+      harness.send(ListingsActions.loadMapPins({ bounds: null, scope: 'all' }));
+      harness.complete();
+
+      expect(await collected).toEqual([ListingsActions.loadMapPinsSuccess({ result })]);
+      expect(getMapPins).toHaveBeenCalledWith(initialListingsState.filters, null, null);
     });
   });
 
