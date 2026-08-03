@@ -543,8 +543,10 @@ export class MapComponent implements AfterViewInit, OnDestroy {
    *  `.is-active` class on that group's marker. `null` (default): none. */
   readonly activeMarkerKey = input<string | null>(null);
   /** The group PERMANENTLY highlighted (not merely while hovered or
-   *  popped-open) — gets `activeMarkerKey`'s `.is-active` ring PLUS a
-   *  CONTINUOUS bounce (`.is-animating`), independent of hover/popup state.
+   *  popped-open) — gets `activeMarkerKey`'s `.is-active` class (a state
+   *  hook only; it carries no visual styling of its own in
+   *  map.component.scss) PLUS a CONTINUOUS bounce (`.is-animating`),
+   *  independent of hover/popup state.
    *  `null` (default): none. Deliberately a SEPARATE signal from
    *  `activeMarkerKey`, not a variant of it: the listing-detail map needs
    *  BOTH roles live at once, and potentially on two DIFFERENT groups at the
@@ -826,7 +828,8 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     // reason `activeMarkerKey`'s is separate from the marker-diffing effect:
     // this only ever needs to toggle state on markers that ALREADY exist.
     // Also drives the continuous-bounce half (`updateDesiredAnimating()`),
-    // not just the ring — see `highlightedMarkerKey`'s own doc comment.
+    // not just the `.is-active` state hook — see `highlightedMarkerKey`'s
+    // own doc comment.
     effect(() => {
       this.highlightedMarkerKey();
       for (const entry of this.markerGroupLayers.values()) {
@@ -1329,9 +1332,10 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       el.tabIndex = 0;
       el.setAttribute('aria-label', this.labelForGroup(group));
       // A newly-created marker (e.g. a re-pan created a new group key) picks
-      // up BOTH the ring and — if it's the highlighted group — the
-      // continuous bounce immediately, rather than waiting for the next
-      // `activeMarkerKey`/`highlightedMarkerKey` effect run.
+      // up BOTH `.is-active` (a state hook only, no visual of its own) and —
+      // if it's the highlighted group — the continuous bounce immediately,
+      // rather than waiting for the next `activeMarkerKey`/
+      // `highlightedMarkerKey` effect run.
       this.applyActiveClass(entry);
       this.updateDesiredAnimating(entry);
 
@@ -1423,8 +1427,10 @@ export class MapComponent implements AfterViewInit, OnDestroy {
 
   /** Combines `activeMarkerKey` (the parent's open popup) and
    *  `highlightedMarkerKey` (the permanently-highlighted "this is the
-   *  current listing" marker) into the single `.is-active` ring class — see
-   *  both inputs' own doc comments for why they're independent signals that
+   *  current listing" marker) into the single `.is-active` class — a state
+   *  hook only (its ring styling was removed from map.component.scss; the
+   *  class itself carries no visual on its own any more) — see both inputs'
+   *  own doc comments for why they're independent signals that
    *  can each be `true` for a DIFFERENT group at the same time. Centralised
    *  here, rather than each effect toggling the class off its own single
    *  condition, so the two effects driving them can never fight over the

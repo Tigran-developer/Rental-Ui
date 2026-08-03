@@ -39,10 +39,10 @@ const DETAIL_MAP_ZOOM = 15;
  * `enableHighAccuracy: true` (see its own doc comment for the fix that
  * replaced), but a device with no GPS radio, or one indoors with a poor
  * signal, can still legitimately answer with a rough estimate. The listing's
- * OWN uncertainty circle (`APPROXIMATE_AREA_RADIUS_METERS`, above) is ~150m —
+ * OWN uncertainty circle (`APPROXIMATE_AREA_RADIUS_METERS`, above) is ~100m —
  * a visitor fix with a wider error margin than that already makes any
- * distance figure printed from it close to meaningless, so 500m (roughly
- * 3x that radius) is where this component stops presenting the fix as
+ * distance figure printed from it close to meaningless, so 500m (several
+ * times that radius) is where this component stops presenting the fix as
  * trustworthy and offers the manual picker instead, without hiding the
  * (still shown) distance line outright.
  */
@@ -88,7 +88,7 @@ type UserPinSource = 'geo' | 'manual' | null;
  *   passed as `anchorPin` (a `fitBounds()` anchor only, `showPin=false` on
  *   the wrapped `app-map` — it already appears as one of the fetched
  *   markers, so a second orange teardrop at the same spot would double up);
- * - a warm "approximate area / ~150 m" pill (design decision: not a red/alert
+ * - a warm "approximate area / ~100 m" pill (design decision: not a red/alert
  *   treatment — this is normal, expected behaviour, not a warning);
  * - a "My location" button that requests `navigator.geolocation` (via the
  *   injected `GeolocationService`, never read from `navigator` directly here)

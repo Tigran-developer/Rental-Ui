@@ -230,12 +230,12 @@ describe('ListingLocationComponent', () => {
     expect(APPROXIMATE_AREA_RADIUS_METERS).toBeGreaterThanOrEqual(halfDiagonalWorstCase);
   });
 
-  it('shows the two-line "approximate area / ~150 m" chip', async () => {
+  it('shows the two-line "approximate area / ~N m" chip, with N interpolated from the constant', async () => {
     const { el } = await createComponent({ latitude: 40.18, longitude: 44.51 });
 
     const chip = el.querySelector('.listing-location__chip');
     expect(chip).not.toBeNull();
-    expect(chip?.textContent).toContain('150');
+    expect(chip?.textContent).toContain(String(APPROXIMATE_AREA_RADIUS_METERS));
   });
 
   it('shows the privacy caption alongside the map', async () => {
