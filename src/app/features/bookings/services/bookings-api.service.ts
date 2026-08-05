@@ -103,6 +103,7 @@ function normalizeBookingDetail(item: Partial<BookingDetail> & { id: string }): 
     completedAt: toNullableStr(item.completedAt),
     expiresAt: toNullableStr(item.expiresAt),
     rejectionReason: toNullableStr(item.rejectionReason),
+    note: toNullableStr(item.note),
     counterpartyId: toStr(item.counterpartyId),
     counterpartyFirstName: toStr(item.counterpartyFirstName),
     counterpartyLastName: toStr(item.counterpartyLastName),
@@ -128,6 +129,7 @@ function normalizeBookingRequest(
     totalPrice: toFiniteNumber(item.totalPrice),
     status: coerceBookingStatus(item.status),
     createdAt: toNullableStr(item.createdAt),
+    note: toNullableStr(item.note),
   };
 }
 
