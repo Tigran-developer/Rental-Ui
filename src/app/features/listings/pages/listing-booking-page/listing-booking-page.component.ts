@@ -4,8 +4,10 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
@@ -15,7 +17,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ButtonModule } from 'primeng/button';
@@ -37,6 +39,8 @@ import * as PublicProfilesActions from '../../../public-profiles/store/public-pr
 import { selectPublicProfile } from '../../../public-profiles/store/public-profiles.selectors';
 import * as ReviewsActions from '../../../reviews/store/reviews.actions';
 import { selectOwnerReviews } from '../../../reviews/store/reviews.selectors';
+import * as ChatActions from '../../../chat/store/chat.actions';
+import { selectOpeningConversationFromBooking } from '../../../chat/store/chat.selectors';
 
 interface QuickBookOption {
   readonly key: string;
@@ -92,7 +96,6 @@ interface BookingForm {
     DecimalPipe,
     PageHeaderComponent,
     ReactiveFormsModule,
-    RouterLink,
     TranslatePipe,
   ],
   templateUrl: './listing-booking-page.component.html',
@@ -106,7 +109,12 @@ export class ListingBookingPageComponent {
   private readonly fb = inject(FormBuilder);
   private readonly translate = inject(TranslateService);
 
-  protected readonly NOTE_MAX_LENGTH = 300;
+  // Mirrors the server (`CreateBookingRequest.note` — see BOOKING_ERROR_MESSAGE_KEYS
+  // in bookings.effects.ts): the server trims first, then rejects anything over 280
+  // chars, so the client trims before length-checking too (see onSubmit()).
+  protected readonly NOTE_MAX_LENGTH = 280;
+  /** Counter turns warn-coloured once fewer than this many characters remain. */
+  private readonly NOTE_WARN_REMAINING = 30;
   protected readonly quickBookOptions = QUICK_BOOK_OPTIONS;
   protected readonly suggestionChipKeys = SUGGESTION_CHIP_KEYS;
 
@@ -123,6 +131,12 @@ export class ListingBookingPageComponent {
   protected readonly submitting = this.store.selectSignal(selectCreateBookingLoading);
   protected readonly submitError = this.store.selectSignal(selectCreateBookingError);
   private readonly successId = this.store.selectSignal(selectCreateBookingSuccessId);
+  protected readonly openingConversation = this.store.selectSignal(
+    selectOpeningConversationFromBooking,
+  );
+
+  /** Focus target for the confirmation state — moved there once it renders (a11y). */
+  private readonly confirmHeading = viewChild<ElementRef<HTMLElement>>('confirmHeading');
 
   // ── Owner trust signals (for the "Your request" card) ──────────────
   private readonly ownerId$ = this.store.select(selectSelectedListing).pipe(
@@ -183,6 +197,12 @@ export class ListingBookingPageComponent {
   );
 
   protected readonly noteLength = computed(() => this.noteValue().length);
+  protected readonly noteNearLimit = computed(
+    () => this.NOTE_MAX_LENGTH - this.noteLength() < this.NOTE_WARN_REMAINING,
+  );
+  /** Snapshot of what was actually sent, captured at submit time so the confirmation's
+   * note echo can't drift if the form were ever touched again before it unmounts. */
+  protected readonly sentNote = signal<string | null>(null);
 
   protected readonly rentalDays = computed(() => {
     const start = this.startDate();
@@ -197,6 +217,10 @@ export class ListingBookingPageComponent {
     if (days <= 0 || !price) return null;
     return days * price;
   });
+
+  // Shown as its own breakdown row — refundable, collected by the owner off-platform,
+  // and deliberately NOT folded into totalPrice()/Total above (product decision).
+  protected readonly depositAmount = computed(() => this.listing()?.depositAmount ?? null);
 
   protected readonly primaryImageUrl = computed(() => {
     const images = this.listing()?.images;
@@ -229,6 +253,16 @@ export class ListingBookingPageComponent {
       if (ownerId) {
         this.store.dispatch(ReviewsActions.loadOwnerReviews({ userId: ownerId }));
         this.store.dispatch(PublicProfilesActions.loadPublicProfile({ userId: ownerId }));
+      }
+    });
+
+    // Move focus into the confirmation card once it renders, so assistive tech
+    // announces it immediately instead of leaving focus on the (now gone) submit
+    // button. Deferred a tick: the @if branch swap hasn't painted the heading yet
+    // in the same change-detection pass that flips isSuccess().
+    effect(() => {
+      if (this.isSuccess()) {
+        setTimeout(() => this.confirmHeading()?.nativeElement.focus());
       }
     });
   }
@@ -280,6 +314,12 @@ export class ListingBookingPageComponent {
     const listingId = this.listingId();
     if (!start || !end || !listingId || !this.canSubmit()) return;
 
+    // Mirror the server: trim first, then treat an empty/whitespace-only note as
+    // absent (send null, not "") rather than a real note.
+    const trimmed = this.form.controls.noteForOwner.value.trim();
+    const note = trimmed.length > 0 ? trimmed : null;
+    this.sentNote.set(note);
+
     this.store.dispatch(BookingsActions.clearCreateBookingState());
     this.store.dispatch(
       BookingsActions.createBooking({
@@ -287,7 +327,7 @@ export class ListingBookingPageComponent {
           listingId,
           startDate: toLocalIsoDate(start),
           endDate: toLocalIsoDate(end),
-          // TODO: wire noteForOwner to API when backend supports notes
+          note,
         },
       }),
     );
@@ -297,6 +337,15 @@ export class ListingBookingPageComponent {
     const id = this.successId();
     if (id) {
       void this.router.navigate(['/bookings', id]);
+    }
+  }
+
+  /** "Message {owner}" on the confirmation card — opens/creates the booking's
+   * conversation via the chat store and lets ChatEffects navigate there. */
+  protected onMessageOwner(): void {
+    const bookingId = this.successId();
+    if (bookingId) {
+      this.store.dispatch(ChatActions.openConversationFromBooking({ bookingId }));
     }
   }
 }

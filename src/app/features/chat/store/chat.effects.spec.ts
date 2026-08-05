@@ -1,7 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { TranslateService } from '@ngx-translate/core';
+import { MessageService } from 'primeng/api';
 import { of, throwError } from 'rxjs';
 
 import { actionsHarness, collect } from '../../../../testing/ngrx.helpers';
@@ -87,6 +89,8 @@ function problemDetails(
 
 function setup(chatApi: Partial<ChatApiService> = {}) {
   const harness = actionsHarness();
+  const router = { navigate: vi.fn().mockResolvedValue(true) };
+  const messageService = { add: vi.fn() };
   TestBed.configureTestingModule({
     providers: [
       ChatEffects,
@@ -95,12 +99,20 @@ function setup(chatApi: Partial<ChatApiService> = {}) {
       { provide: ChatApiService, useValue: chatApi },
       { provide: ChatBadgeService, useValue: { setUnreadCount: vi.fn() } },
       { provide: TranslateService, useValue: translateStub() },
+      { provide: Router, useValue: router },
+      { provide: MessageService, useValue: messageService },
     ],
   });
   const store = TestBed.inject(MockStore);
   store.overrideSelector(selectAuthUser, { id: 'renter-1' } as never);
   store.overrideSelector(selectActiveConversation, makeActiveConversation());
-  return { harness, store, effects: TestBed.inject(ChatEffects) };
+  return {
+    harness,
+    store,
+    effects: TestBed.inject(ChatEffects),
+    router,
+    messageService,
+  };
 }
 
 describe('ChatEffects', () => {
@@ -348,6 +360,73 @@ describe('ChatEffects', () => {
       expect(
         emitted.some((action) => action.type === ChatActions.loadConversationDetails.type),
       ).toBe(false);
+    });
+  });
+
+  describe('openConversationFromBooking$', () => {
+    it('maps a successful open/create to openConversationFromBookingSuccess', async () => {
+      const conversation = makeActiveConversation({ id: 'c-from-booking' });
+      const getOrCreateFromBooking = vi.fn(() => of(conversation));
+      const { harness, effects } = setup({
+        getOrCreateFromBooking,
+      } as unknown as Partial<ChatApiService>);
+
+      const result = collect(effects.openConversationFromBooking$);
+      harness.send(ChatActions.openConversationFromBooking({ bookingId: 'b1' }));
+      harness.complete();
+
+      expect(await result).toEqual([
+        ChatActions.openConversationFromBookingSuccess({ conversation }),
+      ]);
+      expect(getOrCreateFromBooking).toHaveBeenCalledWith('b1');
+    });
+
+    it('maps a failure to openConversationFromBookingFailure', async () => {
+      const { harness, effects } = setup({
+        getOrCreateFromBooking: vi.fn(() => throwError(() => new Error('nope'))),
+      } as unknown as Partial<ChatApiService>);
+
+      const result = collect(effects.openConversationFromBooking$);
+      harness.send(ChatActions.openConversationFromBooking({ bookingId: 'b1' }));
+      harness.complete();
+
+      expect(await result).toEqual([
+        ChatActions.openConversationFromBookingFailure({ error: 'nope' }),
+      ]);
+    });
+  });
+
+  describe('navigateAfterOpenConversationFromBooking$', () => {
+    it('navigates to the opened thread', async () => {
+      const { harness, effects, router } = setup();
+
+      const result = collect(effects.navigateAfterOpenConversationFromBooking$);
+      harness.send(
+        ChatActions.openConversationFromBookingSuccess({
+          conversation: makeActiveConversation({ id: 'c-from-booking' }),
+        }),
+      );
+      harness.complete();
+      await result;
+
+      expect(router.navigate).toHaveBeenCalledWith(['/chat', 'c-from-booking']);
+    });
+  });
+
+  describe('openConversationFromBookingErrorToast$', () => {
+    it('shows an error toast so a failed "Message owner" click is never silent', async () => {
+      const { harness, effects, messageService } = setup();
+
+      const result = collect(effects.openConversationFromBookingErrorToast$);
+      harness.send(
+        ChatActions.openConversationFromBookingFailure({ error: 'Could not reach server' }),
+      );
+      harness.complete();
+      await result;
+
+      expect(messageService.add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error', detail: 'Could not reach server' }),
+      );
     });
   });
 });

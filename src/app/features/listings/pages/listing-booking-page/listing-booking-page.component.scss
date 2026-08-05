@@ -7,7 +7,7 @@
 .booking-page {
   background: var(--ui-color-surface-muted);
 
-  @media (min-width: 960px) {
+  @media (min-width: 1100px) {
     /* Top gutter comes from `.page-container` on `.booking-page__container`
        inside; only the bottom run-out is local. */
     padding-block: 0 64px;
@@ -20,8 +20,8 @@
   gap: 16px;
 }
 
-/* Clear the fixed mobile action bar (shown < 960px) */
-@media (max-width: 959px) {
+/* Clear the fixed mobile action bar (shown < 1100px) */
+@media (max-width: 1099px) {
   .booking-page {
     padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
   }
@@ -57,45 +57,175 @@
   align-items: center;
   text-align: center;
   gap: var(--ui-space-16);
-  padding: var(--ui-space-32) var(--ui-space-16) var(--ui-space-64);
+  max-width: 420px;
+  margin: var(--ui-space-24) auto 0;
+  padding: var(--ui-space-32) var(--ui-space-24);
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow-card-hover);
   animation: booking-fade-in 300ms ease-out both;
+
+  &:focus-visible {
+    outline: none;
+  }
+}
+
+.booking-page__confirm-icon-wrap {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    border: 2px dashed var(--ui-color-primary);
+    opacity: 0.35;
+  }
 }
 
 .booking-page__confirm-icon {
-  font-size: 3.5rem;
-  color: var(--ui-color-success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: var(--ui-color-primary-soft);
+  color: var(--ui-color-primary);
+  font-size: 2.5rem;
   line-height: 1;
 }
 
 .booking-page__confirm-title {
-  font-size: clamp(1.375rem, 4vw, 1.875rem);
+  font-size: clamp(1.25rem, 4vw, 1.375rem);
   font-weight: 800;
   color: var(--ui-color-text-primary);
   letter-spacing: -0.02em;
   margin: 0;
+
+  &:focus-visible {
+    outline: none;
+  }
 }
 
 .booking-page__confirm-body {
-  font-size: 1rem;
+  font-size: 0.8125rem;
   color: var(--ui-color-text-secondary);
   line-height: 1.6;
-  max-width: 480px;
   margin: 0;
+}
+
+/* Note echo — same chat-bubble treatment as the live preview, primary/white */
+.booking-page__confirm-note {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: var(--ui-space-14);
+  background: var(--ui-color-surface-muted);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+  text-align: left;
+}
+
+.booking-page__confirm-note-eyebrow {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ui-color-text-secondary);
+}
+
+.booking-page__confirm-note-bubble {
+  background: var(--ui-color-primary);
+  color: var(--ui-color-on-primary);
+  border-radius: 14px 14px 14px 4px;
+  padding: 10px 13px;
+
+  p {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+}
+
+.booking-page__confirm-contact {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--ui-radius-md);
+  border: 1px dashed var(--ui-color-border);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--ui-color-text-secondary);
+  text-align: left;
+
+  .pi {
+    flex-shrink: 0;
+    margin-top: 2px;
+    font-size: 0.75rem;
+  }
+
+  ::ng-deep strong {
+    color: var(--ui-color-text-primary);
+    font-weight: 700;
+  }
 }
 
 .booking-page__confirm-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--ui-space-12);
-  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
   margin-top: var(--ui-space-8);
+}
+
+::ng-deep .booking-page__confirm-message-btn.p-button {
+  width: 100%;
+  justify-content: center;
+  border-radius: var(--ui-radius-pill);
+  font-weight: 700;
+  min-height: 48px;
+}
+
+.booking-page__confirm-secondary {
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--ui-color-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: var(--ui-radius-md);
+  transition: color 120ms ease;
+
+  &:hover {
+    color: var(--ui-color-text-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-color-primary);
+    outline-offset: 2px;
+  }
 }
 
 /* ── Desktop hero ───────────────────────────────────────── */
 .booking-page__hero {
   display: none;
 
-  @media (min-width: 960px) {
+  @media (min-width: 1100px) {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -179,7 +309,7 @@
   gap: 24px;
   animation: booking-fade-in 240ms ease-out both;
 
-  @media (min-width: 960px) {
+  @media (min-width: 1100px) {
     grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr);
     align-items: start;
   }
@@ -214,7 +344,7 @@
   border-radius: var(--ui-radius-card);
   box-shadow: var(--ui-shadow-card);
 
-  @media (min-width: 960px) {
+  @media (min-width: 1100px) {
     display: none;
   }
 }
@@ -280,9 +410,16 @@
   border-radius: var(--ui-radius-lg);
   box-shadow: var(--ui-shadow-card);
 
-  @media (max-width: 700px) {
+  /* Below the documented `md` floor (640px) — DESIGN_RULES §3. */
+  @media (max-width: 639px) {
     padding: var(--ui-space-16);
   }
+}
+
+/* Note card is the page's focal block — a primary-tinted border marks it out
+   from the plain-bordered dates card above it. */
+.booking-page__section--note {
+  border: 1.5px solid color-mix(in srgb, var(--ui-color-primary) 25%, transparent);
 }
 
 .booking-page__section-title {
@@ -313,7 +450,8 @@
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
 
-  @media (max-width: 480px) {
+  /* Below the documented `xs` floor (560px) — DESIGN_RULES §3. */
+  @media (max-width: 559px) {
     grid-template-columns: repeat(2, 1fr);
   }
 }
@@ -392,6 +530,25 @@
     font-style: italic;
     font-size: 0.8125rem;
   }
+
+  /* Refundable deposit — visually distinct from the charged subtotal above it,
+     and explicitly NOT part of the total below (product decision). */
+  &--deposit {
+    dt {
+      color: var(--ui-color-text-primary);
+      font-weight: 600;
+    }
+
+    dd {
+      color: var(--ui-color-text-secondary);
+    }
+  }
+}
+
+.booking-page__breakdown-note {
+  font-weight: 400;
+  font-style: italic;
+  color: var(--ui-color-text-secondary);
 }
 
 /* Note section */
@@ -476,8 +633,9 @@
   color: var(--ui-color-text-secondary);
   pointer-events: none;
 
+  /* Warn-coloured near the cap — not an error yet, just a heads-up. */
   &.booking-page__note-counter--near {
-    color: var(--ui-color-error);
+    color: var(--ui-color-warning);
     font-weight: 600;
   }
 }
@@ -603,14 +761,14 @@
 .booking-page__request-col {
   display: none;
 
-  @media (min-width: 960px) {
+  @media (min-width: 1100px) {
     display: block;
     min-width: 0;
   }
 }
 
 .booking-page__request-sticky {
-  @media (min-width: 960px) {
+  @media (min-width: 1100px) {
     position: sticky;
     top: calc(4.25rem + 20px);
   }
@@ -815,7 +973,7 @@
   border-radius: var(--ui-radius-lg);
   box-shadow: var(--ui-shadow-card);
 
-  @media (min-width: 960px) {
+  @media (min-width: 1100px) {
     display: none;
   }
 }
@@ -867,7 +1025,7 @@
   border-top: 1px solid var(--ui-color-border);
   box-shadow: 0 -4px 16px rgba(20, 15, 5, 0.08);
 
-  @media (min-width: 960px) {
+  @media (min-width: 1100px) {
     display: none;
   }
 

@@ -138,3 +138,30 @@ export const realtimeConversationReadResolved = createAction(
   '[Chat] Realtime Conversation Read Resolved',
   props<{ conversationId: string; readAtUtc: string; readerIsMe: boolean }>(),
 );
+
+// --- Cross-feature entry point (e.g. "Message {owner}" on the booking
+// confirmation screen) ---------------------------------------------------
+
+/**
+ * Opens (creating if needed) the conversation tied to a booking, then
+ * navigates there. Dispatched from outside the chat feature — callers never
+ * hit `ChatApiService` directly. Consumers that dispatch this must also
+ * provide `chatFeatureKey`/`ChatEffects` on their route (see
+ * `features/listings/routes.ts` for the precedent already used by
+ * `bookingsFeatureKey`), since the chat store is registered lazily per
+ * consuming route rather than app-wide.
+ */
+export const openConversationFromBooking = createAction(
+  '[Chat] Open Conversation From Booking',
+  props<{ bookingId: string }>(),
+);
+
+export const openConversationFromBookingSuccess = createAction(
+  '[Chat] Open Conversation From Booking Success',
+  props<{ conversation: ChatConversationDetails }>(),
+);
+
+export const openConversationFromBookingFailure = createAction(
+  '[Chat] Open Conversation From Booking Failure',
+  props<{ error: string }>(),
+);

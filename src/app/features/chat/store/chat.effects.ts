@@ -1,7 +1,9 @@
 import { Injectable, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { TranslateService } from '@ngx-translate/core';
+import { MessageService } from 'primeng/api';
 import {
   catchError,
   concatMap,
@@ -43,6 +45,8 @@ const CHAT_ERROR_MESSAGE_KEYS: Readonly<Partial<Record<ApiErrorCode, string>>> =
   'chat.conversation_closed': 'chat.details.closedBanner',
 };
 
+const CHAT_TOAST_LIFE_MS = 7000;
+
 /** Map a viewer-neutral hub message to the local, viewer-relative shape. */
 function toChatMessage(
   raw: ChatRealtimeMessage,
@@ -62,6 +66,8 @@ export class ChatEffects {
   private readonly store = inject(Store);
   private readonly chatBadge = inject(ChatBadgeService);
   private readonly translate = inject(TranslateService);
+  private readonly router = inject(Router);
+  private readonly messageService = inject(MessageService);
 
   /**
    * Translate a known chat error code; fall back to the generic HTTP message
@@ -181,6 +187,63 @@ export class ChatEffects {
         ),
       ),
     ),
+  );
+
+  /**
+   * Opens (creating if needed) the conversation tied to a booking — the
+   * "Message {owner}" CTA on the booking confirmation screen. The caller
+   * (e.g. `ListingBookingPageComponent`) never touches `ChatApiService`
+   * directly; it only dispatches {@link ChatActions.openConversationFromBooking}.
+   */
+  readonly openConversationFromBooking$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(ChatActions.openConversationFromBooking),
+      switchMap(({ bookingId }) =>
+        this.chatApi.getOrCreateFromBooking(bookingId).pipe(
+          map((conversation) =>
+            ChatActions.openConversationFromBookingSuccess({ conversation }),
+          ),
+          catchError((error: unknown) =>
+            of(
+              ChatActions.openConversationFromBookingFailure({
+                error: this.toErrorMessage(error),
+              }),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  /** Navigate to the thread once it's open — kept separate so the dispatching
+   * effect above stays a pure action mapper. */
+  readonly navigateAfterOpenConversationFromBooking$ = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(ChatActions.openConversationFromBookingSuccess),
+        tap(({ conversation }) => {
+          void this.router.navigate(['/chat', conversation.id]);
+        }),
+      ),
+    { dispatch: false },
+  );
+
+  /** Surface a failure to open/create the conversation via the global toast —
+   * the button must never look like it silently did nothing. */
+  readonly openConversationFromBookingErrorToast$ = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(ChatActions.openConversationFromBookingFailure),
+        tap(({ error }) => {
+          this.messageService.add({
+            severity: 'error',
+            summary: this.translate.instant('chat.details.openFromBookingErrorTitle'),
+            detail: error,
+            life: CHAT_TOAST_LIFE_MS,
+          });
+        }),
+      ),
+    { dispatch: false },
   );
 
   /**

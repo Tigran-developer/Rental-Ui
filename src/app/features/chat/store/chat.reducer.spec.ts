@@ -482,4 +482,33 @@ describe('chatReducer', () => {
       expect(next.conversations.find((c) => c.id === 'c1')?.unreadCount).toBe(0);
     });
   });
+
+  describe('openConversationFromBooking', () => {
+    it('flags the request in flight', () => {
+      const next = chatReducer(
+        initialChatState,
+        ChatActions.openConversationFromBooking({ bookingId: 'b1' }),
+      );
+      expect(next.openingConversationFromBooking).toBe(true);
+    });
+
+    it('on success, clears the flag and adopts the conversation as active', () => {
+      const conversation = makeDetails({ id: 'c-from-booking' });
+      const next = chatReducer(
+        { ...initialChatState, openingConversationFromBooking: true },
+        ChatActions.openConversationFromBookingSuccess({ conversation }),
+      );
+      expect(next.openingConversationFromBooking).toBe(false);
+      expect(next.activeConversation).toEqual(conversation);
+    });
+
+    it('on failure, clears the flag without touching the active conversation', () => {
+      const next = chatReducer(
+        { ...initialChatState, openingConversationFromBooking: true },
+        ChatActions.openConversationFromBookingFailure({ error: 'nope' }),
+      );
+      expect(next.openingConversationFromBooking).toBe(false);
+      expect(next.activeConversation).toBeNull();
+    });
+  });
 });

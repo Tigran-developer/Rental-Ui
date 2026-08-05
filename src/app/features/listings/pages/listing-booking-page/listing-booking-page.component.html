@@ -12,28 +12,53 @@
     @if (isSuccess()) {
       <!-- ── Confirmation state ─────────────────────── -->
       <div class="booking-page__confirm" role="status">
-        <div class="booking-page__confirm-icon" aria-hidden="true">
-          <i class="pi pi-check-circle"></i>
+        <div class="booking-page__confirm-icon-wrap" aria-hidden="true">
+          <span class="booking-page__confirm-icon">
+            <i class="pi pi-check"></i>
+          </span>
         </div>
-        <h1 class="booking-page__confirm-title">
-          {{ 'listings.bookingPage.confirmTitle' | translate }}
+        <h1 class="booking-page__confirm-title" #confirmHeading tabindex="-1">
+          {{ 'listings.bookingPage.confirmTitle' | translate: { name: ownerFirstName() } }}
         </h1>
         <p class="booking-page__confirm-body">
           {{ 'listings.bookingPage.confirmBody' | translate }}
         </p>
+
+        @if (sentNote(); as note) {
+          <div class="booking-page__confirm-note">
+            <span class="booking-page__confirm-note-eyebrow">
+              {{ 'listings.bookingPage.confirmNoteEyebrow' | translate: { name: ownerFirstName() } }}
+            </span>
+            <div class="booking-page__confirm-note-bubble">
+              <p>{{ note }}</p>
+            </div>
+          </div>
+        }
+
+        <p class="booking-page__confirm-contact">
+          <i class="pi pi-lock" aria-hidden="true"></i>
+          <span>
+            {{ 'listings.bookingPage.phoneUnlockLead' | translate: { name: ownerFirstName() } }}
+            <strong>{{ 'listings.bookingPage.phoneUnlockEmphasis' | translate }}</strong>
+          </span>
+        </p>
+
         <div class="booking-page__confirm-actions">
           <p-button
             type="button"
-            [label]="'listings.bookingPage.confirmViewBooking' | translate"
-            icon="pi pi-calendar-check"
-            (onClick)="onViewBooking()"
+            styleClass="booking-page__confirm-message-btn"
+            [label]="'listings.bookingPage.confirmMessageOwner' | translate: { name: ownerFirstName() }"
+            icon="pi pi-comment"
+            [loading]="openingConversation()"
+            (onClick)="onMessageOwner()"
           />
-          <p-button
+          <button
             type="button"
-            severity="secondary"
-            [label]="'listings.bookingPage.confirmBrowse' | translate"
-            routerLink="/listings"
-          />
+            class="booking-page__confirm-secondary"
+            (click)="onViewBooking()"
+          >
+            {{ 'listings.bookingPage.confirmViewBooking' | translate }}
+          </button>
         </div>
       </div>
 
@@ -118,7 +143,7 @@
 
             @if (listing(); as item) {
               <app-booking-calendar
-                [bookedDates]="item.bookedDates"
+                [bookedDates]="item.bookedDateRanges"
                 [pricePerDay]="item.pricePerDay"
                 [value]="controlledRange()"
                 (dateRangeSelected)="onRangeChange($event)"
@@ -131,6 +156,17 @@
                     <dt>{{ item.pricePerDay | dram }} × {{ rentalDays() }} {{ 'listings.bookingPage.daysLabel' | translate }}</dt>
                     <dd>{{ totalPrice() | dram }}</dd>
                   </div>
+                  @if (depositAmount(); as deposit) {
+                    <div class="booking-page__breakdown-row booking-page__breakdown-row--deposit">
+                      <dt>
+                        {{ 'listings.booking.deposit' | translate }}
+                        <span class="booking-page__breakdown-note">
+                          ({{ 'listings.bookingPage.depositNotCharged' | translate }})
+                        </span>
+                      </dt>
+                      <dd>{{ deposit | dram }}</dd>
+                    </div>
+                  }
                   <div class="booking-page__breakdown-row booking-page__breakdown-row--total">
                     <dt>{{ 'listings.bookingPage.summaryTotal' | translate }}</dt>
                     <dd>{{ totalPrice() | dram }}</dd>
@@ -146,7 +182,7 @@
           </section>
 
           <!-- Section 2: Note for the owner -->
-          <section class="booking-page__section" aria-labelledby="note-heading">
+          <section class="booking-page__section booking-page__section--note" aria-labelledby="note-heading">
             <div class="booking-page__note-head">
               <h2 id="note-heading" class="booking-page__section-title">
                 {{ 'listings.bookingPage.noteSectionHeading' | translate }}
@@ -172,11 +208,14 @@
                   formControlName="noteForOwner"
                   [maxlength]="NOTE_MAX_LENGTH"
                   [placeholder]="'listings.bookingPage.notePlaceholder' | translate: { name: ownerFirstName() }"
+                  aria-describedby="note-counter"
                   rows="4"
                 ></textarea>
                 <span
+                  id="note-counter"
                   class="booking-page__note-counter"
-                  [class.booking-page__note-counter--near]="noteLength() > NOTE_MAX_LENGTH * 0.85"
+                  [class.booking-page__note-counter--near]="noteNearLimit()"
+                  aria-live="polite"
                 >
                   {{ noteLength() }}/{{ NOTE_MAX_LENGTH }}
                 </span>
@@ -256,7 +295,10 @@
               </div>
               <p class="booking-page__request-unlock">
                 <i class="pi pi-lock" aria-hidden="true"></i>
-                <span [innerHTML]="'listings.bookingPage.phoneUnlock' | translate: { name: ownerFirstName() }"></span>
+                <span>
+                  {{ 'listings.bookingPage.phoneUnlockLead' | translate: { name: ownerFirstName() } }}
+                  <strong>{{ 'listings.bookingPage.phoneUnlockEmphasis' | translate }}</strong>
+                </span>
               </p>
             </div>
           }
@@ -332,7 +374,10 @@
                 <!-- Phone unlock note -->
                 <p class="booking-page__request-unlock">
                   <i class="pi pi-lock" aria-hidden="true"></i>
-                  <span [innerHTML]="'listings.bookingPage.phoneUnlock' | translate: { name: ownerFirstName() }"></span>
+                  <span>
+                    {{ 'listings.bookingPage.phoneUnlockLead' | translate: { name: ownerFirstName() } }}
+                    <strong>{{ 'listings.bookingPage.phoneUnlockEmphasis' | translate }}</strong>
+                  </span>
                 </p>
               }
 

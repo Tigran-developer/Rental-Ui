@@ -58,3 +58,8 @@ export const selectSendingImageError = createSelector(
   selectChatState,
   (state: ChatState): string | null => state.sendingImageError,
 );
+
+export const selectOpeningConversationFromBooking = createSelector(
+  selectChatState,
+  (state: ChatState): boolean => state.openingConversationFromBooking,
+);

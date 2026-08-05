@@ -772,7 +772,7 @@ Extend these rather than duplicating markup.
 | Design tokens | `src/styles.css` |
 | App shell + footer visibility | `src/app/app.ts`, `app.html`, `app.css` |
 | Listing card | `src/app/features/listings/components/listing-card/` |
-| Booking panel | `src/app/features/listings/components/booking-panel/` |
+| Booking panel | `src/app/features/listings/pages/listing-booking-page/`, `src/app/features/listings/components/booking-calendar/` |
 | Create listing form | `src/app/features/listings/components/create-listing-form/` |
 | Shared UI | `src/app/shared/ui/` |
 | i18n | `public/i18n/en.json`, `ru.json`, `hy.json` |
