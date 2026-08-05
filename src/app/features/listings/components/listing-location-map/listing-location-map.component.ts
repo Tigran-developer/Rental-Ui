@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  HostListener,
   ViewEncapsulation,
   computed,
   input,
@@ -37,9 +38,24 @@ import type { MapLatLng } from '../../../../shared/ui/map/map.component';
  * with `showHeader=false` (this screen has no header bar — a custom
  * top-left close button and the zone pill sit directly over the map instead)
  * and `closable=false` (no default header close icon to suppress). Because
- * there is no visible header, `role="dialog"`'s accessible name comes from a
+ * there is no visible header, the accessible name comes from a
  * visually-hidden heading (`#listingLocationMapHeading`) wired via
- * `ariaLabelledBy`, rather than PrimeNG's own `[header]` input.
+ * `ariaLabelledBy`, rather than PrimeNG's own `[header]` input; the dialog's
+ * `role="dialog"` itself comes from PrimeNG's own `Dialog.role` input
+ * (defaults to `'dialog'`, applied to the real rendered container) — it must
+ * NOT also be hardcoded as a static `role="dialog"` attribute on the
+ * `<p-dialog>` tag in the template, because `appendTo="body"` portals the
+ * real dialog content elsewhere on open, leaving that host tag behind
+ * PERMANENTLY (open or closed) as an empty phantom `[role="dialog"]` landmark
+ * for assistive tech. (Fixed bug, not a hypothetical — this exact thing
+ * shipped once; see the template for the removal.)
+ *
+ * `closable=false` also silently disables PrimeNG's own `closeOnEscape`
+ * handling — `Dialog.bindGlobalListeners()` only binds its document Escape
+ * listener when `closeOnEscape` AND `closable` are both true. Escape is
+ * therefore handled by this component's own `@HostListener` below, gated on
+ * `open()`, instead of relying on PrimeNG's gated internal listener. (Same
+ * trap, same fix, as `ListingGalleryComponent`'s lightbox dialog.)
  *
  * Focus handling: THIS component does not itself move focus anywhere — Escape
  * and the close button both just emit `(closed)`; returning focus to the
@@ -118,11 +134,32 @@ export class ListingLocationMapComponent {
     this.mapFailed.set(true);
   }
 
-  /** Wired to `p-dialog`'s `(visibleChange)` — fires on Escape; maps to the
-   *  same `(closed)` output the explicit close/back buttons use. */
+  /** Wired to `p-dialog`'s `(visibleChange)` — fires on mask-dismiss (should
+   *  this dialog ever set `dismissableMask`; currently `false`) or any other
+   *  path that flips PrimeNG's own `visible` state; maps to the same
+   *  `(closed)` output the explicit close/back buttons and the Escape
+   *  handler below use. */
   protected onVisibleChange(visible: boolean): void {
     if (!visible) {
       this.closed.emit();
+    }
+  }
+
+  /** Own Escape handling, independent of PrimeNG's `closeOnEscape` — see the
+   *  class doc comment for why `closable=false` defeats PrimeNG's gated
+   *  internal listener. Bound at `window` (not on `<p-dialog>`) because
+   *  `appendTo="body"` portals the real dialog content outside this
+   *  component's own DOM subtree, same reasoning as
+   *  `ListingGalleryComponent.onWindowKeydown()`. Guarded on `open()` so it's
+   *  a no-op while this dialog isn't the one showing. */
+  @HostListener('window:keydown', ['$event'])
+  protected onWindowKeydown(event: KeyboardEvent): void {
+    if (!this.open()) {
+      return;
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.close();
     }
   }
 
