@@ -370,31 +370,27 @@
       "prev": "Предыдущее изображение",
       "next": "Следующее изображение",
       "dotNavLabel": "Пагинация изображений",
-      "dotLabel": "Перейти к изображению {{index}}"
+      "dotLabel": "Перейти к изображению {{index}}",
+      "allPhotos": "Все {{count}} фото",
+      "photoAlt": "Фото {{index}} из {{total}}",
+      "counter": "{{current}} / {{total}}",
+      "closeLightbox": "Закрыть галерею"
     },
     "booking": {
       "calendarLabel": "Выберите даты аренды",
       "totalPrice": "Итого: {{amount}}",
       "selectRangeHint": "Выберите дату начала и окончания, чтобы увидеть итоговую стоимость.",
       "priceSuffix": "в день",
-      "totalLabel": "Итого",
-      "cta": "Отправить запрос на аренду",
-      "submitting": "Отправка...",
-      "disabledHint": "Выберите даты",
       "night": "{{count}} дн.",
       "nights": "{{count}} дн.",
-      "pendingHint": "У вас есть активный запрос на аренду этой игрушки.",
-      "cancelRequest": "Отменить запрос",
-      "cancelling": "Отмена...",
       "assurance": "Владелец рассматривает и одобряет ваш запрос до начала аренды.",
       "assuranceTransparency": "Цена рассчитывается заранее — никаких скрытых платежей.",
       "pickup": "Получение",
       "return": "Возврат",
-      "quickBook": "Быстрое бронирование",
-      "days": "дн.",
       "discount": "скидка",
       "serviceFee": "Сервисный сбор",
-      "deposit": "Возвратный залог"
+      "deposit": "Возвратный залог",
+      "noteTooLongError": "Комментарий слишком длинный — не более {{max}} символов."
     },
     "page": {
       "title": "Каталог игрушек",
@@ -441,10 +437,16 @@
       "priceLabel": "{{amount}} в день",
       "assurance": "Аренда игрушек у владельца с прозрачными ценами.",
       "descriptionHeading": "Об этой игрушке",
-      "hostHeading": "Владелец игрушки",
+      "hostHeading": "Знакомьтесь с владельцем",
       "contactLabel": "Контактные данные станут доступны после подтверждения бронирования.",
       "viewOwnerProfile": "Посмотреть профиль владельца",
       "ownerMemberSince": "Участник с {{year}} г.",
+      "shareLabel": "Поделиться",
+      "saveLabel": "Сохранить",
+      "savedLabel": "Сохранено",
+      "linkCopied": "Ссылка скопирована",
+      "messageOwner": "Написать владельцу",
+      "handoverLabel": "Передача",
       "bookingHeading": "Проверьте доступность",
       "bookingSubtitle": "Выберите даты аренды и посмотрите итоговую стоимость до отправки запроса.",
       "bookingSubmitting": "Отправка запроса на аренду...",
@@ -462,7 +464,23 @@
       "eyebrow": {
         "overview": "Обзор",
         "host": "Владелец",
-        "reviews": "Отзывы"
+        "reviews": "Отзывы",
+        "gettingIt": "Как получить"
+      },
+      "highlights": {
+        "hygieneSub": "Детали чистки от владельца",
+        "verifiedTitle": "Проверенный владелец",
+        "verifiedSub": "Надёжный участник DoRent",
+        "deliveryAvailableTitle": "Доступна доставка",
+        "deliveryAvailableSub": "Владелец может привезти",
+        "pickupOnlyTitle": "Только самовывоз",
+        "pickupOnlySub": "Встретьтесь с владельцем, чтобы забрать",
+        "minStayTitle": "Минимум {{count}} дн.",
+        "minStaySub": "Более короткие запросы не принимаются"
+      },
+      "badges": {
+        "verifiedOwner": "Проверенный владелец",
+        "hygieneChecked": "Гигиена проверена"
       },
       "howItWorks": {
         "label": "Как работает аренда",
@@ -507,7 +525,18 @@
       "reviews": {
         "heading": "Отзывы",
         "empty": "Отзывов пока нет",
-        "error": "Не удалось загрузить отзывы"
+        "error": "Не удалось загрузить отзывы",
+        "whatTheySay": "Что говорят семьи",
+        "seeAll": "Смотреть все {{count}} отзывов"
+      },
+      "pickupDelivery": {
+        "heading": "Получение и доставка",
+        "hygieneValue": "Указано владельцем"
+      },
+      "ownerStats": {
+        "rating": "Рейтинг",
+        "listings": "Активные игрушки",
+        "completed": "Завершённые аренды"
       },
       "ownerToySuffix": "игруш.",
       "ownerCardTitle": "Владелец / контакты",
@@ -862,18 +891,21 @@
         "chip4": "Арендую впервые — будут советы?"
       },
       "yourRequestEyebrow": "Ваш запрос",
-      "phoneUnlock": "Номер телефона {{name}} откроется <strong>сразу после отправки запроса.</strong>",
+      "phoneUnlockLead": "Контактные данные {{name}} станут доступны",
+      "phoneUnlockEmphasis": "после подтверждения бронирования.",
       "notCharged": "С вас не спишут оплату, пока {{name}} не подтвердит.",
       "notChargedShort": "Оплата пока не спишется",
       "summaryTotal": "Итого",
       "selectDatesHint": "Выберите даты, чтобы увидеть итоговую стоимость",
       "daysLabel": "дн.",
+      "depositNotCharged": "пока не списывается",
       "submitCta": "Отправить запрос на аренду",
       "submitting": "Отправка…",
-      "confirmTitle": "Запрос на аренду отправлен!",
+      "confirmTitle": "Запрос отправлен {{name}}!",
       "confirmBody": "Владелец рассмотрит ваш запрос и ответит в ближайшее время. Вы получите уведомление при изменении статуса.",
-      "confirmViewBooking": "Посмотреть бронирование",
-      "confirmBrowse": "Просмотреть другие игрушки"
+      "confirmNoteEyebrow": "Ваше сообщение для {{name}}",
+      "confirmMessageOwner": "Написать {{name}}",
+      "confirmViewBooking": "Посмотреть бронирование"
     }
   },
   "profile": {
@@ -1390,6 +1422,7 @@
       "dayToday": "Сегодня",
       "dayYesterday": "Вчера",
       "errorTitle": "Не удалось загрузить диалог",
+      "openFromBookingErrorTitle": "Не удалось открыть диалог",
       "emptyTitle": "Диалог недоступен",
       "empty": "Этот диалог недоступен или не содержит данных.",
       "noMessages": "В этом диалоге пока нет сообщений.",
@@ -1518,7 +1551,9 @@
       "noReviews": "Отзывов пока нет",
       "oneReview": "1 отзыв",
       "countReviews": "{{count}} отзыва(-ов)",
-      "ariaRating": "Оценка {{rating}} из 5"
+      "ariaRating": "Оценка {{rating}} из 5",
+      "distributionAria": "Распределение оценок",
+      "distributionRowAria": "{{star}} звёзд: {{percent}} процентов"
     },
     "relativeDate": {
       "today": "сегодня",

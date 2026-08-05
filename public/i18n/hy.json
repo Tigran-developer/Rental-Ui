@@ -371,31 +371,27 @@
       "prev": "Նախորդ պատկեր",
       "next": "Հաջորդ պատկեր",
       "dotNavLabel": "Պատկերների նավիգացիա",
-      "dotLabel": "Անցնել {{index}} պատկերին"
+      "dotLabel": "Անցնել {{index}} պատկերին",
+      "allPhotos": "Բոլոր {{count}} լուսանկարները",
+      "photoAlt": "Լուսանկար {{index}}՝ {{total}}-ից",
+      "counter": "{{current}} / {{total}}",
+      "closeLightbox": "Փակել պատկերասրահը"
     },
     "booking": {
       "calendarLabel": "Ընտրեք վարձակալման ամսաթվերը",
       "totalPrice": "Ընդամենը՝ {{amount}}",
       "selectRangeHint": "Ընտրեք սկզբի և վերջի ամսաթիվը՝ ընդհանուր արժեքը տեսնելու համար։",
       "priceSuffix": "օրական",
-      "totalLabel": "Ընդամենը",
-      "cta": "Ուղարկել վարձակալման հարցում",
-      "submitting": "Ուղարկվում է...",
-      "disabledHint": "Ընտրեք ամսաթվերը",
       "night": "{{count}} օր",
       "nights": "{{count}} օր",
-      "pendingHint": "Դուք ունեք ընթացիկ վարձակալման հարցում այս խաղալիքի համար։",
-      "cancelRequest": "Չեղարկել հարցումը",
-      "cancelling": "Չեղարկվում է...",
       "assurance": "Տերը քննարկում և հաստատում է ձեր հարցումը նախքան վարձակալության սկիզբը։",
       "assuranceTransparency": "Գինը ցուցադրվում է կանխավ — թաքնված վճարներ չկան։",
       "pickup": "Ստացում",
       "return": "Վերադարձ",
-      "quickBook": "Արագ ամրագրում",
-      "days": "օր",
       "discount": "զեղչ",
       "serviceFee": "Ծառայության վճար",
-      "deposit": "Վերադարձելի գրավ"
+      "deposit": "Վերադարձելի գրավ",
+      "noteTooLongError": "Ձեր հաղորդագրությունը շատ երկար է․ խնդրում ենք սահմանափակել այն առավելագույնը {{max}} նիշով։"
     },
     "page": {
       "title": "Փնտրել խաղալիքներ",
@@ -442,10 +438,16 @@
       "priceLabel": "{{amount}} օրական",
       "assurance": "Խաղալիքի վարձակալություն տիրոջից՝ թափանցիկ գներով։",
       "descriptionHeading": "Այս խաղալիքի մասին",
-      "hostHeading": "Խաղալիքի սեփականատեր",
+      "hostHeading": "Ծանոթացեք տիրոջ հետ",
       "contactLabel": "Կոնտակտային տվյալները հասանելի կդառնան ամրագրումը հաստատվելուց հետո։",
       "viewOwnerProfile": "Տեսնել սեփականատիրոջ պրոֆիլը",
       "ownerMemberSince": "Անդամ {{year}} թ.-ից",
+      "shareLabel": "Կիսվել",
+      "saveLabel": "Պահել",
+      "savedLabel": "Պահված է",
+      "linkCopied": "Հղումը պատճենվեց",
+      "messageOwner": "Գրել տիրոջը",
+      "handoverLabel": "Հանձնում",
       "bookingHeading": "Ստուգեք հասանելիությունը",
       "bookingSubtitle": "Ընտրեք վարձակալման ամսաթվերը և տեսեք ընդհանուր գումարը՝ նախքան հարցումը։",
       "bookingSubmitting": "Վարձակալման հարցումը ուղարկվում է...",
@@ -463,7 +465,23 @@
       "eyebrow": {
         "overview": "Ընդհանուր",
         "host": "Տերը",
-        "reviews": "Կարծիքներ"
+        "reviews": "Կարծիքներ",
+        "gettingIt": "Ինչպես ստանալ"
+      },
+      "highlights": {
+        "hygieneSub": "Մաքրման մանրամասներ տիրոջից",
+        "verifiedTitle": "Հաստատված տեր",
+        "verifiedSub": "DoRent-ի վստահելի անդամ",
+        "deliveryAvailableTitle": "Հասանելի է առաքում",
+        "deliveryAvailableSub": "Տերը կարող է բերել",
+        "pickupOnlyTitle": "Միայն ինքնաստացում",
+        "pickupOnlySub": "Հանդիպեք տիրոջը՝ վերցնելու համար",
+        "minStayTitle": "Նվազագույնը {{count}} օր",
+        "minStaySub": "Ավելի կարճ հարցումներ չեն ընդունվում"
+      },
+      "badges": {
+        "verifiedOwner": "Հաստատված տեր",
+        "hygieneChecked": "Հիգիենան ստուգված է"
       },
       "howItWorks": {
         "label": "Ինչպես է աշխատում վարձակալությունը",
@@ -508,7 +526,18 @@
       "reviews": {
         "heading": "Կարծիքներ",
         "empty": "Կարծիքներ դեռ չկան",
-        "error": "Չհաջողվեց բեռնել կարծիքները"
+        "error": "Չհաջողվեց բեռնել կարծիքները",
+        "whatTheySay": "Ինչ են ասում ընտանիքները",
+        "seeAll": "Տեսնել բոլոր {{count}} կարծիքները"
+      },
+      "pickupDelivery": {
+        "heading": "Ստացում և առաքում",
+        "hygieneValue": "Տրամադրված է տիրոջ կողմից"
+      },
+      "ownerStats": {
+        "rating": "Վարկանիշ",
+        "listings": "Ակտիվ խաղալիքներ",
+        "completed": "Ավարտված վարձակալություններ"
       },
       "ownerToySuffix": "խաղ.",
       "ownerCardTitle": "Սեփ. / կոնտակտային քարտ",
@@ -863,18 +892,21 @@
         "chip4": "Առաջին անգամ եմ վարձակալում — խորհուրդներ կա՞ն։"
       },
       "yourRequestEyebrow": "Ձեր հարցումը",
-      "phoneUnlock": "{{name}}-ի հեռախոսահամարը կբացվի <strong>հենց որ ուղարկեք այս հարցումը։</strong>",
+      "phoneUnlockLead": "{{name}}-ի կոնտակտային տվյալները հասանելի կդառնան",
+      "phoneUnlockEmphasis": "ամրագրումը հաստատելուց հետո։",
       "notCharged": "Դուք չեք վճարի, մինչև {{name}}-ը հաստատի։",
       "notChargedShort": "Դուք դեռ չեք վճարում",
       "summaryTotal": "Ընդամենը",
       "selectDatesHint": "Ընտրեք ամսաթվերը՝ ընդհանուր գինը տեսնելու համար",
       "daysLabel": "օր",
+      "depositNotCharged": "առայժմ չի գանձվում",
       "submitCta": "Ուղարկել վարձակալման հարցում",
       "submitting": "Ուղարկվում է…",
-      "confirmTitle": "Վարձակալման հարցումն ուղարկված է!",
+      "confirmTitle": "Հարցումն ուղարկվել է {{name}}-ին!",
       "confirmBody": "Տերը կքննի ձեր հարցումը և շուտով կպատասխանի։ Ձեզ կծանուցեն կարգավիճակի փոփոխության մասին։",
-      "confirmViewBooking": "Դիտել ամրագրումը",
-      "confirmBrowse": "Այլ խաղալիքներ"
+      "confirmNoteEyebrow": "Ձեր նշումը {{name}}-ի համար",
+      "confirmMessageOwner": "Գրել {{name}}-ին",
+      "confirmViewBooking": "Դիտել ամրագրումը"
     }
   },
   "profile": {
@@ -1391,6 +1423,7 @@
       "dayToday": "Այսօր",
       "dayYesterday": "Երեկ",
       "errorTitle": "Չհաջողվեց բեռնել զրույցը",
+      "openFromBookingErrorTitle": "Չհաջողվեց բացել զրույցը",
       "emptyTitle": "Զրույցը հասանելի չէ",
       "empty": "Այս զրույցը հասանելի չէ կամ տվյալներ չկան։",
       "noMessages": "Այս զրույցում դեռ հաղորդագրություններ չկան։",
@@ -1519,7 +1552,9 @@
       "noReviews": "Կարծիքներ դեռ չկան",
       "oneReview": "1 կարծիք",
       "countReviews": "{{count}} կարծիք",
-      "ariaRating": "Գնահատված {{rating}} 5-ից"
+      "ariaRating": "Գնահատված {{rating}} 5-ից",
+      "distributionAria": "Գնահատականների բաշխում",
+      "distributionRowAria": "{{star}} աստղ՝ {{percent}} տոկոս"
     },
     "relativeDate": {
       "today": "այսօր",
