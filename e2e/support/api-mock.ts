@@ -34,6 +34,14 @@ export interface ApiSeed {
   mapPins?: unknown[];
   /** GET /api/listings/map-pins — `isTruncated` flag on the same envelope. */
   mapPinsTruncated?: boolean;
+  /** POST /api/bookings outcome — defaults to a successful Pending booking. */
+  createBooking?: { status?: number; body?: unknown };
+  /** GET /api/bookings/mine — items for "my bookings" (booking-relationship UI). */
+  myBookings?: unknown[];
+  /** GET /api/reviews/listing/:id — the toy-review aggregate + comments for a listing. */
+  listingToyReviews?: unknown;
+  /** POST /api/chat/conversations/from-booking/:bookingId outcome — "Message {owner}" CTA. */
+  chatFromBooking?: { status?: number; body?: unknown };
 }
 
 function json(route: Route, status: number, body: unknown): Promise<void> {
@@ -102,6 +110,72 @@ export async function mockApi(page: Page, seed: ApiSeed = {}): Promise<void> {
     const singleListingId = pathname.match(/^\/api\/listings\/([^/]+)$/)?.[1];
     if (singleListingId && singleListingId !== 'mine' && singleListingId !== 'map-pins' && method === 'GET') {
       return json(route, 200, seed.listingDetails ?? {});
+    }
+
+    // POST /api/bookings — create a booking request. Checked with an exact
+    // suffix match (not a prefix regex) so it never shadows
+    // /api/bookings/mine or /api/bookings/requests below.
+    if (pathname.endsWith('/api/bookings') && method === 'POST') {
+      const status = seed.createBooking?.status ?? 200;
+      return json(
+        route,
+        status,
+        seed.createBooking?.body ?? {
+          id: 'booking-e2e-1',
+          listingId: 'listing-e2e-1',
+          status: 'Pending',
+          startDate: '2026-09-10',
+          endDate: '2026-09-12',
+          totalPrice: 15,
+          createdAt: '2026-08-01T10:00:00.000Z',
+        },
+      );
+    }
+
+    if (pathname.endsWith('/api/bookings/mine') && method === 'GET') {
+      return json(route, 200, seed.myBookings ?? []);
+    }
+
+    // GET /api/reviews/listing/{id} — toy-review aggregate + comments for the
+    // listing detail page's reviews section.
+    if (/^\/api\/reviews\/listing\/[^/]+$/.test(pathname) && method === 'GET') {
+      return json(route, 200, seed.listingToyReviews ?? {
+        reviewCount: 0,
+        hasAggregate: false,
+        overallAverage: 0,
+        conditionAverage: 0,
+        cleanlinessAverage: 0,
+        valueForMoneyAverage: 0,
+        funPlayValueAverage: 0,
+        descriptionAccuracyAverage: 0,
+        distribution: [0, 0, 0, 0, 0],
+        comments: [],
+      });
+    }
+
+    // POST /api/chat/conversations/from-booking/{bookingId} — "Message {owner}"
+    // CTA on the booking confirmation screen.
+    if (/^\/api\/chat\/conversations\/from-booking\/[^/]+$/.test(pathname) && method === 'POST') {
+      const status = seed.chatFromBooking?.status ?? 200;
+      return json(
+        route,
+        status,
+        seed.chatFromBooking?.body ?? {
+          id: 'chat-e2e-1',
+          bookingId: 'booking-e2e-1',
+          counterpartId: 'owner-e2e-1',
+          counterpartName: 'Olive Owner',
+          counterpartAvatarUrl: null,
+          counterpartVerified: false,
+          toyTitle: 'E2E Wooden Train Set',
+          toyImageUrl: null,
+          status: 'requested',
+          bookingDates: '2026-09-10 – 2026-09-12',
+          bookingPrice: 15,
+          isClosed: false,
+          messages: [],
+        },
+      );
     }
 
     if (pathname.endsWith('/api/categories') && method === 'GET') {
