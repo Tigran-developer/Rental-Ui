@@ -16,14 +16,47 @@
 } @else {
   <div class="rating-summary rating-summary--full">
     @if (hasRatings()) {
-      <span class="rating-summary__big-number">{{ formattedAverage() }}</span>
-      <div class="rating-summary__stars-row">
-        <app-ui-star-rating [rating]="roundedRating()" size="md" [readonly]="true" />
-      </div>
-      @if (summary().reviewCount === 1) {
-        <span class="rating-summary__count">{{ 'reviews.summary.oneReview' | translate }}</span>
+      @if (showDistribution()) {
+        <div class="rating-summary__panel">
+          <div class="rating-summary__panel-left">
+            <span class="rating-summary__big-number">{{ formattedAverage() }}</span>
+            <app-ui-star-rating [rating]="roundedRating()" size="md" [readonly]="true" />
+            @if (summary().reviewCount === 1) {
+              <span class="rating-summary__count">{{ 'reviews.summary.oneReview' | translate }}</span>
+            } @else {
+              <span class="rating-summary__count">{{ 'reviews.summary.countReviews' | translate: { count: summary().reviewCount } }}</span>
+            }
+          </div>
+          <div
+            class="rating-summary__panel-right"
+            role="list"
+            [attr.aria-label]="'reviews.summary.distributionAria' | translate"
+          >
+            @for (star of starsDesc; track star) {
+              <div
+                class="rating-summary__dist-row"
+                role="listitem"
+                [attr.aria-label]="'reviews.summary.distributionRowAria' | translate: { star, percent: distPercent(star) }"
+              >
+                <span class="rating-summary__dist-label" aria-hidden="true">{{ star }} ★</span>
+                <div class="rating-summary__dist-track" aria-hidden="true">
+                  <div class="rating-summary__dist-fill" [style.width.%]="distPercent(star)"></div>
+                </div>
+                <span class="rating-summary__dist-pct" aria-hidden="true">{{ distPercent(star) }}%</span>
+              </div>
+            }
+          </div>
+        </div>
       } @else {
-        <span class="rating-summary__count">{{ 'reviews.summary.countReviews' | translate: { count: summary().reviewCount } }}</span>
+        <span class="rating-summary__big-number">{{ formattedAverage() }}</span>
+        <div class="rating-summary__stars-row">
+          <app-ui-star-rating [rating]="roundedRating()" size="md" [readonly]="true" />
+        </div>
+        @if (summary().reviewCount === 1) {
+          <span class="rating-summary__count">{{ 'reviews.summary.oneReview' | translate }}</span>
+        } @else {
+          <span class="rating-summary__count">{{ 'reviews.summary.countReviews' | translate: { count: summary().reviewCount } }}</span>
+        }
       }
     } @else {
       <span class="rating-summary__empty">{{ 'reviews.summary.noReviews' | translate }}</span>

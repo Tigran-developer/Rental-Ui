@@ -9,6 +9,13 @@ import type { ListingDistrict } from './district.model';
  */
 export type ToyCondition = 'New' | 'LikeNew' | 'Good' | 'Fair' | 'Poor';
 
+/** Mirrors `ListingCategoryResponse` (rental-api) — id/name/slug of the toy's category. */
+export interface ListingDetailsCategory {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export interface ListingDetails {
   id: string;
   title: string;
@@ -17,8 +24,22 @@ export interface ListingDetails {
   pricePerDay: number;
   images: ListingImage[];
   owner: ListingOwner;
-  bookedDates: BookedDateRange[];
+  /**
+   * Wire field is `bookedDateRanges` (`ListingDetailsResponse.BookedDateRanges`
+   * on the backend, `ListingsQueryService` — only Approved + Active bookings
+   * are included). Each entry is an inclusive `{startDate, endDate}` range,
+   * NOT a list of individual dates — expand with
+   * `expandBookedDateRangesToDisabledDates` before feeding a datepicker.
+   */
+  bookedDateRanges: BookedDateRange[];
   isFavorite: boolean;
+  /**
+   * The toy's category. `ListingDetailsResponse.Category` on the backend is
+   * always populated for an approved listing (every listing has a category) —
+   * `null` here only guards against a malformed/partial payload, it is not an
+   * expected steady-state value.
+   */
+  category?: ListingDetailsCategory | null;
 
   // Optional toy-specific fields. May be omitted by the backend.
   ageFromMonths?: number | null;

@@ -1,114 +1,335 @@
 <div class="listing-gallery">
-  @if (mainImage(); as primary) {
-    <div class="listing-gallery__hero">
-      <!--
-        Purely decorative backdrop: the SAME photo as the hero, cover-fitted and
-        blurred, so the letterbox bands left by `object-fit: contain` read as an
-        extension of the photo instead of a dead grey band. Identical `src` to
-        the hero image (no cache-buster, no resized variant), so the browser
-        serves it from cache — one network request, not two. Never announced:
-        empty alt + aria-hidden, and <img> is not focusable.
-        Only rendered in this branch — the no-image placeholder below keeps its
-        original flat treatment.
-      -->
-      <img
-        class="listing-gallery__hero-backdrop"
-        [src]="primary.url"
-        alt=""
-        aria-hidden="true"
-        draggable="false"
-        loading="eager"
-        decoding="async"
-      />
-
-      <img
-        class="listing-gallery__hero-img"
-        [src]="primary.url"
-        [alt]="'listings.gallery.mainImageAlt' | translate"
-        loading="eager"
-        decoding="async"
-      />
-
-      @if (hasMultipleImages()) {
-        <button
-          type="button"
-          class="listing-gallery__nav listing-gallery__nav--prev"
-          (click)="goPrev()"
-          [attr.aria-label]="'listings.gallery.prev' | translate"
-        >
-          <span class="pi pi-chevron-left" aria-hidden="true"></span>
-        </button>
-
-        <button
-          type="button"
-          class="listing-gallery__nav listing-gallery__nav--next"
-          (click)="goNext()"
-          [attr.aria-label]="'listings.gallery.next' | translate"
-        >
-          <span class="pi pi-chevron-right" aria-hidden="true"></span>
-        </button>
-      }
-
-      <!-- Dots overlaid at bottom-center of image — always shown -->
-      <div
-        class="listing-gallery__dots"
-        role="tablist"
-        [attr.aria-label]="'listings.gallery.dotNavLabel' | translate"
-      >
-        @for (
-          image of sortedImages();
-          track trackByImageId($index, image);
-          let i = $index
-        ) {
-          <button
-            type="button"
-            role="tab"
-            class="listing-gallery__dot"
-            [class.listing-gallery__dot--active]="i === activeIndex()"
-            [attr.aria-selected]="i === activeIndex()"
-            [attr.aria-label]="'listings.gallery.dotLabel' | translate: { index: i + 1 }"
-            (click)="selectIndex(i)"
-          ></button>
-        }
-      </div>
-    </div>
-
-    @if (hasMultipleImages()) {
-      <div
-        class="listing-gallery__thumbs"
-        role="list"
-        [attr.aria-label]="'listings.gallery.thumbnailsLabel' | translate"
-      >
-        @for (
-          image of sortedImages();
-          track trackByImageId($index, image);
-          let i = $index
-        ) {
-          <button
-            type="button"
-            role="listitem"
-            class="listing-gallery__thumb"
-            [class.listing-gallery__thumb--active]="i === activeIndex()"
-            (click)="selectIndex(i)"
-            [attr.aria-label]="'listings.gallery.dotLabel' | translate: { index: i + 1 }"
-          >
-            <img
-              class="listing-gallery__thumb-img"
-              [src]="image.url"
-              alt=""
-              loading="lazy"
-              decoding="async"
-            />
-          </button>
-        }
-      </div>
-    }
-  } @else {
+  @if (totalCount() === 0) {
     <div class="listing-gallery__hero listing-gallery__hero--empty">
       <span class="pi pi-image listing-gallery__empty-icon" aria-hidden="true"></span>
       <p class="listing-gallery__empty-text">
         {{ 'listings.gallery.noImages' | translate }}
       </p>
     </div>
+  } @else {
+
+    <!-- ══════════════════ Desktop mosaic (≥1100px) ══════════════════ -->
+    <div class="listing-gallery__mosaic">
+      @let satellites = mosaicSatellites();
+      @let total = totalCount();
+
+      @if (satellites.length === 0) {
+        <!-- Single image: one full-bleed tile, uniformly rounded. -->
+        <button
+          type="button"
+          class="listing-gallery__mtile listing-gallery__mtile--solo"
+          (click)="openLightbox(0)"
+          [attr.aria-label]="'listings.gallery.photoAlt' | translate: { index: 1, total }"
+        >
+          <img
+            class="listing-gallery__mtile-img"
+            [src]="mosaicMain()!.url"
+            alt=""
+            loading="eager"
+            decoding="async"
+          />
+        </button>
+      } @else if (satellites.length < 4) {
+        <!-- 2–4 total images: main tile + a stacked right-hand column. -->
+        <button
+          type="button"
+          class="listing-gallery__mtile listing-gallery__mtile--main-stack"
+          (click)="openLightbox(0)"
+          [attr.aria-label]="'listings.gallery.photoAlt' | translate: { index: 1, total }"
+        >
+          <img
+            class="listing-gallery__mtile-img"
+            [src]="mosaicMain()!.url"
+            alt=""
+            loading="eager"
+            decoding="async"
+          />
+        </button>
+        <div
+          class="listing-gallery__mstack"
+          [style.grid-template-rows]="'repeat(' + satellites.length + ', 1fr)'"
+        >
+          @for (img of satellites; track trackByImageId($index, img); let i = $index) {
+            <button
+              type="button"
+              class="listing-gallery__mtile"
+              [class.listing-gallery__mtile--corner-top]="i === 0"
+              [class.listing-gallery__mtile--corner-bottom]="i === satellites.length - 1"
+              (click)="openLightbox(i + 1)"
+              [attr.aria-label]="'listings.gallery.photoAlt' | translate: { index: i + 2, total }"
+            >
+              <img
+                class="listing-gallery__mtile-img"
+                [src]="img.url"
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
+              @if (i === satellites.length - 1 && total > 1) {
+                <span class="listing-gallery__mtile-scrim">
+                  <span class="listing-gallery__mtile-allphotos">
+                    <i class="pi pi-images" aria-hidden="true"></i>
+                    {{ 'listings.gallery.allPhotos' | translate: { count: total } }}
+                  </span>
+                </span>
+              }
+            </button>
+          }
+        </div>
+      } @else {
+        <!-- 5+ total images: the full 2fr/1fr/1fr × 2-row mosaic. Only the
+             first 5 photos are ever shown as tiles — the rest are reachable
+             through the lightbox via the "All N photos" button below. -->
+        <button
+          type="button"
+          class="listing-gallery__mtile listing-gallery__mtile--main-wide"
+          (click)="openLightbox(0)"
+          [attr.aria-label]="'listings.gallery.photoAlt' | translate: { index: 1, total }"
+        >
+          <img
+            class="listing-gallery__mtile-img"
+            [src]="mosaicMain()!.url"
+            alt=""
+            loading="eager"
+            decoding="async"
+          />
+        </button>
+        <button
+          type="button"
+          class="listing-gallery__mtile listing-gallery__mtile--grid-a"
+          (click)="openLightbox(1)"
+          [attr.aria-label]="'listings.gallery.photoAlt' | translate: { index: 2, total }"
+        >
+          <img class="listing-gallery__mtile-img" [src]="satellites[0].url" alt="" loading="lazy" decoding="async" />
+        </button>
+        <button
+          type="button"
+          class="listing-gallery__mtile listing-gallery__mtile--grid-b"
+          (click)="openLightbox(2)"
+          [attr.aria-label]="'listings.gallery.photoAlt' | translate: { index: 3, total }"
+        >
+          <img class="listing-gallery__mtile-img" [src]="satellites[1].url" alt="" loading="lazy" decoding="async" />
+        </button>
+        <button
+          type="button"
+          class="listing-gallery__mtile listing-gallery__mtile--grid-c listing-gallery__mtile--corner-top"
+          (click)="openLightbox(3)"
+          [attr.aria-label]="'listings.gallery.photoAlt' | translate: { index: 4, total }"
+        >
+          <img class="listing-gallery__mtile-img" [src]="satellites[2].url" alt="" loading="lazy" decoding="async" />
+        </button>
+        <button
+          type="button"
+          class="listing-gallery__mtile listing-gallery__mtile--grid-d listing-gallery__mtile--corner-bottom"
+          (click)="openLightbox(4)"
+          [attr.aria-label]="'listings.gallery.photoAlt' | translate: { index: 5, total }"
+        >
+          <img class="listing-gallery__mtile-img" [src]="satellites[3].url" alt="" loading="lazy" decoding="async" />
+          <span class="listing-gallery__mtile-scrim">
+            <span class="listing-gallery__mtile-allphotos">
+              <i class="pi pi-images" aria-hidden="true"></i>
+              {{ 'listings.gallery.allPhotos' | translate: { count: total } }}
+            </span>
+          </span>
+        </button>
+      }
+
+      <!-- Trust badges always overlay the main (top-left) tile, whichever mosaic shape is active. -->
+      @if (badges().length > 0) {
+        <span class="listing-gallery__badges" aria-hidden="false">
+          @for (badge of badges(); track badge.label) {
+            <span class="listing-gallery__badge" [class]="'listing-gallery__badge listing-gallery__badge--' + badge.tone">
+              <i [class]="badge.icon" aria-hidden="true"></i>
+              {{ badge.label }}
+            </span>
+          }
+        </span>
+      }
+    </div>
+
+    <!-- ══════════════════ Mobile / tablet hero (<1100px) ══════════════════ -->
+    <div class="listing-gallery__mobile">
+      @if (mainImage(); as primary) {
+        <div class="listing-gallery__hero">
+          <!--
+            Purely decorative backdrop: the SAME photo as the hero, cover-fitted and
+            blurred, so the letterbox bands left by `object-fit: contain` read as an
+            extension of the photo instead of a dead grey band. Identical `src` to
+            the hero image (no cache-buster, no resized variant), so the browser
+            serves it from cache — one network request, not two. Never announced:
+            empty alt + aria-hidden, and <img> is not focusable.
+            Only rendered in this branch — the no-image placeholder below keeps its
+            original flat treatment.
+          -->
+          <img
+            class="listing-gallery__hero-backdrop"
+            [src]="primary.url"
+            alt=""
+            aria-hidden="true"
+            draggable="false"
+            loading="eager"
+            decoding="async"
+          />
+
+          <button
+            type="button"
+            class="listing-gallery__hero-tap"
+            (click)="openLightbox(activeIndex())"
+            [attr.aria-label]="'listings.gallery.photoAlt' | translate: { index: activeIndex() + 1, total: totalCount() }"
+          >
+            <img
+              class="listing-gallery__hero-img"
+              [src]="primary.url"
+              [alt]="'listings.gallery.mainImageAlt' | translate"
+              loading="eager"
+              decoding="async"
+            />
+          </button>
+
+          @if (hasMultipleImages()) {
+            <button
+              type="button"
+              class="listing-gallery__nav listing-gallery__nav--prev"
+              (click)="goPrev()"
+              [attr.aria-label]="'listings.gallery.prev' | translate"
+            >
+              <span class="pi pi-chevron-left" aria-hidden="true"></span>
+            </button>
+
+            <button
+              type="button"
+              class="listing-gallery__nav listing-gallery__nav--next"
+              (click)="goNext()"
+              [attr.aria-label]="'listings.gallery.next' | translate"
+            >
+              <span class="pi pi-chevron-right" aria-hidden="true"></span>
+            </button>
+
+            <span class="listing-gallery__counter" aria-hidden="true">
+              {{ 'listings.gallery.counter' | translate: { current: activeIndex() + 1, total: totalCount() } }}
+            </span>
+
+            <div
+              class="listing-gallery__dots"
+              role="tablist"
+              [attr.aria-label]="'listings.gallery.dotNavLabel' | translate"
+            >
+              @for (
+                image of sortedImages();
+                track trackByImageId($index, image);
+                let i = $index
+              ) {
+                <button
+                  type="button"
+                  role="tab"
+                  class="listing-gallery__dot"
+                  [class.listing-gallery__dot--active]="i === activeIndex()"
+                  [attr.aria-selected]="i === activeIndex()"
+                  [attr.aria-label]="'listings.gallery.dotLabel' | translate: { index: i + 1 }"
+                  (click)="selectIndex(i)"
+                ></button>
+              }
+            </div>
+          }
+        </div>
+
+        @if (hasMultipleImages()) {
+          <div
+            class="listing-gallery__thumbs"
+            role="list"
+            [attr.aria-label]="'listings.gallery.thumbnailsLabel' | translate"
+          >
+            @for (
+              image of sortedImages();
+              track trackByImageId($index, image);
+              let i = $index
+            ) {
+              <button
+                type="button"
+                role="listitem"
+                class="listing-gallery__thumb"
+                [class.listing-gallery__thumb--active]="i === activeIndex()"
+                (click)="selectIndex(i)"
+                [attr.aria-label]="'listings.gallery.dotLabel' | translate: { index: i + 1 }"
+              >
+                <img
+                  class="listing-gallery__thumb-img"
+                  [src]="image.url"
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            }
+          </div>
+        }
+      }
+    </div>
   }
 </div>
+
+<!-- ══════════════════ Lightbox ══════════════════
+     `showHeader` stays true (with `closable: false`, since we use our own
+     round close button) purely so PrimeNG wires its own `aria-labelledby` to
+     a real, rendered header element — with `showHeader: false` that id would
+     point at nothing, which is worse for screen readers than a small header
+     bar. The header is styled to disappear visually into the dark chrome.
+
+     `closable="false"` also silently disables PrimeNG's own `closeOnEscape`
+     AND `dismissableMask` handling (see `ListingGalleryComponent`'s
+     `onWindowKeydown()` and `onWindowMousedown()` doc comments) — Escape and
+     mask clicks are each handled by their own `@HostListener` instead, so
+     `[closeOnEscape]`/`[dismissableMask]` below are left `true` only for
+     documentation/parity with the dialog's other affordances, not because
+     PrimeNG actually acts on either. -->
+<p-dialog
+  [visible]="lightboxOpen()"
+  (visibleChange)="onLightboxVisibleChange($event)"
+  [modal]="true"
+  [dismissableMask]="true"
+  [closeOnEscape]="true"
+  [closable]="false"
+  [header]="'listings.gallery.counter' | translate: { current: lightboxIndex() + 1, total: totalCount() }"
+  styleClass="listing-gallery__lightbox-dialog"
+  [maskStyleClass]="lightboxMaskClass"
+>
+  @if (lightboxOpen()) {
+    <div class="listing-gallery__lightbox">
+      <button
+        type="button"
+        class="listing-gallery__lightbox-close"
+        (click)="closeLightbox()"
+        [attr.aria-label]="'listings.gallery.closeLightbox' | translate"
+      >
+        <i class="pi pi-times" aria-hidden="true"></i>
+      </button>
+
+      @if (sortedImages()[lightboxIndex()]; as active) {
+        <img
+          class="listing-gallery__lightbox-img"
+          [src]="active.url"
+          [alt]="'listings.gallery.photoAlt' | translate: { index: lightboxIndex() + 1, total: totalCount() }"
+        />
+      }
+
+      @if (hasMultipleImages()) {
+        <button
+          type="button"
+          class="listing-gallery__lightbox-nav listing-gallery__lightbox-nav--prev"
+          (click)="lightboxPrev()"
+          [attr.aria-label]="'listings.gallery.prev' | translate"
+        >
+          <span class="pi pi-chevron-left" aria-hidden="true"></span>
+        </button>
+        <button
+          type="button"
+          class="listing-gallery__lightbox-nav listing-gallery__lightbox-nav--next"
+          (click)="lightboxNext()"
+          [attr.aria-label]="'listings.gallery.next' | translate"
+        >
+          <span class="pi pi-chevron-right" aria-hidden="true"></span>
+        </button>
+      }
+    </div>
+  }
+</p-dialog>

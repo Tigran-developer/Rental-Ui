@@ -10,6 +10,7 @@ import { makeListingMapPin } from '../../../../testing/fixtures';
 import type { ListingsFilter } from '../models/listings-filter.model';
 import type { MapPinsBounds } from '../models/map-pins-bounds.model';
 import { ListingsApiService } from './listings-api.service';
+import { expandBookedDateRangesToDisabledDates } from '../components/booking-calendar/booking-calendar.component';
 
 // These filters were silently dropped on the way to the API (contract drift,
 // M-020): `query` went out as `title` instead of `search`, and `ageGroup` /
@@ -315,5 +316,91 @@ describe('ListingsApiService — getMapPins', () => {
     });
 
     expect(result?.items[0].rating).toBeNull();
+  });
+});
+
+describe('ListingsApiService — getListingById', () => {
+  let service: ListingsApiService;
+  let httpMock: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    service = TestBed.inject(ListingsApiService);
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    httpMock.verify();
+  });
+
+  // Regression for the bug where the frontend model/normalizer read
+  // `bookedDates` while `ListingDetailsResponse` (rental-api) actually
+  // serializes `bookedDateRanges` — the mismatch silently produced an empty
+  // array, so the booking calendar disabled nothing and renters could select
+  // already-booked days. This payload is shaped exactly as the API emits it.
+  it('normalizes bookedDateRanges from a payload shaped exactly as the API emits it', () => {
+    let result: { bookedDateRanges: { startDate: string; endDate: string }[] } | undefined;
+    service.getListingById('l1').subscribe((r) => (result = r as never));
+
+    const req = httpMock.expectOne(
+      (r) => r.url === toApiUrl(ApiContract.listings.byId('l1')),
+    );
+    req.flush({
+      id: 'l1',
+      title: 'Wooden Train Set',
+      description: 'A lovely wooden train set.',
+      city: 'Yerevan',
+      pricePerDay: 5000,
+      images: [],
+      owner: { id: 'owner-1', firstName: 'Owen', lastName: 'Owner', phoneNumber: null },
+      bookedDateRanges: [
+        { startDate: '2026-09-10', endDate: '2026-09-10' },
+        { startDate: '2026-09-20', endDate: '2026-09-22' },
+      ],
+      isFavorite: false,
+      category: null,
+    });
+
+    expect(result?.bookedDateRanges).toEqual([
+      { startDate: '2026-09-10', endDate: '2026-09-10' },
+      { startDate: '2026-09-20', endDate: '2026-09-22' },
+    ]);
+
+    // The whole point of surfacing this field correctly: expanding it must
+    // actually disable the booked days (single-day range + a 3-day range).
+    const disabled = expandBookedDateRangesToDisabledDates(result!.bookedDateRanges);
+    const isoDatesOf = (dates: Date[]) =>
+      dates.map((d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`).sort();
+
+    expect(isoDatesOf(disabled)).toEqual([
+      '2026-8-10',
+      '2026-8-20',
+      '2026-8-21',
+      '2026-8-22',
+    ]);
+  });
+
+  it('falls back to an empty array when bookedDateRanges is missing from the payload', () => {
+    let result: { bookedDateRanges: unknown[] } | undefined;
+    service.getListingById('l1').subscribe((r) => (result = r as never));
+
+    const req = httpMock.expectOne(
+      (r) => r.url === toApiUrl(ApiContract.listings.byId('l1')),
+    );
+    req.flush({
+      id: 'l1',
+      title: 'Wooden Train Set',
+      description: 'A lovely wooden train set.',
+      city: 'Yerevan',
+      pricePerDay: 5000,
+      images: [],
+      owner: { id: 'owner-1', firstName: 'Owen', lastName: 'Owner', phoneNumber: null },
+      isFavorite: false,
+      category: null,
+    });
+
+    expect(result?.bookedDateRanges).toEqual([]);
   });
 });

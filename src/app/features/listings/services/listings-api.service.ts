@@ -11,7 +11,11 @@ import type {
   ListingImageUploadEvent,
   ListingImageUploadResponse,
 } from '../models/create-listing.model';
-import type { ListingDetails, ToyCondition } from '../models/listing-details.model';
+import type {
+  ListingDetails,
+  ListingDetailsCategory,
+  ToyCondition,
+} from '../models/listing-details.model';
 import type { ListingDistrict } from '../models/district.model';
 import type {
   BookedDateRange,
@@ -456,6 +460,19 @@ export class ListingsApiService {
   }
 
   private normalizeListingDetails(listing: ListingDetails): ListingDetails {
+    const rawCategory = listing.category as Partial<ListingDetailsCategory> | null | undefined;
+    const category: ListingDetailsCategory | null =
+      rawCategory !== null &&
+      rawCategory !== undefined &&
+      typeof rawCategory.id === 'string' &&
+      typeof rawCategory.name === 'string'
+        ? {
+            id: rawCategory.id,
+            name: rawCategory.name,
+            slug: typeof rawCategory.slug === 'string' ? rawCategory.slug : '',
+          }
+        : null;
+
     const rawOwner = listing.owner;
     const owner: ListingOwner = {
       id: typeof rawOwner?.id === 'string' ? rawOwner.id : '',
@@ -482,8 +499,8 @@ export class ListingsApiService {
           .filter((image) => image.url.length > 0)
       : [];
 
-    const bookedDates: BookedDateRange[] = Array.isArray(listing.bookedDates)
-      ? listing.bookedDates.filter(
+    const bookedDateRanges: BookedDateRange[] = Array.isArray(listing.bookedDateRanges)
+      ? listing.bookedDateRanges.filter(
           (range): range is BookedDateRange =>
             range !== null &&
             range !== undefined &&
@@ -497,7 +514,8 @@ export class ListingsApiService {
       id: String(listing.id),
       owner,
       images,
-      bookedDates,
+      bookedDateRanges,
+      category,
       isFavorite: listing.isFavorite === true,
       city: typeof listing.city === 'string' ? listing.city : '',
       description: typeof listing.description === 'string' ? listing.description : '',

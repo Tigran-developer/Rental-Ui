@@ -130,22 +130,63 @@
   }
 }
 
-/* ── Hero: full-bleed on mobile/tablet ───────────────── */
-.detail-page__hero {
-  width: 100%;
-}
+/* ── Breadcrumb (desktop only) ───────────────────────────
+   Single documented breakpoint (DESIGN_RULES §3 `xl` = 1100px) — matches the
+   gallery's own mosaic/hero switch and the body grid's 2-col switch below,
+   instead of the page's old assortment of ad-hoc 700/900/1099/600 breaks. */
+.detail-page__breadcrumb {
+  display: none;
 
-@media (max-width: 900px) {
-  .detail-page__hero {
-    margin-inline: calc(-1 * var(--ui-space-10));
-    width: calc(100% + var(--ui-space-10) * 2);
+  @media (min-width: 1100px) {
+    display: block;
+    padding-block: var(--ui-space-16) 0;
+  }
+
+  ol {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 12.5px;
+    color: var(--ui-color-text-secondary);
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+
+    &:hover {
+      color: var(--ui-color-primary);
+      text-decoration: underline;
+    }
   }
 }
 
-@media (min-width: 901px) and (max-width: 1099px) {
-  .detail-page__hero {
-    margin-inline: calc(-1 * var(--ui-space-24));
-    width: calc(100% + var(--ui-space-24) * 2);
+.detail-page__breadcrumb-sep {
+  color: var(--ui-color-border-strong);
+}
+
+.detail-page__breadcrumb-current {
+  font-weight: 600;
+  color: var(--ui-color-text-primary);
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Hero: full-bleed below 1100px, contained mosaic at/above it ───────── */
+.detail-page__hero {
+  width: 100%;
+  margin-inline: calc(-1 * var(--ui-space-10));
+  width: calc(100% + var(--ui-space-10) * 2);
+
+  @media (min-width: 1100px) {
+    margin-inline: 0;
+    width: 100%;
   }
 }
 
@@ -168,12 +209,18 @@
   min-width: 0;
 }
 
-/* ── Trust strip ──────────────────────────────────────── */
+/* ── Trust strip (mobile/tablet only — desktop shows the same badges
+   overlaid on the gallery's mosaic instead, via app-listing-gallery's
+   `[badges]` input) ─────────────────────────────────────────────────── */
 .detail-page__trust-strip {
   display: flex;
   flex-wrap: wrap;
   gap: var(--ui-space-8);
-  margin-top: 0;
+  margin-top: var(--ui-space-12);
+
+  @media (min-width: 1100px) {
+    display: none;
+  }
 }
 
 .detail-page__trust-chip {
@@ -195,17 +242,12 @@
   }
 }
 
-.detail-page__trust-chip--neutral {
-  color: var(--ui-color-text-secondary);
-  background: var(--ui-color-neutral-badge-surface);
-}
-
-.detail-page__trust-chip--hygiene {
+.detail-page__trust-chip--info {
   color: var(--ui-color-info);
   background: var(--ui-color-info-surface);
 }
 
-.detail-page__trust-chip--reviewed {
+.detail-page__trust-chip--success {
   color: var(--ui-color-success);
   background: var(--ui-color-success-surface);
 }
@@ -292,17 +334,28 @@
   margin: 0;
 }
 
-.detail-page__favorite {
+.detail-page__heading-actions {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Two 40px pill buttons — Share and Save (design spec §3). */
+.detail-page__pill-btn {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  gap: 6px;
+  /* Design draws these 40px tall; bumped to the DESIGN_RULES §3/§18 44px
+     minimum touch target — 4px taller than the mock, not a visible miss. */
+  height: 44px;
+  padding: 0 16px;
+  border-radius: var(--ui-radius-pill);
   border: 1.5px solid var(--ui-color-border);
-  background: #fff;
-  color: var(--ui-color-text-secondary);
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text-primary);
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
   transition:
     background-color 140ms ease,
@@ -311,7 +364,7 @@
     transform 140ms ease;
 
   i {
-    font-size: 17px;
+    font-size: 15px;
   }
 
   &:hover {
@@ -324,12 +377,22 @@
     outline: 2px solid var(--ui-color-primary);
     outline-offset: 2px;
   }
+
+  span {
+    @media (max-width: 559px) {
+      display: none;
+    }
+  }
 }
 
-.detail-page__favorite--active {
+.detail-page__pill-btn--active {
   color: var(--ui-color-primary);
   border-color: #ffc8a3;
   background: #fff4ea;
+
+  i {
+    color: var(--ui-color-primary);
+  }
 }
 
 /* ── Location + Rating row ────────────────────────────── */
@@ -404,22 +467,258 @@
   color: var(--ui-color-text-secondary);
 }
 
+/* ── Highlights band — 2–4 real-data tiles, one row, no gap between cells;
+   dividers come from `border-left` on every cell after the first ───────── */
+.detail-page__highlights {
+  display: grid;
+  margin-top: var(--ui-space-16);
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-card);
+  overflow: hidden;
+
+  @media (max-width: 1099px) {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+.detail-page__highlight-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 20px;
+  border-left: 1px solid var(--ui-color-border);
+  min-width: 0;
+
+  &:first-child {
+    border-left: none;
+  }
+
+  @media (max-width: 1099px) {
+    padding: 12px;
+
+    &:nth-child(2n+1) {
+      border-left: none;
+    }
+
+    &:nth-child(n+3) {
+      border-top: 1px solid var(--ui-color-border);
+    }
+  }
+}
+
+.detail-page__highlight-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--ui-radius-12);
+  background: var(--ui-color-primary-soft);
+  color: var(--ui-color-primary-strong);
+
+  @media (max-width: 1099px) {
+    width: 36px;
+    height: 36px;
+  }
+
+  i {
+    font-size: 1.05rem;
+  }
+}
+
+.detail-page__highlight-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+
+  strong {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--ui-color-text-primary);
+    line-height: 1.3;
+  }
+
+  small {
+    font-size: 12px;
+    color: var(--ui-color-text-secondary);
+    line-height: 1.35;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* ── Divider — desktop only between major sections (mobile relies on
+   `.detail-page__sections` gap alone) ───────────────────────────────── */
+.detail-page__divider {
+  display: none;
+
+  @media (min-width: 1100px) {
+    display: block;
+    height: 1px;
+    background: var(--ui-color-border);
+    margin: 0;
+  }
+}
+
+/* ── Specs quad: best age / condition / deposit / handover ──────────── */
+.detail-page__specquad {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--ui-space-12);
+
+  @media (max-width: 1099px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--ui-space-8);
+  }
+}
+
+.detail-page__specquad-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--ui-space-16);
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+  min-width: 0;
+
+  @media (max-width: 1099px) {
+    padding: 10px 12px;
+  }
+}
+
+.detail-page__specquad-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--ui-radius-12);
+  background: var(--ui-color-surface-muted);
+  color: var(--ui-color-text-secondary);
+
+  @media (max-width: 1099px) {
+    width: 32px;
+    height: 32px;
+  }
+
+  i {
+    font-size: 1.05rem;
+  }
+}
+
+.detail-page__specquad-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.detail-page__specquad-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ui-color-text-secondary);
+}
+
+.detail-page__specquad-value {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--ui-color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-page__safety-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: var(--ui-space-12) 0 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ui-color-text-secondary);
+
+  i {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--ui-color-text-muted);
+  }
+
+  strong {
+    color: var(--ui-color-text-primary);
+  }
+}
+
+/* ── Getting it / Pickup & delivery ──────────────────────────────────── */
+.detail-page__pickup-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: var(--ui-space-16);
+  align-items: start;
+
+  @media (max-width: 1099px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.detail-page__pickup-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.detail-page__pickup-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-12);
+}
+
+.detail-page__pickup-row-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: var(--ui-color-primary-soft);
+  color: var(--ui-color-primary-strong);
+
+  i {
+    font-size: 0.9375rem;
+  }
+}
+
+.detail-page__pickup-row-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ui-color-text-primary);
+}
+
+.detail-page__pickup-row-value {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ui-color-text-secondary);
+  text-align: right;
+}
+
 /* ── Owner / contact section ──────────────────────────── */
 .detail-page__section--owner {
   gap: 14px;
-}
-
-.detail-page__owner-section-head {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.detail-page__owner-section-subtitle {
-  margin: 0;
-  font-size: 0.875rem;
-  color: var(--ui-color-text-secondary);
-  line-height: 1.4;
 }
 
 /* Card wraps owner row + phone notice */
@@ -433,34 +732,103 @@
   overflow: hidden;
 }
 
-/* Horizontal owner row inside the card */
+/* Owner row: identity link (avatar + name + meta) + a separate "Message
+   owner" button, space-between. Both currently route to the same public
+   profile — chat has no pre-booking "start a conversation with a user"
+   endpoint (conversations are created strictly from an existing booking via
+   `POST /api/chat/conversations/from-booking/{bookingId}`), so a real chat
+   entry point only exists once a booking is underway; the profile page is
+   the honest destination before that. */
 .detail-page__owner-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--ui-space-12);
-  padding: 16px var(--ui-space-16);
+  padding: var(--ui-space-16);
+}
+
+.detail-page__owner-identity {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-12);
+  min-width: 0;
   text-decoration: none;
-  cursor: pointer;
-  transition: background-color 120ms ease;
+  border-radius: var(--ui-radius-sm);
 
-  &:hover {
-    background: var(--ui-color-surface-muted);
-
-    .detail-page__owner-profile-btn {
-      border-color: var(--ui-color-primary);
-      color: var(--ui-color-primary);
-      background: var(--ui-color-primary-wash);
-    }
+  &:hover .detail-page__owner-name {
+    color: var(--ui-color-primary);
   }
 
   &:focus-visible {
     outline: 2px solid var(--ui-color-primary);
-    outline-offset: -2px;
+    outline-offset: 2px;
   }
+}
+
+.detail-page__owner-message-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Design draws this 42px tall; bumped to the DESIGN_RULES §3/§18 44px
+     minimum touch target. */
+  height: 44px;
+  padding: 0 18px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-color-surface-muted);
+  color: var(--ui-color-text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 140ms ease, color 140ms ease;
+
+  &:hover {
+    background: var(--ui-color-primary-wash);
+    color: var(--ui-color-primary-strong);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-color-primary);
+    outline-offset: 2px;
+  }
+}
+
+.detail-page__owner-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--ui-space-12);
+  padding: 0 var(--ui-space-16) var(--ui-space-16);
+}
+
+.detail-page__owner-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
+  padding: 14px 8px;
+  background: var(--ui-color-surface-muted);
+  border-radius: var(--ui-radius-12);
+}
+
+.detail-page__owner-stat-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ui-color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.detail-page__owner-stat-label {
+  font-size: 11.5px;
+  color: var(--ui-color-text-secondary);
 }
 
 .detail-page__owner-avatar-wrap {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -471,20 +839,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.detail-page__owner-initials {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #ff7a2e, #ff4f00);
-  color: #fff;
-  font-weight: 700;
-  font-size: 15px;
-  text-transform: uppercase;
-  letter-spacing: 0.01em;
 }
 
 .detail-page__owner-info {
@@ -531,24 +885,6 @@
     color: #f59e0b;
     font-size: 11px;
     vertical-align: -1px;
-  }
-}
-
-.detail-page__owner-profile-btn {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1.5px solid var(--ui-color-border);
-  background: var(--ui-color-surface-muted);
-  color: var(--ui-color-text-secondary);
-  transition: border-color 120ms ease, color 120ms ease, background-color 120ms ease;
-
-  i {
-    font-size: 0.75rem;
   }
 }
 
@@ -643,91 +979,24 @@
   margin-bottom: 0;
 }
 
-.detail-page__protection-sub {
-  font-weight: 500;
-  color: var(--ui-color-text-primary);
-  margin-top: 4px;
-}
-
-.detail-page__bullets {
-  list-style: disc;
-  padding-left: 24px;
-  margin: 4px 0 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-
-  li {
-    font-size: 16px;
-    line-height: 1.55;
-    color: var(--ui-color-text-primary);
-  }
-}
-
-.detail-page__specs {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px 24px;
-  margin: 0;
-}
-
-.detail-page__spec {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.detail-page__spec--block {
-  grid-column: 1 / -1;
-}
-
-.detail-page__spec-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--ui-color-footer);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin: 0;
-}
-
-.detail-page__spec-value {
-  font-size: 16px;
-  line-height: 1.5;
-  color: var(--ui-color-text-primary);
-  margin: 0;
-}
-
-.detail-page__spec-value--block {
-  white-space: pre-line;
-}
-
-@media (max-width: 600px) {
-  .detail-page__specs {
-    grid-template-columns: 1fr;
-  }
-}
-
-.detail-page__section--toydetails {
-  background: var(--ui-color-surface);
-  border-radius: var(--ui-radius-md);
-  padding: var(--ui-space-20);
-  box-shadow: var(--ui-shadow-card);
-}
-
 /* ── Desktop sidebar ──────────────────────────────────── */
 .detail-page__sidebar {
   min-width: 0;
 }
 
 .detail-page__sidebar-sticky {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-12);
+
   @media (min-width: 1100px) {
     position: sticky;
     top: calc(4.25rem + 20px);
   }
 }
 
-/* On mobile, sidebar (CTA card) is hidden — mobile CTA is inline above sections */
+/* On mobile, sidebar (CTA card + desktop protection-card copy) is hidden —
+   the mobile CTA bar and the mobile protection-card copy take over. */
 @media (max-width: 1099px) {
   .detail-page__sidebar {
     display: none;
@@ -738,18 +1007,147 @@
   }
 }
 
+/* ── Protection card ──────────────────────────────────── */
+.detail-page__protection-card {
+  display: flex;
+  gap: 13px;
+  padding: var(--ui-space-16) 18px;
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-lg);
+}
+
+.detail-page__protection-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: var(--ui-color-success-surface);
+  color: var(--ui-color-success);
+
+  i {
+    font-size: 1rem;
+  }
+}
+
+.detail-page__protection-body {
+  min-width: 0;
+
+  strong {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--ui-color-text-primary);
+    margin-bottom: 4px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--ui-color-text-secondary);
+  }
+}
+
+.detail-page__protection-bullets {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  li {
+    position: relative;
+    padding-left: 14px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--ui-color-text-secondary);
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 7px;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--ui-color-success);
+    }
+  }
+}
+
+/* Mobile/tablet copy of the protection card (the sidebar it normally lives
+   in is desktop-only) — same content, rendered in the main content flow. */
+.detail-page__protection-card--mobile {
+  display: none;
+
+  @media (max-width: 1099px) {
+    display: block;
+    margin-top: var(--ui-space-24);
+  }
+}
+
 /* ── Reviews ──────────────────────────────────────────── */
-.detail-page__reviews-count {
-  font-size: 1rem;
-  font-weight: 400;
-  color: var(--ui-color-text-secondary);
-  margin-left: 6px;
+.detail-page__reviews-summary-panel {
+  padding: var(--ui-space-24);
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-lg);
+  margin-bottom: var(--ui-space-16);
+
+  @media (max-width: 1099px) {
+    padding: var(--ui-space-16);
+    margin-bottom: 12px;
+  }
+}
+
+.detail-page__review-item--desktop-only {
+  @media (max-width: 1099px) {
+    display: none;
+  }
+}
+
+.detail-page__reviews-seeall {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 46px;
+  margin-top: 14px;
+  border-radius: var(--ui-radius-pill);
+  border: 1.5px solid var(--ui-color-border);
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text-primary);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 140ms ease, background-color 140ms ease;
+
+  &:hover {
+    border-color: var(--ui-color-primary);
+    background: var(--ui-color-primary-wash);
+    color: var(--ui-color-primary-strong);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-color-primary);
+    outline-offset: 2px;
+  }
 }
 
 .detail-page__reviews-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+
+  @media (max-width: 1099px) {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
 }
 
 .detail-page__reviews-skeleton {
@@ -1039,8 +1437,8 @@
   }
 }
 
-/* ── Mobile adjustments ───────────────────────────────── */
-@media (max-width: 700px) {
+/* ── Mobile adjustments — DESIGN_RULES §3 `xs` (<560px) ─────────────── */
+@media (max-width: 559px) {
   .detail-page__container {
     gap: 0;
   }
@@ -1055,9 +1453,5 @@
 
   .detail-page__sections {
     gap: 32px;
-  }
-
-  .detail-page__section--toydetails {
-    padding: var(--ui-space-16);
   }
 }

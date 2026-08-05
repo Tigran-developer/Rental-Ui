@@ -8,146 +8,166 @@
       [hideTitleOnDesktop]="true"
     />
 
-    @if (viewModel$ | async; as vm) {
+    @if (showError()) {
+      <div class="detail-page__error" role="alert">
+        @if (invalidRoute()) {
+          <div class="detail-page__error-card detail-page__error-card--warn">
+            <i class="pi pi-info-circle" aria-hidden="true"></i>
+            <p>{{ 'listings.details.invalidRoute' | translate }}</p>
+            <a class="detail-page__error-link" routerLink="/listings">
+              {{ 'listings.details.back' | translate }}
+            </a>
+          </div>
+        } @else {
+          <div class="detail-page__error-card">
+            <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+            <p>{{ listingsError() }}</p>
+            <p-button
+              type="button"
+              [label]="'listings.common.retry' | translate"
+              styleClass="detail-page__retry"
+              (onClick)="retryLoad()"
+            />
+          </div>
+        }
+      </div>
+    }
 
-      @if (vm.showError) {
-        <div class="detail-page__error" role="alert">
-          @if (vm.invalidRoute) {
-            <div class="detail-page__error-card detail-page__error-card--warn">
-              <i class="pi pi-info-circle" aria-hidden="true"></i>
-              <p>{{ 'listings.details.invalidRoute' | translate }}</p>
-              <a
-                class="detail-page__error-link"
-                routerLink="/listings"
-              >
-                {{ 'listings.details.back' | translate }}
-              </a>
-            </div>
-          } @else {
-            <div class="detail-page__error-card">
-              <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-              <p>{{ vm.error }}</p>
-              <p-button
-                type="button"
-                [label]="'listings.common.retry' | translate"
-                styleClass="detail-page__retry"
-                (onClick)="retryLoad()"
-              />
-            </div>
-          }
+    @if (showSkeleton()) {
+      <div
+        class="detail-page__skeleton"
+        aria-busy="true"
+        [attr.aria-label]="'listings.details.loading' | translate"
+      >
+        <div class="detail-page__skeleton-hero">
+          <p-skeleton width="100%" height="100%" borderRadius="4px" />
         </div>
-      }
+        <div class="detail-page__skeleton-grid">
+          <div class="detail-page__skeleton-col">
+            <p-skeleton width="70%" height="2.5rem" />
+            <p-skeleton width="40%" height="1.25rem" />
+            <div class="detail-page__skeleton-section">
+              <p-skeleton width="30%" height="1.25rem" />
+              <p-skeleton width="100%" height="1rem" />
+              <p-skeleton width="95%" height="1rem" />
+              <p-skeleton width="80%" height="1rem" />
+            </div>
+            <div class="detail-page__skeleton-section">
+              <p-skeleton width="35%" height="1.25rem" />
+              <p-skeleton width="100%" height="1rem" />
+              <p-skeleton width="65%" height="1rem" />
+            </div>
+          </div>
+          <div class="detail-page__skeleton-col detail-page__skeleton-col--sidebar">
+            <p-skeleton width="100%" height="22rem" borderRadius="20px" />
+          </div>
+        </div>
+      </div>
+    }
 
-      @if (vm.showSkeleton) {
-        <div
-          class="detail-page__skeleton"
-          aria-busy="true"
-          [attr.aria-label]="'listings.details.loading' | translate"
+    @if (showContent() && displayListing(); as listing) {
+      <article class="detail-page__article">
+
+        <!-- Breadcrumb (desktop only) -->
+        <nav
+          class="detail-page__breadcrumb"
+          [attr.aria-label]="'listings.details.subNavAria' | translate"
         >
-          <div class="detail-page__skeleton-hero">
-            <p-skeleton width="100%" height="100%" borderRadius="4px" />
-          </div>
-          <div class="detail-page__skeleton-grid">
-            <div class="detail-page__skeleton-col">
-              <p-skeleton width="70%" height="2.5rem" />
-              <p-skeleton width="40%" height="1.25rem" />
-              <div class="detail-page__skeleton-section">
-                <p-skeleton width="30%" height="1.25rem" />
-                <p-skeleton width="100%" height="1rem" />
-                <p-skeleton width="95%" height="1rem" />
-                <p-skeleton width="80%" height="1rem" />
-              </div>
-              <div class="detail-page__skeleton-section">
-                <p-skeleton width="35%" height="1.25rem" />
-                <p-skeleton width="100%" height="1rem" />
-                <p-skeleton width="65%" height="1rem" />
-              </div>
-            </div>
-            <div class="detail-page__skeleton-col detail-page__skeleton-col--sidebar">
-              <p-skeleton width="100%" height="22rem" borderRadius="20px" />
-            </div>
-          </div>
+          <ol>
+            <li><a routerLink="/">{{ 'listings.details.breadcrumb.home' | translate }}</a></li>
+            <li class="detail-page__breadcrumb-sep" aria-hidden="true">›</li>
+            <li><a routerLink="/listings">{{ 'listings.details.breadcrumb.listings' | translate }}</a></li>
+            @if (categoryName(); as cat) {
+              <li class="detail-page__breadcrumb-sep" aria-hidden="true">›</li>
+              <li>
+                <a routerLink="/listings" [queryParams]="{ categoryId: listing.category?.id }">{{ cat }}</a>
+              </li>
+            }
+            <li class="detail-page__breadcrumb-sep" aria-hidden="true">›</li>
+            <li class="detail-page__breadcrumb-current" aria-current="page">{{ listing.title }}</li>
+          </ol>
+        </nav>
+
+        <!-- Gallery mosaic + lightbox -->
+        <div class="detail-page__hero">
+          <app-listing-gallery [images]="listing.images" [badges]="trustBadges()" />
         </div>
-      }
 
-      @if (vm.showContent && vm.displayListing; as listing) {
-        <article class="detail-page__article">
-
-          <!-- Full-bleed hero gallery -->
-          <div class="detail-page__hero">
-            <app-listing-gallery [images]="listing.images" />
+        <!-- Mobile-only trust badge row (desktop shows these overlaid on the gallery instead) -->
+        @if (trustBadges().length > 0) {
+          <div class="detail-page__trust-strip">
+            @for (badge of trustBadges(); track badge.label) {
+              <span class="detail-page__trust-chip" [class]="'detail-page__trust-chip detail-page__trust-chip--' + badge.tone">
+                <i [class]="badge.icon" aria-hidden="true"></i>
+                <span>{{ badge.label }}</span>
+              </span>
+            }
           </div>
+        }
 
-          <div class="detail-page__body">
-            <div class="detail-page__main">
+        <div class="detail-page__body">
+          <div class="detail-page__main">
 
-              <!-- Trust chips -->
-              <div class="detail-page__trust-strip">
-                <span class="detail-page__trust-chip detail-page__trust-chip--reviewed">
-                  <i class="pi pi-check-circle" aria-hidden="true"></i>
-                  <span>{{ 'listings.details.trustBadge.reviewed' | translate }}</span>
-                </span>
-                @if (listing.hygieneNotes) {
-                  <span class="detail-page__trust-chip detail-page__trust-chip--hygiene">
-                    <i class="pi pi-shield" aria-hidden="true"></i>
-                    <span>{{ 'listings.card.hygieneProvided' | translate }}</span>
+            <!-- User booking relationship panel -->
+            <!-- Hidden for finished states (Rejected / Completed) since no action is needed -->
+            @if (isAuthenticated() && userBooking(); as booking) {
+              @if (booking.status !== 'Rejected' && booking.status !== 'Completed') {
+              <div
+                class="detail-page__relationship"
+                [class]="'detail-page__relationship--' + booking.status.toLowerCase()"
+                role="status"
+              >
+                <div class="detail-page__relationship-body">
+                  <span class="detail-page__relationship-label">
+                    @switch (booking.status) {
+                      @case ('PendingApproval') { {{ 'listings.details.relationship.rentalRequested' | translate }} }
+                      @case ('Pending') { {{ 'listings.details.relationship.rentalRequested' | translate }} }
+                      @case ('Approved') { {{ 'listings.details.relationship.approved' | translate }} }
+                      @case ('Active') { {{ 'listings.details.relationship.currentlyRenting' | translate }} }
+                      @case ('ReturnMarked') { {{ 'listings.details.relationship.awaitingCompletion' | translate }} }
+                      @case ('Cancelled') { {{ 'listings.details.relationship.cancelled' | translate }} }
+                    }
                   </span>
-                }
-              </div>
 
-              <!-- User booking relationship panel -->
-              <!-- Hidden for finished states (Rejected / Completed) since no action is needed -->
-              @if (isAuthenticated() && userBooking(); as booking) {
-                @if (booking.status !== 'Rejected' && booking.status !== 'Completed') {
-                <div
-                  class="detail-page__relationship"
-                  [class]="'detail-page__relationship--' + booking.status.toLowerCase()"
-                  role="status"
-                >
-                  <div class="detail-page__relationship-body">
-                    <span class="detail-page__relationship-label">
-                      @switch (booking.status) {
-                        @case ('PendingApproval') { {{ 'listings.details.relationship.rentalRequested' | translate }} }
-                        @case ('Pending') { {{ 'listings.details.relationship.rentalRequested' | translate }} }
-                        @case ('Approved') { {{ 'listings.details.relationship.approved' | translate }} }
-                        @case ('Active') { {{ 'listings.details.relationship.currentlyRenting' | translate }} }
-                        @case ('ReturnMarked') { {{ 'listings.details.relationship.awaitingCompletion' | translate }} }
-                        @case ('Cancelled') { {{ 'listings.details.relationship.cancelled' | translate }} }
-                      }
+                  @if ((booking.status === 'Approved' || booking.status === 'Active') && booking.endDate) {
+                    <span class="detail-page__relationship-date">
+                      {{ 'listings.details.relationship.endsOn' | translate }}: {{ booking.endDate }}
                     </span>
-
-                    @if ((booking.status === 'Approved' || booking.status === 'Active') && booking.endDate) {
-                      <span class="detail-page__relationship-date">
-                        {{ 'listings.details.relationship.endsOn' | translate }}: {{ booking.endDate }}
-                      </span>
-                    }
-                    @if ((booking.status === 'PendingApproval' || booking.status === 'Pending') && booking.startDate) {
-                      <span class="detail-page__relationship-date">
-                        {{ 'listings.details.relationship.startsOn' | translate }}: {{ booking.startDate }}
-                      </span>
-                    }
-                  </div>
-
-                  <a
-                    class="detail-page__relationship-cta"
-                    [routerLink]="['/bookings', booking.id]"
-                  >
-                    {{ 'listings.details.relationship.viewBooking' | translate }}
-                    <i class="pi pi-arrow-right" aria-hidden="true"></i>
-                  </a>
+                  }
+                  @if ((booking.status === 'PendingApproval' || booking.status === 'Pending') && booking.startDate) {
+                    <span class="detail-page__relationship-date">
+                      {{ 'listings.details.relationship.startsOn' | translate }}: {{ booking.startDate }}
+                    </span>
+                  }
                 </div>
-                }
-              }
 
-              <!-- Title + favorite -->
-              <div class="detail-page__heading">
-                <h1 class="detail-page__title">{{ listing.title }}</h1>
+                <a class="detail-page__relationship-cta" [routerLink]="['/bookings', booking.id]">
+                  {{ 'listings.details.relationship.viewBooking' | translate }}
+                  <i class="pi pi-arrow-right" aria-hidden="true"></i>
+                </a>
+              </div>
+              }
+            }
+
+            <!-- Title + Share / Save -->
+            <div class="detail-page__heading">
+              <h1 class="detail-page__title">{{ listing.title }}</h1>
+              <div class="detail-page__heading-actions">
                 <button
                   type="button"
-                  class="detail-page__favorite"
-                  [class.detail-page__favorite--active]="listing.isFavorite"
-                  [attr.aria-label]="'listings.card.toggleFavorite' | translate"
+                  class="detail-page__pill-btn"
+                  (click)="onShare(listing)"
+                  [attr.aria-label]="'listings.details.shareLabel' | translate"
+                >
+                  <i class="pi pi-share-alt" aria-hidden="true"></i>
+                  <span>{{ 'listings.details.shareLabel' | translate }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="detail-page__pill-btn"
+                  [class.detail-page__pill-btn--active]="listing.isFavorite"
                   [attr.aria-pressed]="listing.isFavorite"
+                  [attr.aria-label]="'listings.card.toggleFavorite' | translate"
                   (click)="onFavoriteToggle(listing)"
                 >
                   <i
@@ -156,143 +176,156 @@
                     [class.pi-heart]="!listing.isFavorite"
                     aria-hidden="true"
                   ></i>
+                  <span>{{ (listing.isFavorite ? 'listings.details.savedLabel' : 'listings.details.saveLabel') | translate }}</span>
                 </button>
               </div>
+            </div>
 
-              <!-- Location + Rating row -->
-              <div class="detail-page__meta-row">
-                <span class="detail-page__city">
-                  <i class="pi pi-map-marker" aria-hidden="true"></i>
-                  <span>{{ listing.city }}</span>
-                </span>
-                @if (ratingSummary(); as summary) {
-                  @if (summary.reviewCount > 0) {
-                    <span class="detail-page__meta-sep" aria-hidden="true">•</span>
-                    <span class="detail-page__rating">
-                      <i class="pi pi-star-fill" aria-hidden="true"></i>
-                      <span>{{ summary.averageRating | number:'1.1-1' }}</span>
-                      <span class="detail-page__rating-count">({{ summary.reviewCount }})</span>
+            <!-- Location + Rating row -->
+            <div class="detail-page__meta-row">
+              <span class="detail-page__city">
+                <i class="pi pi-map-marker" aria-hidden="true"></i>
+                <span>{{ listing.city }}</span>
+              </span>
+              @if (ratingSummary(); as summary) {
+                @if (summary.reviewCount > 0) {
+                  <span class="detail-page__meta-sep" aria-hidden="true">•</span>
+                  <span class="detail-page__rating">
+                    <i class="pi pi-star-fill" aria-hidden="true"></i>
+                    <span>{{ summary.averageRating | number:'1.1-1' }}</span>
+                    <span class="detail-page__rating-count">({{ summary.reviewCount }})</span>
+                  </span>
+                }
+              }
+            </div>
+
+            <!-- Price (mobile only — desktop sees it in the sidebar CTA card) -->
+            <p class="detail-page__price-mobile">
+              <span class="detail-page__price-amount">{{ listing.pricePerDay | dram }}</span>
+              <span class="detail-page__price-suffix">&thinsp;/ {{ 'listings.booking.priceSuffix' | translate }}</span>
+            </p>
+
+            <!-- Highlights band — only real, data-backed tiles; 2–4 columns -->
+            @if (highlightTiles().length > 0) {
+              <div
+                class="detail-page__highlights"
+                [style.grid-template-columns]="'repeat(' + highlightColumns() + ', 1fr)'"
+              >
+                @for (tile of highlightTiles(); track tile.id) {
+                  <div class="detail-page__highlight-cell">
+                    <span class="detail-page__highlight-icon">
+                      <i [class]="tile.icon" aria-hidden="true"></i>
                     </span>
-                  }
+                    <span class="detail-page__highlight-text">
+                      <strong>{{ tile.titleKey | translate: tile.titleParams }}</strong>
+                      @if (tile.subKey) {
+                        <small>{{ tile.subKey | translate: tile.subParams }}</small>
+                      }
+                    </span>
+                  </div>
                 }
               </div>
+            }
 
-              <!-- Price (mobile only — desktop sees it in the sidebar CTA card) -->
-              <p class="detail-page__price-mobile">
-                <span class="detail-page__price-amount">{{ listing.pricePerDay | dram }}</span>
-                <span class="detail-page__price-suffix">&thinsp;/ {{ 'listings.booking.priceSuffix' | translate }}</span>
-              </p>
+            <div class="detail-page__sections">
 
-
-              <div class="detail-page__sections">
-
-                <!-- 1. Toy trust details -->
-                @if (hasAnyToyDetail(listing)) {
-                  <section
-                    class="detail-page__section detail-page__section--toydetails"
-                    aria-labelledby="detail-toy-heading"
-                  >
-                    <h2
-                      id="detail-toy-heading"
-                      class="detail-page__section-title"
-                    >
-                      {{ 'listings.details.toyDetails.heading' | translate }}
-                    </h2>
-                    <dl class="detail-page__specs">
-                      @if (resolveAgeRangeDisplay(listing.ageFromMonths, listing.ageToMonths); as ageRange) {
-                        <div class="detail-page__spec">
-                          <dt class="detail-page__spec-label">
-                            {{ 'listings.details.toyDetails.ageRange' | translate }}
-                          </dt>
-                          <dd class="detail-page__spec-value">
-                            {{ ageRange.key | translate: ageRange.params }}
-                          </dd>
-                        </div>
-                      }
-                      @if (listing.condition; as condition) {
-                        <div class="detail-page__spec">
-                          <dt class="detail-page__spec-label">
-                            {{ 'listings.details.toyDetails.condition' | translate }}
-                          </dt>
-                          <dd class="detail-page__spec-value">
-                            @if (resolveConditionLabelKey(condition); as conditionKey) {
-                              {{ conditionKey | translate }}
-                            } @else {
-                              {{ condition }}
-                            }
-                          </dd>
-                        </div>
-                      }
-                      @if (listing.hygieneNotes; as hygieneNotes) {
-                        <div class="detail-page__spec detail-page__spec--block">
-                          <dt class="detail-page__spec-label">
-                            {{ 'listings.details.toyDetails.hygieneNotes' | translate }}
-                          </dt>
-                          <dd class="detail-page__spec-value detail-page__spec-value--block">
-                            {{ hygieneNotes }}
-                          </dd>
-                        </div>
-                      }
-                      @if (listing.safetyNotes; as safetyNotes) {
-                        <div class="detail-page__spec detail-page__spec--block">
-                          <dt class="detail-page__spec-label">
-                            {{ 'listings.details.toyDetails.safetyNotes' | translate }}
-                          </dt>
-                          <dd class="detail-page__spec-value detail-page__spec-value--block">
-                            {{ safetyNotes }}
-                          </dd>
-                        </div>
-                      }
-                    </dl>
-                  </section>
-                }
-
-                <!-- 2. Description -->
-                <section
-                  class="detail-page__section"
-                  aria-labelledby="detail-description-heading"
-                >
-                  <span class="detail-page__section-eyebrow">{{ 'listings.details.eyebrow.overview' | translate }}</span>
-                  <h2 id="detail-description-heading" class="detail-page__section-title">
-                    {{ 'listings.details.descriptionHeading' | translate }}
+              <!-- 1. Specs quad: best age / condition / deposit / handover -->
+              @if (specTiles().length > 0) {
+                <section class="detail-page__section" aria-labelledby="detail-specs-heading">
+                  <h2 id="detail-specs-heading" class="detail-page__section-title">
+                    {{ 'listings.details.toyDetails.heading' | translate }}
                   </h2>
-                  <p class="detail-page__section-body">
-                    {{ listing.description }}
-                  </p>
-                </section>
-
-                <!-- 3. Location -->
-                <section
-                  class="detail-page__section"
-                  aria-labelledby="detail-location-heading"
-                >
-                  <h2 id="detail-location-heading" class="detail-page__section-title">
-                    {{ 'listings.details.location.heading' | translate }}
-                  </h2>
-                  <app-listing-location
-                    [listingId]="listing.id"
-                    [city]="listing.city"
-                    [district]="listing.district ?? null"
-                    [latitude]="listing.latitude ?? null"
-                    [longitude]="listing.longitude ?? null"
-                    [title]="listing.title"
-                    [imageUrl]="listingHeroImageUrl()"
-                  />
-                </section>
-
-                <!-- 4. Owner / contact card -->
-                <section class="detail-page__section detail-page__section--owner" aria-labelledby="detail-owner-heading">
-                  <div class="detail-page__owner-section-head">
-                    <span class="detail-page__section-eyebrow">{{ 'listings.details.eyebrow.host' | translate }}</span>
-                    <h2 id="detail-owner-heading" class="detail-page__section-title">
-                      {{ 'listings.details.hostHeading' | translate }}
-                    </h2>
+                  <div class="detail-page__specquad">
+                    @for (tile of specTiles(); track tile.id) {
+                      <div class="detail-page__specquad-cell">
+                        <span class="detail-page__specquad-icon">
+                          <i [class]="tile.icon" aria-hidden="true"></i>
+                        </span>
+                        <span class="detail-page__specquad-body">
+                          <span class="detail-page__specquad-label">{{ tile.titleKey | translate }}</span>
+                          @if (tile.subKey) {
+                            <span class="detail-page__specquad-value">{{ tile.subKey | translate: tile.subParams }}</span>
+                          }
+                        </span>
+                      </div>
+                    }
                   </div>
+                  @if (safetyNotes(); as notes) {
+                    <p class="detail-page__safety-note">
+                      <i class="pi pi-info-circle" aria-hidden="true"></i>
+                      <span><strong>{{ 'listings.details.toyDetails.safetyNotes' | translate }}:</strong> {{ notes }}</span>
+                    </p>
+                  }
+                </section>
+                <div class="detail-page__divider" aria-hidden="true"></div>
+              }
 
-                  <div class="detail-page__owner-card">
-                    <!-- Owner row -->
-                    <a class="detail-page__owner-row" [routerLink]="['/users', listing.owner.id]">
-                      <div class="detail-page__owner-avatar-wrap" aria-hidden="true">
+              <!-- 2. Description -->
+              <section class="detail-page__section" aria-labelledby="detail-description-heading">
+                <span class="detail-page__section-eyebrow">{{ 'listings.details.eyebrow.overview' | translate }}</span>
+                <h2 id="detail-description-heading" class="detail-page__section-title">
+                  {{ 'listings.details.descriptionHeading' | translate }}
+                </h2>
+                <p class="detail-page__section-body">
+                  {{ listing.description }}
+                </p>
+              </section>
+
+              <div class="detail-page__divider" aria-hidden="true"></div>
+
+              <!-- 3. Getting it / Pickup & delivery -->
+              <section class="detail-page__section" aria-labelledby="detail-pickup-heading">
+                <span class="detail-page__section-eyebrow">{{ 'listings.details.eyebrow.gettingIt' | translate }}</span>
+                <h2 id="detail-pickup-heading" class="detail-page__section-title">
+                  {{ 'listings.details.pickupDelivery.heading' | translate }}
+                </h2>
+                <div class="detail-page__pickup-grid">
+                  <div class="detail-page__pickup-map">
+                    <app-listing-location
+                      [listingId]="listing.id"
+                      [city]="listing.city"
+                      [district]="listing.district ?? null"
+                      [latitude]="listing.latitude ?? null"
+                      [longitude]="listing.longitude ?? null"
+                      [title]="listing.title"
+                      [imageUrl]="listingHeroImageUrl()"
+                    />
+                  </div>
+                  @if (pickupDeliveryRows().length > 0) {
+                    <div class="detail-page__pickup-rows">
+                      @for (row of pickupDeliveryRows(); track row.id) {
+                        <div class="detail-page__pickup-row">
+                          <span class="detail-page__pickup-row-icon">
+                            <i [class]="row.icon" aria-hidden="true"></i>
+                          </span>
+                          <span class="detail-page__pickup-row-label">{{ row.labelKey | translate }}</span>
+                          <span class="detail-page__pickup-row-value">
+                            @if (row.valueText) {
+                              {{ row.valueText }}
+                            } @else {
+                              {{ row.valueKey | translate: row.valueParams }}
+                            }
+                          </span>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </section>
+
+              <div class="detail-page__divider" aria-hidden="true"></div>
+
+              <!-- 4. Owner / contact card -->
+              <section class="detail-page__section detail-page__section--owner" aria-labelledby="detail-owner-heading">
+                <span class="detail-page__section-eyebrow">{{ 'listings.details.eyebrow.host' | translate }}</span>
+                <h2 id="detail-owner-heading" class="detail-page__section-title">
+                  {{ 'listings.details.hostHeading' | translate }}
+                </h2>
+
+                <div class="detail-page__owner-card">
+                  <div class="detail-page__owner-row">
+                    <a class="detail-page__owner-identity" [routerLink]="['/users', listing.owner.id]">
+                      <span class="detail-page__owner-avatar-wrap" aria-hidden="true">
                         @if (ownerPublicProfile()?.avatarUrl; as avatarUrl) {
                           <img
                             class="detail-page__owner-img"
@@ -301,219 +334,289 @@
                             loading="lazy"
                           />
                         } @else {
-                          <div class="detail-page__owner-initials">
-                            {{ listing.owner.firstName.charAt(0) }}{{ listing.owner.lastName.charAt(0) }}
-                          </div>
+                          <app-ui-avatar [name]="listing.owner.firstName + ' ' + listing.owner.lastName" size="lg" />
                         }
-                      </div>
-                      <div class="detail-page__owner-info">
-                        <p class="detail-page__owner-name">
+                      </span>
+                      <span class="detail-page__owner-info">
+                        <span class="detail-page__owner-name">
                           {{ listing.owner.firstName }} {{ listing.owner.lastName }}
-                          <span class="detail-page__owner-verified-badge" aria-label="verified">
-                            <i class="pi pi-check" aria-hidden="true"></i>
-                          </span>
-                        </p>
-                        <p class="detail-page__owner-meta">
+                          @if (ownerIsVerified()) {
+                            <span
+                              class="detail-page__owner-verified-badge"
+                              [attr.aria-label]="'listings.details.badges.verifiedOwner' | translate"
+                            >
+                              <i class="pi pi-check" aria-hidden="true"></i>
+                            </span>
+                          }
+                        </span>
+                        <span class="detail-page__owner-meta">
                           @if (ownerPublicProfile()?.activeListingsCount; as count) {
                             <span>{{ count }}&nbsp;{{ 'listings.details.ownerToySuffix' | translate }}</span>
                           }
-                          @if (ownerSummary(); as summary) {
-                            @if (summary.reviewCount > 0) {
-                              <span aria-hidden="true">&ensp;·&ensp;</span>
-                              <span>
-                                <i class="pi pi-star-fill" aria-hidden="true"></i>&nbsp;{{ summary.averageRating | number:'1.1-1' }}
-                              </span>
-                            }
+                          @if (ownerMemberYear(); as year) {
+                            <span aria-hidden="true">&ensp;·&ensp;</span>
+                            <span>{{ 'listings.details.ownerMemberSince' | translate: { year } }}</span>
                           }
-                        </p>
-                      </div>
-                      <span class="detail-page__owner-profile-btn" aria-hidden="true">
-                        <i class="pi pi-chevron-right"></i>
+                        </span>
                       </span>
                     </a>
 
-                    <!-- Phone notice (inside card) -->
-                    <div class="detail-page__phone-notice-wrap">
-                      <div class="detail-page__phone-notice">
-                        <i class="pi pi-lock" aria-hidden="true"></i>
-                        <p>
-                          {{ 'listings.details.contactLabelPre' | translate }}<strong>{{ 'listings.details.contactLabelBold' | translate }}</strong>
-                        </p>
-                      </div>
+                    <a
+                      class="detail-page__owner-message-btn"
+                      [routerLink]="['/users', listing.owner.id]"
+                    >
+                      {{ 'listings.details.messageOwner' | translate }}
+                    </a>
+                  </div>
+
+                  @if (ownerStats().length > 0) {
+                    <div class="detail-page__owner-stats">
+                      @for (stat of ownerStats(); track stat.id) {
+                        <div class="detail-page__owner-stat">
+                          <span class="detail-page__owner-stat-value">{{ stat.value }}</span>
+                          <span class="detail-page__owner-stat-label">{{ stat.labelKey | translate }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  <!-- Phone notice (inside card) -->
+                  <div class="detail-page__phone-notice-wrap">
+                    <div class="detail-page__phone-notice">
+                      <i class="pi pi-lock" aria-hidden="true"></i>
+                      <p>
+                        {{ 'listings.details.contactLabelPre' | translate }}<strong>{{ 'listings.details.contactLabelBold' | translate }}</strong>
+                      </p>
                     </div>
                   </div>
-                </section>
+                </div>
+              </section>
 
-                <!-- 5. Reviews -->
-                <section
-                  class="detail-page__section"
-                  aria-labelledby="detail-reviews-heading"
-                >
-                  <span class="detail-page__section-eyebrow">{{ 'listings.details.eyebrow.reviews' | translate }}</span>
-                  <h2
-                    id="detail-reviews-heading"
-                    class="detail-page__section-title"
-                  >
-                    {{ 'listings.details.reviews.heading' | translate }}
-                    @if (ratingSummary(); as summary) {
-                      @if (summary.reviewCount > 0) {
-                        <span class="detail-page__reviews-count">({{ summary.reviewCount }})</span>
-                      }
-                    }
-                  </h2>
+              <div class="detail-page__divider" aria-hidden="true"></div>
 
-                  @if (reviewsLoading()) {
-                    <div class="detail-page__reviews-skeleton">
-                      @for (i of [0, 1, 2]; track i) {
-                        <p-skeleton height="5.25rem" borderRadius="16px" />
-                      }
-                    </div>
-                  } @else if (reviewsError()) {
-                    <p class="detail-page__reviews-error" role="alert">
-                      {{ 'listings.details.reviews.error' | translate }}
-                    </p>
-                  } @else if (reviews().length === 0) {
-                    <p class="detail-page__reviews-empty">
-                      {{ 'listings.details.reviews.empty' | translate }}
-                    </p>
+              <!-- 5. Reviews -->
+              <section class="detail-page__section" aria-labelledby="detail-reviews-heading">
+                <span class="detail-page__section-eyebrow">
+                  @let ratingSum = ratingSummary();
+                  @if (ratingSum && ratingSum.reviewCount === 1) {
+                    {{ 'reviews.summary.oneReview' | translate }}
+                  } @else if (ratingSum && ratingSum.reviewCount > 1) {
+                    {{ 'reviews.summary.countReviews' | translate: { count: ratingSum.reviewCount } }}
                   } @else {
-                    <div class="detail-page__reviews-list">
-                      @for (review of reviews(); track review.id) {
-                        <app-review-card [review]="review" />
-                      }
-                    </div>
+                    {{ 'listings.details.eyebrow.reviews' | translate }}
                   }
-                </section>
-              </div>
-            </div>
+                </span>
+                <h2 id="detail-reviews-heading" class="detail-page__section-title">
+                  {{ 'listings.details.reviews.whatTheySay' | translate }}
+                </h2>
 
-            <!-- Desktop sidebar: price card + booking CTA -->
-            <aside class="detail-page__sidebar">
-              <div class="detail-page__sidebar-sticky">
-                <div class="detail-page__cta-card">
-                  <div class="detail-page__cta-price-row">
-                    <p class="detail-page__cta-price">
-                      <span class="detail-page__cta-price-amount">{{ listing.pricePerDay | dram }}</span>
-                      <span class="detail-page__cta-price-suffix">/ {{ 'listings.booking.priceSuffix' | translate }}</span>
-                    </p>
-                    @if (ratingSummary(); as summary) {
-                      @if (summary.reviewCount > 0) {
-                        <span class="detail-page__cta-rating">
-                          <i class="pi pi-star-fill" aria-hidden="true"></i>
-                          <strong>{{ summary.averageRating | number:'1.1-1' }}</strong>
-                          <span class="detail-page__cta-rating-count">({{ summary.reviewCount }})</span>
-                        </span>
-                      }
+                @if (reviewsLoading()) {
+                  <div class="detail-page__reviews-skeleton">
+                    @for (i of [0, 1, 2]; track i) {
+                      <p-skeleton height="5.25rem" borderRadius="16px" />
+                    }
+                  </div>
+                } @else if (reviewsError()) {
+                  <p class="detail-page__reviews-error" role="alert">
+                    {{ 'listings.details.reviews.error' | translate }}
+                  </p>
+                } @else if (reviews().length === 0) {
+                  <p class="detail-page__reviews-empty">
+                    {{ 'listings.details.reviews.empty' | translate }}
+                  </p>
+                } @else {
+                  <!-- Summary panel: gated on hasAggregate — below MinReviewsForAggregate (2)
+                       the API still returns 0.0 averages, so an ungated render here would
+                       show a fabricated rating. app-rating-summary already handles that gate
+                       internally via `hasAggregate`, falling back to its own empty state. -->
+                  <div class="detail-page__reviews-summary-panel">
+                    <app-rating-summary
+                      [summary]="toyRatingSummaryView()"
+                      variant="full"
+                      [distribution]="reviewsDistribution()"
+                    />
+                  </div>
+
+                  <div class="detail-page__reviews-list">
+                    @for (review of visibleReviews(); track review.id; let i = $index) {
+                      <div
+                        class="detail-page__review-item"
+                        [class.detail-page__review-item--desktop-only]="i === 2 && !reviewsExpanded()"
+                      >
+                        <app-review-card [review]="review" />
+                      </div>
                     }
                   </div>
 
-                  <div class="detail-page__cta-divider" aria-hidden="true"></div>
+                  @if (showSeeAllReviews()) {
+                    <button
+                      type="button"
+                      class="detail-page__reviews-seeall"
+                      (click)="toggleReviewsExpanded()"
+                    >
+                      {{ 'listings.details.reviews.seeAll' | translate: { count: reviews().length } }}
+                    </button>
+                  }
+                }
+              </section>
+            </div>
+          </div>
 
-                  <p class="detail-page__cta-steps-label">{{ 'listings.details.howItWorks.label' | translate }}</p>
-                  <ol class="detail-page__cta-steps">
-                    <li class="detail-page__cta-step">
-                      <span class="detail-page__cta-step-num">1</span>
-                      <span class="detail-page__cta-step-text">{{ 'listings.details.howItWorks.step1' | translate }}</span>
-                    </li>
-                    <li class="detail-page__cta-step">
-                      <span class="detail-page__cta-step-num">2</span>
-                      <span class="detail-page__cta-step-text">{{ 'listings.details.howItWorks.step2' | translate }}</span>
-                    </li>
-                    <li class="detail-page__cta-step">
-                      <span class="detail-page__cta-step-num">3</span>
-                      <span class="detail-page__cta-step-text">{{ 'listings.details.howItWorks.step3' | translate }}</span>
-                    </li>
-                  </ol>
+          <!-- Desktop sidebar: price card + protection card -->
+          <aside class="detail-page__sidebar">
+            <div class="detail-page__sidebar-sticky">
+              <div class="detail-page__cta-card">
+                <div class="detail-page__cta-price-row">
+                  <p class="detail-page__cta-price">
+                    <span class="detail-page__cta-price-amount">{{ listing.pricePerDay | dram }}</span>
+                    <span class="detail-page__cta-price-suffix">/ {{ 'listings.booking.priceSuffix' | translate }}</span>
+                  </p>
+                  @if (ratingSummary(); as summary) {
+                    @if (summary.reviewCount > 0) {
+                      <span class="detail-page__cta-rating">
+                        <i class="pi pi-star-fill" aria-hidden="true"></i>
+                        <strong>{{ summary.averageRating | number:'1.1-1' }}</strong>
+                        <span class="detail-page__cta-rating-count">({{ summary.reviewCount }})</span>
+                      </span>
+                    }
+                  }
+                </div>
 
-                  @if (existingBookingId()) {
-                    <p class="detail-page__cta-hint">
-                      <i class="pi pi-info-circle" aria-hidden="true"></i>
-                      {{ 'listings.details.ctaExistingHint' | translate }}
+                <div class="detail-page__cta-divider" aria-hidden="true"></div>
+
+                <p class="detail-page__cta-steps-label">{{ 'listings.details.howItWorks.label' | translate }}</p>
+                <ol class="detail-page__cta-steps">
+                  <li class="detail-page__cta-step">
+                    <span class="detail-page__cta-step-num">1</span>
+                    <span class="detail-page__cta-step-text">{{ 'listings.details.howItWorks.step1' | translate }}</span>
+                  </li>
+                  <li class="detail-page__cta-step">
+                    <span class="detail-page__cta-step-num">2</span>
+                    <span class="detail-page__cta-step-text">{{ 'listings.details.howItWorks.step2' | translate }}</span>
+                  </li>
+                  <li class="detail-page__cta-step">
+                    <span class="detail-page__cta-step-num">3</span>
+                    <span class="detail-page__cta-step-text">{{ 'listings.details.howItWorks.step3' | translate }}</span>
+                  </li>
+                </ol>
+
+                @if (existingBookingId()) {
+                  <p class="detail-page__cta-hint">
+                    <i class="pi pi-info-circle" aria-hidden="true"></i>
+                    {{ 'listings.details.ctaExistingHint' | translate }}
+                  </p>
+                }
+
+                @if (isAuthenticated()) {
+                  <p-button
+                    type="button"
+                    styleClass="detail-page__cta-btn"
+                    [label]="'listings.details.ctaBook' | translate"
+                    icon="pi pi-arrow-right"
+                    iconPos="right"
+                    [disabled]="existingBookingId() !== null"
+                    [routerLink]="['/listings', listing.id, 'book']"
+                  />
+                  @if (!existingBookingId()) {
+                    <p class="detail-page__cta-next-hint">
+                      <i class="pi pi-calendar" aria-hidden="true"></i>
+                      {{ 'listings.details.howItWorks.nextStepHint' | translate }}
                     </p>
                   }
-
-                  @if (isAuthenticated()) {
+                } @else {
+                  <div class="detail-page__cta-guest">
+                    <p class="detail-page__cta-guest-text">{{ 'listings.details.guestRentSubtext' | translate }}</p>
                     <p-button
                       type="button"
                       styleClass="detail-page__cta-btn"
-                      [label]="'listings.details.ctaBook' | translate"
-                      icon="pi pi-arrow-right"
-                      iconPos="right"
-                      [disabled]="existingBookingId() !== null"
-                      [routerLink]="['/listings', listing.id, 'book']"
+                      [label]="'listings.details.guestSignIn' | translate"
+                      (onClick)="showAuthDialog.set(true)"
                     />
-                    @if (!existingBookingId()) {
-                      <p class="detail-page__cta-next-hint">
-                        <i class="pi pi-calendar" aria-hidden="true"></i>
-                        {{ 'listings.details.howItWorks.nextStepHint' | translate }}
-                      </p>
-                    }
-                  } @else {
-                    <div class="detail-page__cta-guest">
-                      <p class="detail-page__cta-guest-text">{{ 'listings.details.guestRentSubtext' | translate }}</p>
-                      <p-button
-                        type="button"
-                        styleClass="detail-page__cta-btn"
-                        [label]="'listings.details.guestSignIn' | translate"
-                        (onClick)="showAuthDialog.set(true)"
-                      />
-                    </div>
-                  }
-
-                  <div class="detail-page__cta-assurance">
-                    <p class="detail-page__cta-assurance-item">
-                      <i class="pi pi-shield" aria-hidden="true"></i>
-                      <span>{{ 'listings.booking.assurance' | translate }}</span>
-                    </p>
-                    <p class="detail-page__cta-assurance-item">
-                      <i class="pi pi-check-circle" aria-hidden="true"></i>
-                      <span>{{ 'listings.booking.assuranceTransparency' | translate }}</span>
-                    </p>
                   </div>
+                }
+
+                <div class="detail-page__cta-assurance">
+                  <p class="detail-page__cta-assurance-item">
+                    <i class="pi pi-shield" aria-hidden="true"></i>
+                    <span>{{ 'listings.booking.assurance' | translate }}</span>
+                  </p>
+                  <p class="detail-page__cta-assurance-item">
+                    <i class="pi pi-check-circle" aria-hidden="true"></i>
+                    <span>{{ 'listings.booking.assuranceTransparency' | translate }}</span>
+                  </p>
                 </div>
               </div>
-            </aside>
-          </div>
 
-          <!-- Mobile fixed action bar — replaces the global bottom nav -->
-          <div class="detail-page__mobile-bar">
-            <div class="detail-page__mobile-bar-info">
-              <span class="detail-page__mobile-bar-price">
-                <span class="detail-page__mobile-bar-amount">{{ listing.pricePerDay | dram }}</span>
-                <span class="detail-page__mobile-bar-suffix">/ {{ 'listings.booking.priceSuffix' | translate }}</span>
-              </span>
-              @if (ratingSummary(); as summary) {
-                @if (summary.reviewCount > 0) {
-                  <span class="detail-page__mobile-bar-rating">
-                    <i class="pi pi-star-fill" aria-hidden="true"></i>
-                    {{ summary.averageRating | number:'1.1-1' }} · {{ summary.reviewCount }}
-                  </span>
-                }
-              }
+              <!-- Protection card (desktop copy — sidebar is hidden below 1100px,
+                   see the mobile copy after the sections stack, below). -->
+              <ng-container [ngTemplateOutlet]="protectionCardTpl" />
             </div>
-            @if (isAuthenticated()) {
-              <p-button
-                type="button"
-                styleClass="detail-page__cta-btn"
-                [label]="'listings.details.ctaBook' | translate"
-                icon="pi pi-arrow-right"
-                iconPos="right"
-                [disabled]="existingBookingId() !== null"
-                [routerLink]="['/listings', listing.id, 'book']"
-              />
-            } @else {
-              <p-button
-                type="button"
-                styleClass="detail-page__cta-btn"
-                [label]="'listings.details.guestSignIn' | translate"
-                (onClick)="showAuthDialog.set(true)"
-              />
+          </aside>
+        </div>
+
+        <!-- Protection card (mobile/tablet copy — hidden ≥1100px via
+             `.detail-page__protection-card--mobile`; the sidebar it normally
+             lives in is desktop-only, same as the CTA card / mobile bar
+             split already used on this page). -->
+        <div class="detail-page__protection-card--mobile">
+          <ng-container [ngTemplateOutlet]="protectionCardTpl" />
+        </div>
+
+        <ng-template #protectionCardTpl>
+          <div class="detail-page__protection-card">
+            <span class="detail-page__protection-icon" aria-hidden="true">
+              <i class="pi pi-shield"></i>
+            </span>
+            <div class="detail-page__protection-body">
+              <strong>{{ protectionTitleKey | translate }}</strong>
+              <p>{{ protectionIntroKey | translate }}</p>
+              <ul class="detail-page__protection-bullets">
+                @for (key of protectionBullets; track key) {
+                  <li>{{ key | translate }}</li>
+                }
+              </ul>
+            </div>
+          </div>
+        </ng-template>
+
+        <!-- Mobile fixed action bar — replaces the global bottom nav -->
+        <div class="detail-page__mobile-bar">
+          <div class="detail-page__mobile-bar-info">
+            <span class="detail-page__mobile-bar-price">
+              <span class="detail-page__mobile-bar-amount">{{ listing.pricePerDay | dram }}</span>
+              <span class="detail-page__mobile-bar-suffix">/ {{ 'listings.booking.priceSuffix' | translate }}</span>
+            </span>
+            @if (ratingSummary(); as summary) {
+              @if (summary.reviewCount > 0) {
+                <span class="detail-page__mobile-bar-rating">
+                  <i class="pi pi-star-fill" aria-hidden="true"></i>
+                  {{ summary.averageRating | number:'1.1-1' }} · {{ summary.reviewCount }}
+                </span>
+              }
             }
           </div>
-        </article>
-      }
-
-      <app-auth-dialog [visible]="showAuthDialog()" (closed)="showAuthDialog.set(false)" />
+          @if (isAuthenticated()) {
+            <p-button
+              type="button"
+              styleClass="detail-page__cta-btn"
+              [label]="'listings.details.ctaBook' | translate"
+              icon="pi pi-arrow-right"
+              iconPos="right"
+              [disabled]="existingBookingId() !== null"
+              [routerLink]="['/listings', listing.id, 'book']"
+            />
+          } @else {
+            <p-button
+              type="button"
+              styleClass="detail-page__cta-btn"
+              [label]="'listings.details.guestSignIn' | translate"
+              (onClick)="showAuthDialog.set(true)"
+            />
+          }
+        </div>
+      </article>
     }
+
+    <app-auth-dialog [visible]="showAuthDialog()" (closed)="showAuthDialog.set(false)" />
   </div>
 </div>
