@@ -371,31 +371,27 @@
       "prev": "Previous image",
       "next": "Next image",
       "dotNavLabel": "Image pagination",
-      "dotLabel": "Go to image {{index}}"
+      "dotLabel": "Go to image {{index}}",
+      "allPhotos": "All {{count}} photos",
+      "photoAlt": "Photo {{index}} of {{total}}",
+      "counter": "{{current}} / {{total}}",
+      "closeLightbox": "Close gallery"
     },
     "booking": {
       "calendarLabel": "Select rental dates",
       "totalPrice": "Total: {{amount}}",
       "selectRangeHint": "Select a start and end date to see the total.",
       "priceSuffix": "per day",
-      "totalLabel": "Total",
-      "cta": "Send rental request",
-      "submitting": "Submitting...",
-      "disabledHint": "Select dates",
       "night": "{{count}} day",
       "nights": "{{count}} days",
-      "pendingHint": "You have a pending rental request for this toy.",
-      "cancelRequest": "Cancel request",
-      "cancelling": "Cancelling...",
       "assurance": "The owner reviews and approves your request before the rental begins.",
       "assuranceTransparency": "Pricing is shown upfront — no hidden fees or surprises.",
       "pickup": "Pickup",
       "return": "Return",
-      "quickBook": "Quick Book",
-      "days": "days",
       "discount": "discount",
       "serviceFee": "Service fee",
-      "deposit": "Refundable deposit"
+      "deposit": "Refundable deposit",
+      "noteTooLongError": "Your note is too long — please keep it to {{max}} characters or fewer."
     },
     "page": {
       "title": "Browse Toys",
@@ -442,10 +438,16 @@
       "priceLabel": "{{amount}} per day",
       "assurance": "Owner-managed toy rentals with transparent pricing.",
       "descriptionHeading": "About this toy",
-      "hostHeading": "Toy owner",
+      "hostHeading": "Meet the owner",
       "contactLabel": "Contact details become available once the booking is approved.",
       "viewOwnerProfile": "View owner profile",
       "ownerMemberSince": "Member since {{year}}",
+      "shareLabel": "Share",
+      "saveLabel": "Save",
+      "savedLabel": "Saved",
+      "linkCopied": "Link copied to clipboard",
+      "messageOwner": "Message owner",
+      "handoverLabel": "Handover",
       "bookingHeading": "Check availability",
       "bookingSubtitle": "Pick your rental dates and see the total before you send a rental request.",
       "bookingSubmitting": "Submitting rental request...",
@@ -463,7 +465,23 @@
       "eyebrow": {
         "overview": "Overview",
         "host": "Your host",
-        "reviews": "Reviews"
+        "reviews": "Reviews",
+        "gettingIt": "Getting it"
+      },
+      "highlights": {
+        "hygieneSub": "Cleaning details from the owner",
+        "verifiedTitle": "Verified owner",
+        "verifiedSub": "Trusted DoRent member",
+        "deliveryAvailableTitle": "Delivery available",
+        "deliveryAvailableSub": "Owner can drop it off",
+        "pickupOnlyTitle": "Pickup only",
+        "pickupOnlySub": "Meet the owner to collect",
+        "minStayTitle": "{{count}}-day minimum",
+        "minStaySub": "Shorter requests aren't accepted"
+      },
+      "badges": {
+        "verifiedOwner": "Verified owner",
+        "hygieneChecked": "Hygiene checked"
       },
       "howItWorks": {
         "label": "How renting works",
@@ -508,7 +526,18 @@
       "reviews": {
         "heading": "Reviews",
         "empty": "No reviews yet",
-        "error": "Unable to load reviews"
+        "error": "Unable to load reviews",
+        "whatTheySay": "What families say",
+        "seeAll": "See all {{count}} reviews"
+      },
+      "pickupDelivery": {
+        "heading": "Pickup & delivery",
+        "hygieneValue": "Provided by owner"
+      },
+      "ownerStats": {
+        "rating": "Rating",
+        "listings": "Active toys",
+        "completed": "Completed rentals"
       },
       "ownerToySuffix": "toys",
       "ownerCardTitle": "Owner / contact card",
@@ -617,7 +646,14 @@
         "previewEyebrow": "How renters see it",
         "reviewTitle": "Review & submit",
         "nextHint": "Next: {{next}}",
+        "nextLabel": "Next",
         "readyHint": "Ready to publish — we'll review within ~4 hours.",
+        "hygieneCheckedBadge": "Hygiene checked",
+        "communityNote": {
+          "before": "I agree to DoRent's",
+          "linkLabel": "community rules",
+          "after": "and confirm this listing is accurate."
+        },
         "step1Short": "Photos",
         "step2Short": "Basics",
         "step3Short": "Pricing",
@@ -673,7 +709,10 @@
         "confirm": "Confirm location",
         "cancel": "Cancel",
         "privacyNote": "We publish only the approximate area on the map — your exact address is never shown to renters.",
-        "pinSetHint": "Pin set. Only the approximate area is ever shown to renters."
+        "pinSetHint": "Pin set. Only the approximate area is ever shown to renters.",
+        "mapLabel": "Where the toy is",
+        "mapHelper": "Renters see this map with an approximate circle — your exact address stays private until a booking is confirmed.",
+        "approximateChip": "Approximate area"
       },
       "images": "Toy photos",
       "imagesSelected": "photos selected",
@@ -853,18 +892,21 @@
         "chip4": "First time renting — any tips welcome!"
       },
       "yourRequestEyebrow": "Your request",
-      "phoneUnlock": "{{name}}'s phone number unlocks <strong>right after you send this request.</strong>",
+      "phoneUnlockLead": "{{name}}'s contact details unlock",
+      "phoneUnlockEmphasis": "once they approve your booking.",
       "notCharged": "You won't be charged until {{name}} confirms.",
       "notChargedShort": "You're not charged yet",
       "summaryTotal": "Total",
       "selectDatesHint": "Choose dates to see the total price",
       "daysLabel": "days",
+      "depositNotCharged": "not charged now",
       "submitCta": "Send booking request",
       "submitting": "Submitting…",
-      "confirmTitle": "Booking request sent!",
+      "confirmTitle": "Request sent to {{name}}!",
       "confirmBody": "The owner will review your request and get back to you soon. You'll be notified when the status changes.",
-      "confirmViewBooking": "View booking",
-      "confirmBrowse": "Browse more toys"
+      "confirmNoteEyebrow": "Your note to {{name}}",
+      "confirmMessageOwner": "Message {{name}}",
+      "confirmViewBooking": "View booking"
     }
   },
   "profile": {
@@ -1381,6 +1423,7 @@
       "dayToday": "Today",
       "dayYesterday": "Yesterday",
       "errorTitle": "Unable to load conversation",
+      "openFromBookingErrorTitle": "Couldn't open the conversation",
       "emptyTitle": "Conversation not available",
       "empty": "This conversation is unavailable or has no data.",
       "noMessages": "No messages in this conversation yet.",
@@ -1509,7 +1552,9 @@
       "noReviews": "No reviews yet",
       "oneReview": "1 review",
       "countReviews": "{{count}} reviews",
-      "ariaRating": "Rated {{rating}} out of 5"
+      "ariaRating": "Rated {{rating}} out of 5",
+      "distributionAria": "Rating distribution",
+      "distributionRowAria": "{{star}} stars: {{percent}} percent"
     },
     "relativeDate": {
       "today": "today",

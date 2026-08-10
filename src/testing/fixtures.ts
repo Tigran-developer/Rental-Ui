@@ -13,6 +13,7 @@ import type {
 } from '../app/features/bookings/models/booking.model';
 import type { ListingPreview } from '../app/features/listings/models/listing.model';
 import type { ListingMapPin } from '../app/features/listings/models/listing-map-pin.model';
+import type { ListingDetails } from '../app/features/listings/models/listing-details.model';
 import type { PendingListing } from '../app/features/admin/models/pending-listing.model';
 import type { BookingReviewStatus } from '../app/features/reviews/models/review.model';
 
@@ -41,6 +42,40 @@ export function makeListingPreview(
     pricePerDay: 5,
     mainImageUrl: null,
     isFavorite: false,
+    ...overrides,
+  };
+}
+
+export function makeListingDetails(
+  overrides: Partial<ListingDetails> = {},
+): ListingDetails {
+  return {
+    id: 'listing-1',
+    title: 'Wooden Train Set',
+    description: 'A lovely wooden train set.',
+    city: 'Yerevan',
+    pricePerDay: 5,
+    images: [],
+    owner: {
+      id: 'owner-1',
+      firstName: 'Owen',
+      lastName: 'Owner',
+      phoneNumber: null,
+    },
+    bookedDateRanges: [],
+    isFavorite: false,
+    category: null,
+    ageFromMonths: null,
+    ageToMonths: null,
+    condition: null,
+    hygieneNotes: null,
+    safetyNotes: null,
+    depositAmount: null,
+    minRentalDays: null,
+    deliveryType: null,
+    latitude: null,
+    longitude: null,
+    district: null,
     ...overrides,
   };
 }
@@ -97,6 +132,7 @@ export function makeBookingRequest(
     totalPrice: 15,
     status: 'PendingApproval',
     createdAt: '2026-06-20T10:00:00.000Z',
+    note: null,
     ...overrides,
   };
 }
@@ -128,6 +164,7 @@ export function makeBookingDetail(
     completedAt: null,
     expiresAt: null,
     rejectionReason: null,
+    note: null,
     counterpartyId: 'user-2',
     counterpartyFirstName: 'Rena',
     counterpartyLastName: 'Renter',

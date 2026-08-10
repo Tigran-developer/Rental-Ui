@@ -289,4 +289,26 @@ export const chatReducer = createReducer(
       };
     },
   ),
+  on(
+    ChatActions.openConversationFromBooking,
+    (state): ChatState => ({
+      ...state,
+      openingConversationFromBooking: true,
+    }),
+  ),
+  on(
+    ChatActions.openConversationFromBookingSuccess,
+    (state, { conversation }): ChatState => ({
+      ...state,
+      openingConversationFromBooking: false,
+      activeConversation: conversation,
+    }),
+  ),
+  on(
+    ChatActions.openConversationFromBookingFailure,
+    (state): ChatState => ({
+      ...state,
+      openingConversationFromBooking: false,
+    }),
+  ),
 );

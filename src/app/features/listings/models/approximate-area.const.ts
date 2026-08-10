@@ -12,13 +12,15 @@
  *
  *   sqrt((117/2)^2 + (153/2)^2) ≈ 96.3m
  *
- * 150m is used instead of that bare 96.3m minimum for two independent
- * reasons that happen to agree: it is the exact figure the approved design's
- * pill shows on every screen state ("~150 m"), and it keeps a comfortable
- * margin over the measured worst case — wider, proportionally, than the
- * previous geohash-6-era value's own margin (600m against a ~557.6m
- * half-diagonal). Never draw a radius smaller than the real uncertainty, or
- * the map implies more precision than we actually have — the exact failure
- * this feature exists to prevent.
+ * 100m is a deliberately tight round number just above that 96.3m minimum
+ * (it was 150m until 2026-08-03, when the circle was judged to read as
+ * wider than the precision we actually withhold). The margin is now small
+ * — ~3.7m — so this constant can no longer absorb a precision change
+ * silently: if `GeohashSnapper.Precision` in rental-api ever moves again,
+ * recompute the half-diagonal above FIRST and raise this value to match.
+ * Never draw a radius smaller than the real uncertainty, or the map implies
+ * more precision than we actually have — the exact failure this feature
+ * exists to prevent. The pill next to the map interpolates this number
+ * ("~100 m"), so it follows the constant automatically.
  */
-export const APPROXIMATE_AREA_RADIUS_METERS = 150;
+export const APPROXIMATE_AREA_RADIUS_METERS = 100;

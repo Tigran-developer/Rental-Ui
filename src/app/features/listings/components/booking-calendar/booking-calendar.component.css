@@ -125,9 +125,9 @@
   justify-content: center !important;
   width: 36px;
   height: 36px;
-  border-radius: 50% !important;
+  border-radius: 999px !important;
   font-size: 0.875rem;
-  font-weight: 400;
+  font-weight: 500;
   color: var(--ui-color-text-primary);
   cursor: pointer;
   transition: background 140ms ease, color 140ms ease;
@@ -154,23 +154,26 @@
   font-weight: 700;
 }
 
-/* ── Selected (range start / end) – solid orange circle ──────────── */
+/* ── Selected (range start / end) – solid orange, pill-end radii ──── */
+/* Isolated default: a single selected day (no adjacent range/selected
+   sibling) is a full circle — covers both "no range yet" and a same-day
+   (1-day) range. */
 :host ::ng-deep .p-datepicker-day.p-datepicker-day-selected {
   background: var(--ui-color-primary) !important;
   color: #fff !important;
-  border-radius: 50% !important;
-  font-weight: 600;
+  border-radius: 999px !important;
+  font-weight: 700;
 }
 
-/* ── Range middle – transparent span, orange text ────────────────── */
+/* ── Range middle – transparent span, dark text over the tinted band ── */
 :host ::ng-deep .p-datepicker-day.p-datepicker-day-selected-range {
   background: transparent !important;
-  color: var(--ui-color-primary) !important;
+  color: var(--ui-color-text-primary) !important;
   border-radius: 0 !important;
   font-weight: 500;
 }
 
-/* ── Continuous band via td::before (rounded ends) ───────────────── */
+/* ── Continuous band via td::before (pill ends only at start/end) ─── */
 
 /* Enable absolute positioning for pseudo-elements */
 :host ::ng-deep td.p-datepicker-day-cell:has(.p-datepicker-day-selected-range),
@@ -181,28 +184,18 @@
 
 /* stylelint-disable */
 
-/* Middle cells – full-width peach band, no rounding */
+/* Interior days – full-width tinted band, radius 0 (spec: `{primary}55`, ~33% alpha) */
 :host ::ng-deep td.p-datepicker-day-cell:has(.p-datepicker-day-selected-range)::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: rgb(255 96 8 / 12%);
+  background: color-mix(in srgb, var(--ui-color-primary) 33%, transparent);
   border-radius: 0;
   z-index: 0;
 }
 
-/* :host ::ng-deep td.p-datepicker-day-cell:has(.p-datepicker-day-selected) + td.p-datepicker-day-cell:has(.p-datepicker-day-selected-range)::before {
-  border-radius: 20px 0 0 20px;
-}
-
-:host ::ng-deep td.p-datepicker-day-cell:has(.p-datepicker-day-selected-range):has(+ td .p-datepicker-day-selected)::before {
-  border-radius: 0 20px 20px 0;
-} */
-
-:host ::ng-deep td.p-datepicker-day-cell:has(.p-datepicker-day-selected) + td.p-datepicker-day-cell:has(.p-datepicker-day-selected-range):has(+ td .p-datepicker-day-selected)::before {
-  border-radius: 20px;
-}
-
+/* Start cell: band fills the right half only, flowing into the range — the
+   circle keeps its left-rounded pill shape via the selector below. */
 :host ::ng-deep td.p-datepicker-day-cell:has(.p-datepicker-day-selected):has(+ td .p-datepicker-day-selected-range)::before {
   content: '';
   position: absolute;
@@ -210,10 +203,11 @@
   bottom: 0;
   left: 50%;
   right: 0;
-  background: rgb(255 96 8 / 12%);
+  background: color-mix(in srgb, var(--ui-color-primary) 33%, transparent);
   z-index: 0;
 }
 
+/* End cell: band fills the left half only. */
 :host ::ng-deep td.p-datepicker-day-cell:has(.p-datepicker-day-selected-range) + td.p-datepicker-day-cell:has(.p-datepicker-day-selected)::before {
   content: '';
   position: absolute;
@@ -221,11 +215,30 @@
   bottom: 0;
   left: 0;
   right: 50%;
-  background: rgb(255 96 8 / 12%);
+  background: color-mix(in srgb, var(--ui-color-primary) 33%, transparent);
   z-index: 0;
 }
 
 /* stylelint-enable */
+
+/* Start of a multi-day range: rounded on the left, flat on the right —
+   `999px 0 0 999px`. Covers both "start, then an interior day" and the
+   2-day case (start immediately followed by the end day). */
+:host ::ng-deep td.p-datepicker-day-cell:has(.p-datepicker-day-selected):has(+ td .p-datepicker-day-selected-range)
+  .p-datepicker-day.p-datepicker-day-selected,
+:host ::ng-deep td.p-datepicker-day-cell:has(.p-datepicker-day-selected):has(+ td .p-datepicker-day-selected)
+  .p-datepicker-day.p-datepicker-day-selected {
+  border-radius: 999px 0 0 999px !important;
+}
+
+/* End of a multi-day range: flat on the left, rounded on the right —
+   `0 999px 999px 0`. */
+:host ::ng-deep td.p-datepicker-day-cell:has(.p-datepicker-day-selected-range) + td.p-datepicker-day-cell:has(.p-datepicker-day-selected)
+  .p-datepicker-day.p-datepicker-day-selected,
+:host ::ng-deep td.p-datepicker-day-cell:has(.p-datepicker-day-selected) + td.p-datepicker-day-cell:has(.p-datepicker-day-selected)
+  .p-datepicker-day.p-datepicker-day-selected {
+  border-radius: 0 999px 999px 0 !important;
+}
 
 /* ── PICKUP / RETURN date summary boxes ──────────────────────────── */
 .booking-calendar__dates {

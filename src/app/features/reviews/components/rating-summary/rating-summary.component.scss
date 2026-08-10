@@ -60,3 +60,98 @@
     }
   }
 }
+
+/* ── Full + distribution: two-column panel ─────────────────────────────── */
+.rating-summary__panel {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 28px;
+  width: 100%;
+}
+
+.rating-summary__panel-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--ui-space-4);
+  padding-right: 28px;
+  border-right: 1px solid var(--ui-color-border);
+
+  .rating-summary__big-number {
+    font-size: 50px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--ui-color-text-primary);
+  }
+
+  .rating-summary__count {
+    font-size: 0.8125rem;
+    color: var(--ui-color-text-secondary);
+  }
+}
+
+.rating-summary__panel-right {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.rating-summary__dist-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rating-summary__dist-label {
+  flex: 0 0 30px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ui-color-text-secondary);
+}
+
+.rating-summary__dist-track {
+  flex: 1 1 auto;
+  height: 7px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-color-surface-muted);
+  overflow: hidden;
+}
+
+.rating-summary__dist-fill {
+  height: 100%;
+  border-radius: var(--ui-radius-pill);
+  /* Star gold — no dedicated app token; matches the hex `shared/ui/star-rating`
+     already uses ($star-gold in star-rating.component.scss) so the app has a
+     single gold, not two. */
+  background: #f2a900;
+  transition: width 200ms ease;
+}
+
+.rating-summary__dist-pct {
+  flex: 0 0 32px;
+  text-align: right;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ui-color-text-secondary);
+}
+
+@media (max-width: 700px) {
+  .rating-summary__panel {
+    grid-template-columns: auto 1fr;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .rating-summary__panel-left {
+    padding-right: 16px;
+
+    .rating-summary__big-number {
+      font-size: 36px;
+    }
+  }
+}

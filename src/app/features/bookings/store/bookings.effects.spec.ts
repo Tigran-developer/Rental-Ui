@@ -1,4 +1,6 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
+import { TranslateService } from '@ngx-translate/core';
 import { of, throwError } from 'rxjs';
 
 import { actionsHarness, collect } from '../../../../testing/ngrx.helpers';
@@ -9,6 +11,28 @@ import { BookingsEffects } from './bookings.effects';
 
 type ApiStub = Partial<Record<keyof BookingsApiService, ReturnType<typeof vi.fn>>>;
 
+/** A ProblemDetails error exactly as the API returns it (see ApiProblemDetails). */
+function problemDetails(status: number, code: string, title: string): HttpErrorResponse {
+  return new HttpErrorResponse({
+    status,
+    error: { status, type: `urn:rental:error:${code}`, title, errorCode: code },
+  });
+}
+
+// Only `booking.note_too_long` is mapped to an i18n key today (see
+// BOOKING_ERROR_MESSAGE_KEYS in bookings.effects.ts); everything else falls through to
+// the generic ProblemDetails `title`, so the stub only needs to resolve that one key.
+function translateStub(): Pick<TranslateService, 'instant'> {
+  return {
+    instant: ((key: string, params?: Record<string, unknown>) => {
+      if (key === 'listings.booking.noteTooLongError') {
+        return `Your note is too long — please keep it to ${params?.['max'] ?? ''} characters or fewer.`;
+      }
+      return key;
+    }) as TranslateService['instant'],
+  };
+}
+
 function setup(api: ApiStub) {
   const harness = actionsHarness();
   TestBed.configureTestingModule({
@@ -16,6 +40,7 @@ function setup(api: ApiStub) {
       BookingsEffects,
       harness.provider,
       { provide: BookingsApiService, useValue: api },
+      { provide: TranslateService, useValue: translateStub() },
     ],
   });
   return { harness, effects: TestBed.inject(BookingsEffects) };
@@ -44,6 +69,33 @@ describe('BookingsEffects', () => {
       harness.complete();
 
       expect(await result).toEqual([BookingsActions.createBookingFailure({ error: 'nope' })]);
+    });
+
+    it('maps booking.note_too_long to the translated i18n message, not the raw ProblemDetails title', async () => {
+      const api = {
+        createBooking: vi
+          .fn()
+          .mockReturnValue(
+            throwError(() =>
+              problemDetails(400, 'booking.note_too_long', 'Note must be 280 characters or fewer.'),
+            ),
+          ),
+      };
+      const { harness, effects } = setup(api);
+
+      const result = collect(effects.createBooking$);
+      harness.send(
+        BookingsActions.createBooking({
+          payload: { listingId: 'l1', startDate: 'a', endDate: 'b', note: 'x'.repeat(300) },
+        }),
+      );
+      harness.complete();
+
+      expect(await result).toEqual([
+        BookingsActions.createBookingFailure({
+          error: 'Your note is too long — please keep it to 280 characters or fewer.',
+        }),
+      ]);
     });
   });
 

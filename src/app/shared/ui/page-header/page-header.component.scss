@@ -96,26 +96,52 @@
     display: none;
   }
 
-  .ph--hide-desktop-title .ph__title {
-    display: none;
-  }
-
   :host.ph--hide-on-desktop {
     display: none;
   }
 }
 
-/* ── Mobile sticky back-nav bar (when backLink is provided) ── */
-@media (max-width: 960px) {
+/* ── hideTitleOnDesktop: collapse the whole header, not just its title ──
+   Bug fix (M-item-details-audit): the old rule above only hid `.ph__title`,
+   so `.ph` (a flex column with `gap` + `.ph--comfortable`'s margin-bottom)
+   kept occupying a full row of vertical space with nothing visibly in it —
+   a blank band above the page's own desktop breadcrumb/hero. Hiding the
+   whole `.ph--hide-desktop-title` block (not just its title child) collapses
+   that space, exactly like `:host.ph--hide-on-desktop` already does for the
+   other consumers of this component.
+
+   Breakpoint: the two current consumers of `hideTitleOnDesktop`
+   (listing-details-page, listing-booking-page) both standardise their own
+   desktop switch — breadcrumb / hero+step-indicator — at 1100px, not this
+   component's default 960/961. Collapsing this header at the default 961
+   would open a 961–1099 seam with neither a back control nor the page's own
+   desktop nav. So: keep the mobile back-bar treatment alive through 1099
+   (see the `hideTitleOnDesktop`-scoped block below) and only collapse the
+   header at ≥1100, where those pages' breadcrumb/hero has taken over. This
+   is scoped to `.ph--hide-desktop-title`/`.ph--hide-title-desktop-host`
+   specifically so the other four `backLink` consumers (my-listings,
+   favorites, my-bookings, booking-requests — none of which pass
+   `hideTitleOnDesktop`) keep their original 960/961 behaviour untouched. */
+@media (min-width: 1100px) {
+  .ph--hide-desktop-title {
+    display: none;
+  }
+}
+
+/* ── Mobile sticky back-nav bar (when backLink is provided) ──────────────
+   Factored into a mixin so the exact same bar chrome can be re-emitted,
+   scoped, for the 961–1099 seam block below (hideTitleOnDesktop pages)
+   without duplicating it by hand and letting the two copies drift. */
+@mixin ph-back-bar-rules($host-scope: '', $inner-scope: '') {
   // Flow spacer that reserves the fixed bar's height. It is empty, so it needs
   // no horizontal correction — the bar below pins itself to the viewport.
-  :host.ph-back-host {
+  :host.ph-back-host#{$host-scope} {
     display: block;
     height: 3.25rem;
     flex-shrink: 0;
   }
 
-  .ph--has-back {
+  .ph--has-back#{$inner-scope} {
     position: fixed;
     // Pin to the viewport edges rather than `width: 100%` from the element's
     // static position. That static position depends on the enclosing
@@ -167,7 +193,7 @@
     }
   }
 
-  .ph--has-back .ph__back {
+  .ph--has-back#{$inner-scope} .ph__back {
     width: 1.75rem;
     height: 1.75rem;
 
@@ -177,7 +203,7 @@
   }
 
   // Start-aligned title: revert to flex so actions get natural width
-  .ph--has-back.ph--mobile-title-start {
+  .ph--has-back.ph--mobile-title-start#{$inner-scope} {
     .ph__row {
       display: flex;
       grid-template-columns: unset;
@@ -198,4 +224,22 @@
       flex-shrink: 0;
     }
   }
+}
+
+@media (max-width: 960px) {
+  @include ph-back-bar-rules;
+}
+
+/* ── Seam block for hideTitleOnDesktop pages (961–1099px) ────────────────
+   Re-emits the exact same back-bar chrome as the default ≤960 block above,
+   scoped to `.ph--hide-desktop-title`/`.ph--hide-title-desktop-host` only —
+   see the long comment on the ≥1100 collapse rule above for why. Every
+   selector below requires that extra class, so the four other `backLink`
+   consumers (which never set `hideTitleOnDesktop`) are completely
+   unaffected and keep switching at the default 960/961. */
+@media (min-width: 961px) and (max-width: 1099px) {
+  @include ph-back-bar-rules(
+    $host-scope: '.ph--hide-title-desktop-host',
+    $inner-scope: '.ph--hide-desktop-title'
+  );
 }

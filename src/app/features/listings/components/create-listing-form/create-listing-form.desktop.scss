@@ -3,19 +3,29 @@
    per-component style budget; loaded after the base sheet via styleUrls. */
 @media (min-width: 1024px) {
   .wizard__header,
-  .wizard__progress { display: none; }
+  .wizard__progress {
+    display: none;
+  }
 
   .wizard__layout {
     max-width: 1080px;
     display: grid;
     grid-template-columns: 244px 1fr;
     gap: 40px;
-    padding: 28px 32px 120px;
+    /* listing-desktop.jsx's own shell padding (`28px 32px 40px`) — the nav
+       footer is inline content now (see `.wizard__footer` below), not a
+       floating bar, so no extra bottom space needs reserving for it. */
+    padding: 28px 32px 40px;
   }
 
   /* Sidebar stepper */
-  .wizard__sidebar { display: block; }
-  .wizard__sidebar-sticky { position: sticky; top: 24px; }
+  .wizard__sidebar {
+    display: block;
+  }
+  .wizard__sidebar-sticky {
+    position: sticky;
+    top: 24px;
+  }
 
   .wizard__sidebar-eyebrow {
     font-size: 0.6875rem;
@@ -26,7 +36,12 @@
     margin-bottom: 14px;
   }
 
-  .wizard-stepper { position: relative; display: flex; flex-direction: column; gap: 8px; }
+  .wizard-stepper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
 
   .wizard-stepper__track {
     position: absolute;
@@ -62,8 +77,13 @@
     z-index: 1;
     transition: background 150ms ease;
 
-    &:hover { background: var(--ui-color-surface-muted); }
-    &:focus-visible { outline: 2px solid var(--ui-color-primary); outline-offset: 2px; }
+    &:hover {
+      background: var(--ui-color-surface-muted);
+    }
+    &:focus-visible {
+      outline: 2px solid var(--ui-color-primary);
+      outline-offset: 2px;
+    }
   }
 
   .wizard-stepper__item--active {
@@ -82,7 +102,9 @@
     border: 2px solid var(--ui-color-border);
     color: var(--ui-color-text-secondary);
 
-    .pi { font-size: 0.9rem; }
+    .pi {
+      font-size: 0.9rem;
+    }
   }
 
   .wizard-stepper__item--active .wizard-stepper__dot {
@@ -97,13 +119,30 @@
     color: #fff;
   }
 
-  .wizard-stepper__text { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-  .wizard-stepper__step { font-size: 0.65rem; font-weight: 700; color: var(--ui-color-text-secondary); }
-  .wizard-stepper__label { font-size: 0.85rem; font-weight: 600; color: var(--ui-color-text-secondary); }
+  .wizard-stepper__text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .wizard-stepper__step {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--ui-color-text-secondary);
+  }
+  .wizard-stepper__label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ui-color-text-secondary);
+  }
 
   .wizard-stepper__item--active .wizard-stepper__label,
-  .wizard-stepper__item--done .wizard-stepper__label { color: var(--ui-color-text-primary); }
-  .wizard-stepper__item--active .wizard-stepper__label { font-weight: 800; }
+  .wizard-stepper__item--done .wizard-stepper__label {
+    color: var(--ui-color-text-primary);
+  }
+  .wizard-stepper__item--active .wizard-stepper__label {
+    font-weight: 800;
+  }
 
   .wizard-stepper__note {
     margin-top: 18px;
@@ -121,7 +160,10 @@
     font-weight: 800;
     color: var(--ui-color-text-primary);
 
-    .pi { color: var(--ui-color-primary); font-size: 0.8rem; }
+    .pi {
+      color: var(--ui-color-primary);
+      font-size: 0.8rem;
+    }
   }
 
   .wizard-stepper__note-sub {
@@ -131,20 +173,27 @@
     line-height: 1.5;
   }
 
-  /* Content head */
-  .wizard__content-head { display: block; margin-bottom: 18px; }
+  /* Content head — title first (loud, primary), eyebrow "STEP N OF 5" below
+     it in muted text-primary (listing-desktop.jsx's `<h1>` then step-count
+     div, in that order — a prior pass here had them swapped and mis-coloured). */
+  .wizard__content-head {
+    display: block;
+    margin-bottom: 18px;
+  }
+  .wizard__content-title {
+    margin: 0;
+    font-size: 1.625rem;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    color: var(--ui-color-primary);
+  }
   .wizard__content-eyebrow {
-    font-size: 0.72rem;
+    display: block;
+    margin-top: 6px;
+    font-size: 0.75rem;
     font-weight: 800;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--ui-color-primary);
-  }
-  .wizard__content-title {
-    margin: 6px 0 0;
-    font-size: 1.625rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
     color: var(--ui-color-text-primary);
   }
 
@@ -155,39 +204,138 @@
     border-radius: 18px;
     padding: 28px;
   }
-  .wizard-panel__subtitle { margin-top: -8px; }
+  .wizard-panel__subtitle {
+    margin-top: -8px;
+  }
   /* Step 3's subtitle is mobile-only — the desktop design has none. */
-  .wizard-panel__subtitle--mobile { display: none; }
+  .wizard-panel__subtitle--mobile {
+    display: none;
+  }
 
   /* Two-column groups split on desktop */
-  .wizard-2col { grid-template-columns: 1fr 1fr; gap: 22px; }
-  .wizard-delivery-list { grid-template-columns: 1fr 1fr; }
+  .wizard-2col {
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+  }
+  .wizard-delivery-list {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Step 3 map: DLPricing's LocationMap uses height={248} (mobile default is
+     168px, FACreatePricing's height={168}, in the base sheet). */
+  .location-card {
+    --wizard-map-height: 248px;
+  }
 
   /* Step 1 photos: cover beside grid. align-items:start keeps the cover at its
      own 4/3 height instead of stretching to the grid's height (which crushed
      the layout once several large photos were added). */
-  .wizard-photo__main { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; align-items: start; }
-  .wizard-photo__cover { min-height: 0; aspect-ratio: 4 / 3; }
-  .wizard-photo__grid { grid-template-columns: 1fr 1fr; align-content: start; }
-  .wizard-photo__slot--filler { display: block; }
+  .wizard-photo__main {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  .wizard-photo__cover {
+    min-height: 0;
+    aspect-ratio: 4 / 3;
+  }
+  .wizard-photo__grid {
+    grid-template-columns: 1fr 1fr;
+    align-content: start;
+  }
+  .wizard-photo__slot--filler {
+    display: block;
+  }
 
   /* Step 5: preview card left, review right */
-  .wizard-preview-grid { grid-template-columns: 340px 1fr; gap: 22px; }
+  .wizard-preview-grid {
+    grid-template-columns: 340px 1fr;
+    gap: 22px;
+  }
 
-  /* Footer aligns to content, buttons right */
-  .wizard__footer { padding: 14px 32px; }
-  .wizard__footer-inner { max-width: 1080px; }
-  .wizard__footer-hint {
-    display: block;
-    flex: 1;
-    font-size: 0.78rem;
+  /* Nav footer: listing-desktop.jsx renders this INLINE under the step
+     content (`marginTop: 24`), never as a floating/sticky bar — the footer
+     markup lives inside `.wizard__content` (after `.wizard__body`) in the
+     template precisely so this override can turn it back into normal flow.
+     Mobile keeps the sticky bar untouched (base sheet, below 1024px). */
+  .wizard__footer {
+    position: static;
+    border-top: 0;
+    background: transparent;
+    padding: 24px 0 0;
+  }
+  .wizard__footer-inner {
+    max-width: none;
+    margin-inline: 0;
+    justify-content: space-between;
+  }
+
+  /* Both nav buttons stay full pills at ≥1024px — `borderRadius: 999` on
+     every desktop nav button in listing-desktop.jsx. (A prior pass here
+     rounded them to --ui-radius-12, citing a design line that doesn't
+     actually specify that; the pill is the base sheet's own default, so
+     nothing needs overriding for shape — only height/padding/colour do.) */
+  .wizard__btn {
+    height: 48px;
+  }
+  /* Design's exact primary-button shadow (`0 4px 14px -3px rgba(255,96,8,.5)`)
+     — expressed via `color-mix()` against the primary token rather than a
+     literal brand hex, mirroring `.rate-card:focus-within` elsewhere in this
+     component's base sheet. */
+  .wizard__btn--primary {
+    flex: 0 0 auto;
+    padding: 0 24px 0 28px;
+    box-shadow: 0 4px 14px -3px color-mix(in srgb, var(--ui-color-primary) 50%, transparent);
+  }
+  .wizard__btn--full {
+    width: auto;
+  }
+
+  /* Desktop back button sits on white, not the muted mobile fill. */
+  .wizard__btn--back {
+    background: var(--ui-color-surface);
+    padding: 0 24px 0 20px;
+  }
+
+  /* The last-step Submit button stays single-line at `0 30px` — distinct from
+     the two-line Next button's asymmetric padding above (both share
+     `.wizard__btn--primary`, so this must come after it to win the cascade). */
+  .wizard__btn--submit {
+    padding: 0 30px;
+  }
+
+  /* Desktop-only two-line label stack (small caption over the adjacent
+     step's short name) — mobile keeps the single-line "Continue to …"/"Back"
+     labels from the base sheet untouched. */
+  .wizard__btn-mobile-label {
+    display: none;
+  }
+  .wizard__btn-stack {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.1;
+  }
+  .wizard__btn-stack--end {
+    align-items: flex-end;
+  }
+  .wizard__btn-sub {
+    font-size: 0.6875rem;
+    font-weight: 700;
     color: var(--ui-color-text-secondary);
   }
-  /* Desktop: radius-12 rounded-rect (listing-desktop.jsx:293); mobile stays a
-     pill (base sheet). */
-  .wizard__btn { padding: 0 28px; border-radius: var(--ui-radius-12); }
-  .wizard__btn--primary { flex: 0 0 auto; }
-  .wizard__btn--full { width: auto; }
+  .wizard__btn-step {
+    font-size: 0.84375rem;
+    font-weight: 800;
+    color: var(--ui-color-text-primary);
+  }
+  .wizard__btn--primary .wizard__btn-sub {
+    color: rgba(255, 255, 255, 0.8);
+  }
+  .wizard__btn--primary .wizard__btn-step {
+    color: #fff;
+  }
 
   /* Step 1: the design keeps Back in place but faded and inert, rather than
      hiding it — the footer layout stays put between steps. (Mobile still hides

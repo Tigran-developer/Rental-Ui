@@ -39,6 +39,7 @@ export type KnownApiErrorCode =
   | 'booking.listing_not_approved'
   | 'booking.own_listing_forbidden'
   | 'booking.invalid_dates'
+  | 'booking.note_too_long'
   | 'booking.overlap'
   | 'booking.not_found'
   | 'booking.forbidden'

@@ -22,6 +22,15 @@ export interface RatingSummaryView {
 export class RatingSummaryComponent {
   readonly summary = input.required<RatingSummaryView>();
   readonly variant = input<RatingSummaryVariant>('compact');
+  /**
+   * Optional 5-star breakdown, index 0 = 1★ … index 4 = 5★ (matches the
+   * backend's `distribution: int[5]`). Only meaningful for `variant="full"` —
+   * when provided (and `hasAggregate` is true) the full variant renders the
+   * two-column panel with distribution bars instead of the plain stacked
+   * summary. Existing `full` consumers that don't pass this keep the
+   * original stacked layout unchanged.
+   */
+  readonly distribution = input<readonly number[] | null>(null);
 
   // Numbers are only shown once the aggregate threshold is met.
   protected readonly hasRatings = computed(() => this.summary().hasAggregate);
@@ -32,4 +41,23 @@ export class RatingSummaryComponent {
   });
 
   protected readonly roundedRating = computed(() => Math.round(this.summary().average));
+
+  protected readonly showDistribution = computed(
+    () =>
+      this.variant() === 'full' &&
+      this.hasRatings() &&
+      (this.distribution()?.length ?? 0) === 5,
+  );
+
+  protected readonly starsDesc = [5, 4, 3, 2, 1] as const;
+
+  protected distCount(star: number): number {
+    return this.distribution()?.[star - 1] ?? 0;
+  }
+
+  protected distPercent(star: number): number {
+    const total = this.summary().reviewCount;
+    if (total <= 0) return 0;
+    return Math.round((this.distCount(star) / total) * 100);
+  }
 }

@@ -4,7 +4,11 @@ import { By } from '@angular/platform-browser';
 import { TranslateModule } from '@ngx-translate/core';
 import { DatePicker } from 'primeng/datepicker';
 
-import { BookingCalendarComponent } from './booking-calendar.component';
+import {
+  BookingCalendarComponent,
+  expandBookedDateRangesToDisabledDates,
+} from './booking-calendar.component';
+import type { BookedDateRange } from '../../models/listing.model';
 
 /**
  * Host mirroring `listing-booking-page`: it feeds an external controlled range in
@@ -109,5 +113,55 @@ describe('BookingCalendarComponent', () => {
 
     expect(received!.startDate).toBe(start);
     expect(received!.endDate).toBeNull();
+  });
+});
+
+describe('expandBookedDateRangesToDisabledDates', () => {
+  function isoDatesOf(dates: Date[]): string[] {
+    return dates
+      .map((d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`)
+      .sort();
+  }
+
+  it('expands a single-day range (start === end) to exactly that one day', () => {
+    const ranges: BookedDateRange[] = [
+      { startDate: '2026-09-10', endDate: '2026-09-10' },
+    ];
+
+    const result = expandBookedDateRangesToDisabledDates(ranges);
+
+    expect(isoDatesOf(result)).toEqual(['2026-8-10']);
+  });
+
+  it('expands a multi-day range inclusive of both endpoints', () => {
+    const ranges: BookedDateRange[] = [
+      { startDate: '2026-09-10', endDate: '2026-09-12' },
+    ];
+
+    const result = expandBookedDateRangesToDisabledDates(ranges);
+
+    expect(isoDatesOf(result)).toEqual(['2026-8-10', '2026-8-11', '2026-8-12']);
+  });
+
+  it('expands two disjoint ranges into the union of their days, without bridging the gap', () => {
+    const ranges: BookedDateRange[] = [
+      { startDate: '2026-09-10', endDate: '2026-09-11' },
+      { startDate: '2026-09-20', endDate: '2026-09-21' },
+    ];
+
+    const result = expandBookedDateRangesToDisabledDates(ranges);
+
+    expect(isoDatesOf(result)).toEqual([
+      '2026-8-10',
+      '2026-8-11',
+      '2026-8-20',
+      '2026-8-21',
+    ]);
+    // The gap between the two ranges must stay available.
+    expect(isoDatesOf(result)).not.toContain('2026-8-15');
+  });
+
+  it('returns an empty array for no booked ranges', () => {
+    expect(expandBookedDateRangesToDisabledDates([])).toEqual([]);
   });
 });

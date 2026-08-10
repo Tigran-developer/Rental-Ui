@@ -2,35 +2,193 @@
   display: flex;
   flex-direction: column;
   gap: 19px;
+  align-items: stretch;
+  width: 100%;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Desktop mosaic (≥1100px) — 2fr/1fr/1fr × 2 rows for 5+ photos, with
+   graceful degradation for 1–4. Hidden below 1100px; the mobile hero
+   block below takes over there.
+   ══════════════════════════════════════════════════════════════════════ */
+.listing-gallery__mosaic {
+  display: none;
+  position: relative;
+}
+
+@media (min-width: 1100px) {
+  .listing-gallery__mosaic {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-rows: repeat(2, 1fr);
+    gap: 8px;
+    height: 380px;
+  }
+}
+
+.listing-gallery__mtile {
+  position: relative;
+  display: block;
+  padding: 0;
+  margin: 0;
+  border: none;
+  cursor: pointer;
+  overflow: hidden;
+  background: #e3e5ef;
+  width: 100%;
+  height: 100%;
+}
+
+.listing-gallery__mtile:focus-visible {
+  outline: 2px solid var(--ui-color-primary);
+  outline-offset: -2px;
+  z-index: 2;
+}
+
+.listing-gallery__mtile-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 220ms ease;
+}
+
+.listing-gallery__mtile:hover .listing-gallery__mtile-img {
+  transform: scale(1.03);
+}
+
+/* Solo tile (1 image total): uniform rounding — no adjacent tile to visually
+   "continue" a square edge into, so all four corners read as a single card. */
+.listing-gallery__mtile--solo {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+  border-radius: var(--ui-radius-lg);
+}
+
+/* Main tile spans both rows in every multi-tile layout, column 1. */
+.listing-gallery__mtile--main-stack,
+.listing-gallery__mtile--main-wide {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  border-radius: 20px 0 0 20px;
+}
+
+/* 2–4 total images: main tile (col 1) + a stacked right-hand column (col 2). */
+.listing-gallery__mstack {
+  grid-column: 2 / -1;
+  grid-row: 1 / -1;
+  display: grid;
+  gap: 8px;
+}
+
+/* 5+ total images: explicit 3-column × 2-row grid cells. */
+.listing-gallery__mtile--grid-a { grid-column: 2; grid-row: 1; }
+.listing-gallery__mtile--grid-b { grid-column: 2; grid-row: 2; }
+.listing-gallery__mtile--grid-c { grid-column: 3; grid-row: 1; }
+.listing-gallery__mtile--grid-d { grid-column: 3; grid-row: 2; }
+
+.listing-gallery__mtile--corner-top {
+  border-radius: 0 20px 0 0;
+}
+
+.listing-gallery__mtile--corner-bottom {
+  border-radius: 0 0 20px 0;
+}
+
+.listing-gallery__mtile--corner-top.listing-gallery__mtile--corner-bottom {
+  border-radius: 0 20px 20px 0;
+}
+
+/* ── "All N photos" scrim on the last visible tile ──────────────────── */
+.listing-gallery__mtile-scrim {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 17, 21, 0.42);
+  pointer-events: none;
+}
+
+.listing-gallery__mtile-allphotos {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: var(--ui-radius-pill);
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--ui-color-text-primary);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+/* ── Trust badges overlay (top-left of the main tile) ────────────────── */
+.listing-gallery__badges {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.listing-gallery__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--ui-radius-pill);
+  font-size: 0.75rem;
+  font-weight: 700;
+
+  .pi {
+    font-size: 0.6875rem;
+  }
+}
+
+.listing-gallery__badge--success {
+  color: var(--ui-color-success);
+  background: var(--ui-color-success-surface);
+}
+
+.listing-gallery__badge--info {
+  color: var(--ui-color-info);
+  background: var(--ui-color-info-surface);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Mobile / tablet hero (<1100px)
+   ══════════════════════════════════════════════════════════════════════ */
+.listing-gallery__mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 19px;
   align-items: center;
   width: 100%;
+}
+
+@media (min-width: 1100px) {
+  .listing-gallery__mobile {
+    display: none;
+  }
 }
 
 .listing-gallery__hero {
   position: relative;
   width: 100%;
-  /* 785px is the gallery's native design width — it is the numerator of the
-     aspect ratio below, so at this cap the hero renders at exactly the box it
-     was designed for instead of being stretched across the full 1440-grid
-     content column (~1300px at 1440px), where `object-fit: contain` left ~283px
-     of dead band per side. `.listing-gallery` centers it (align-items: center).
-     Below 785px viewports this is inert, so the mobile full-bleed hero is
-     unaffected. */
   max-width: 785px;
   aspect-ratio: 785 / 599;
   max-height: clamp(320px, 56vw, 560px);
   background: #e3e5ef;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.25);
-  /* Also clips the blurred backdrop, whose blur bleeds past the box edges. */
   overflow: hidden;
   border-radius: 4px;
 }
 
-/* ── Blurred backdrop fill ──────────────────────────────────
-   The same photo, cover-fitted and blurred behind the contained foreground
-   image, so the letterbox bands look like an extension of the photo. The
-   product itself is never cropped — the foreground keeps `object-fit: contain`.
-   ─────────────────────────────────────────────────────────── */
 .listing-gallery__hero-backdrop {
   position: absolute;
   inset: 0;
@@ -39,8 +197,6 @@
   height: 100%;
   object-fit: cover;
   object-position: center;
-  /* Blur samples beyond the element box and would otherwise leave translucent
-     corners; scaling up pushes those soft edges outside the clipped hero. */
   transform: scale(1.1);
   filter: blur(24px);
   z-index: 0;
@@ -48,10 +204,6 @@
   user-select: none;
 }
 
-/* Dim layer, between the backdrop (z-index 0) and the foreground photo
-   (z-index 2). It never darkens the product itself — only the bands — and
-   keeps the toy the clear focus. Slightly stronger at the bottom, where the
-   dots and the counter badge sit. */
 .listing-gallery__hero:not(.listing-gallery__hero--empty)::after {
   content: '';
   position: absolute;
@@ -66,10 +218,22 @@
   );
 }
 
+.listing-gallery__hero-tap {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
 .listing-gallery__hero-img {
   display: block;
-  position: relative;
-  z-index: 2;
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -119,16 +283,7 @@
   cursor: pointer;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
   transition: background-color 140ms ease, transform 140ms ease, box-shadow 140ms ease;
-  opacity: 0;
-  pointer-events: none;
-  /* Above the backdrop (0), the dim layer (1) and the hero image (2). */
   z-index: 3;
-}
-
-.listing-gallery__hero:hover .listing-gallery__nav,
-.listing-gallery__hero:focus-within .listing-gallery__nav {
-  opacity: 1;
-  pointer-events: auto;
 }
 
 .listing-gallery__nav:hover {
@@ -140,51 +295,46 @@
 .listing-gallery__nav:focus-visible {
   outline: 2px solid var(--ui-color-primary);
   outline-offset: 2px;
-  opacity: 1;
-  pointer-events: auto;
 }
 
 .listing-gallery__nav--prev {
-  left: 18px;
+  left: 10px;
 }
 
 .listing-gallery__nav--next {
-  right: 18px;
+  right: 10px;
 }
 
 .listing-gallery__nav .pi {
   font-size: 14px;
 }
 
-/* ── Dots: overlaid at bottom-center of image ───────────────
-   The dot group doubles as its own capsule track. The dots sit at z-index 3,
-   ON TOP of the foreground photo (z-index 2) — so the dim layer at z-index 1
-   is behind the photo and does nothing for them, and the active white dot was
-   measuring 2.2:1 against bright photos (WCAG 1.4.11 non-text contrast needs
-   3:1). A scrim over the photo was rejected: it would dim the product itself.
-   Instead this compact pill carries its own dark background, so the dots have
-   a KNOWN backdrop no matter what the photo does.
+/* ── Counter chip: bottom-right ─────────────────────────── */
+.listing-gallery__counter {
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  z-index: 3;
+  background: rgba(20, 18, 16, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 99px;
+  letter-spacing: 0.01em;
+}
 
-   Contrast, worst case (a pure-white photo behind the capsule — the darkest
-   the composite can never get, i.e. the lightest possible track):
-     track = 0.55 x rgb(20,18,16) + 0.45 x rgb(255,255,255) = rgb(126,125,124)
-     relative luminance 0.2044 -> white dot (L 1.0) measures 4.13:1. PASS.
-   Over any darker photo the track only gets darker and the ratio only rises
-   (~18:1 against black), so 4.13:1 is the floor, not a typical reading.
-
-   The capsule is styled onto the tablist element itself rather than an extra
-   wrapper, so the role="tablist" / role="tab" structure stays intact.
-   ─────────────────────────────────────────────────────────── */
+/* ── Dots: overlaid at bottom-left of image ─────────────── */
 .listing-gallery__dots {
   position: absolute;
   bottom: 14px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 14px;
   display: flex;
   align-items: center;
   gap: 6px;
   z-index: 3;
-  /* Tight enough to read as a pill hugging the dots, not a bar across the hero. */
   padding: 5px 8px;
   border-radius: 99px;
   background: rgba(20, 18, 16, 0.55);
@@ -193,8 +343,8 @@
 }
 
 .listing-gallery__dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 99px;
   border: none;
   background: rgba(255, 255, 255, 0.55);
@@ -208,11 +358,8 @@
 }
 
 .listing-gallery__dot--active {
-  width: 20px;
-  /* Solid white, not 0.95 — the ratio above is computed for pure white. */
+  width: 18px;
   background: #fff;
-  /* Firms the active pill against the track without a hard ring, which would
-     visually shrink a 7px-tall dot. */
   box-shadow: 0 1px 3px rgba(20, 18, 16, 0.55);
 }
 
@@ -221,29 +368,11 @@
   outline-offset: 3px;
 }
 
-/* ── Counter badge: overlaid at bottom-right ────────────── */
-.listing-gallery__counter {
-  position: absolute;
-  bottom: 12px;
-  right: 14px;
-  background: rgba(16, 18, 30, 0.52);
-  color: #fff;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 99px;
-  pointer-events: none;
-  letter-spacing: 0.01em;
-  z-index: 3;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-
-/* ── Desktop thumbnails (below image) ───────────────────── */
+/* ── Thumbnails (below hero) ─────────────────────────────── */
 .listing-gallery__thumbs {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   justify-content: center;
   margin-top: 6px;
 }
@@ -252,7 +381,7 @@
   flex: 0 0 auto;
   padding: 0;
   border: 2px solid transparent;
-  border-radius: 10px;
+  border-radius: 11px;
   overflow: hidden;
   background: transparent;
   cursor: pointer;
@@ -275,22 +404,18 @@
 
 .listing-gallery__thumb-img {
   display: block;
-  width: 88px;
-  height: 60px;
+  width: 54px;
+  height: 54px;
   object-fit: cover;
 }
 
-/* ── Mobile ──────────────────────────────────────────────── */
 @media (max-width: 700px) {
-  .listing-gallery {
+  .listing-gallery__mobile {
     gap: 0;
   }
 
   .listing-gallery__hero {
     border-radius: 0;
-    /* Keep a defined aspect ratio so `object-fit: contain` has a real box
-       to fit against; without it the image renders at its natural height and
-       gets clipped to a top band on mobile. */
     aspect-ratio: 4 / 3;
     max-height: 80vh;
   }
@@ -298,20 +423,126 @@
   .listing-gallery__nav {
     width: 30px;
     height: 30px;
-    opacity: 1;
-    pointer-events: auto;
     background: rgba(255, 255, 255, 0.85);
   }
+}
 
-  .listing-gallery__nav--prev {
-    left: 10px;
+/* ══════════════════════════════════════════════════════════════════════
+   Lightbox
+   ══════════════════════════════════════════════════════════════════════ */
+/* `styleClass` lands on the `.p-dialog` root itself (not a wrapper), so this
+   must be a compound selector, not a descendant one. `maskStyleClass`
+   (see the template) similarly lands on the mask element itself. */
+::ng-deep .p-dialog.listing-gallery__lightbox-dialog {
+  background: transparent;
+  box-shadow: none;
+  max-width: 96vw;
+  max-height: 96vh;
+}
+
+::ng-deep .p-dialog.listing-gallery__lightbox-dialog .p-dialog-content {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* The header only exists to give PrimeNG a real element to point
+   `aria-labelledby` at (see the HTML comment) — visually it's just the
+   counter text, top-left, blended into the dark chrome. */
+::ng-deep .p-dialog.listing-gallery__lightbox-dialog .p-dialog-header {
+  background: transparent;
+  padding: 0;
+  margin: 0 0 10px;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+::ng-deep .p-dialog-mask.listing-gallery__lightbox-mask {
+  background: rgba(10, 10, 14, 0.92);
+}
+
+.listing-gallery__lightbox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 92vw;
+  max-width: 1100px;
+  height: 86vh;
+}
+
+.listing-gallery__lightbox-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.listing-gallery__lightbox-close {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.94);
+  color: #111217;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.listing-gallery__lightbox-close:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.listing-gallery__lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.94);
+  color: #111217;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.listing-gallery__lightbox-nav:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.listing-gallery__lightbox-nav--prev {
+  left: -10px;
+}
+
+.listing-gallery__lightbox-nav--next {
+  right: -10px;
+}
+
+@media (max-width: 700px) {
+  .listing-gallery__lightbox-close {
+    top: 8px;
+    right: 8px;
   }
 
-  .listing-gallery__nav--next {
-    right: 10px;
+  .listing-gallery__lightbox-nav--prev {
+    left: 4px;
   }
 
-  .listing-gallery__thumbs {
-    display: none;
+  .listing-gallery__lightbox-nav--next {
+    right: 4px;
   }
 }

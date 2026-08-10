@@ -114,6 +114,110 @@ export function e2eMapPin(overrides: Record<string, unknown> = {}) {
   };
 }
 
+/**
+ * `count` `ListingImage`-shaped entries for gallery mosaic/lightbox tests.
+ * URLs are relative and deliberately unresolvable (404 against the dev
+ * server) — the gallery only needs a real `<img src>` string, never a real
+ * network fetch, and a fast local 404 keeps the suite from depending on any
+ * external host.
+ */
+export function e2eListingImages(
+  count: number,
+): { id: string; url: string; isPrimary: boolean; sortOrder: number }[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `img-e2e-${i + 1}`,
+    url: `/e2e-fixtures/toy-${i + 1}.png`,
+    isPrimary: i === 0,
+    sortOrder: i,
+  }));
+}
+
+/** POST /api/bookings success response (`CreateBookingResponse` wire shape). */
+export function e2eCreateBookingResponse(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'booking-e2e-1',
+    listingId: 'listing-e2e-1',
+    status: 'Pending',
+    startDate: '2026-09-10',
+    endDate: '2026-09-12',
+    totalPrice: 15,
+    createdAt: '2026-08-01T10:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/** One `GET /api/bookings/mine` item (`MyBooking` wire shape). */
+export function e2eMyBooking(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'booking-e2e-1',
+    listingId: 'listing-e2e-1',
+    listingTitle: 'E2E Wooden Train Set',
+    listingPrimaryImageUrl: null,
+    ownerFirstName: 'Olive',
+    ownerLastName: 'Owner',
+    startDate: '2026-09-10',
+    endDate: '2026-09-12',
+    totalPrice: 15,
+    status: 'Pending',
+    createdAt: '2026-08-01T10:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/** POST /api/chat/conversations/from-booking/:id response (`ChatConversationDetails`). */
+export function e2eChatConversation(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'chat-e2e-1',
+    bookingId: 'booking-e2e-1',
+    counterpartId: 'owner-e2e-1',
+    counterpartName: 'Olive Owner',
+    counterpartAvatarUrl: null,
+    counterpartVerified: false,
+    toyTitle: 'E2E Wooden Train Set',
+    toyImageUrl: null,
+    status: 'requested',
+    bookingDates: '2026-09-10 – 2026-09-12',
+    bookingPrice: 15,
+    isClosed: false,
+    messages: [],
+    ...overrides,
+  };
+}
+
+/**
+ * `GET /api/reviews/listing/:id` (`ToyReviewSummary` wire shape). Defaults to
+ * the below-aggregate-threshold shape the backend actually sends for a listing
+ * with fewer than `MinReviewsForAggregate` (2) reviews: `hasAggregate: false`
+ * with `0.0` averages, but a real (non-empty) `comments` array — this is the
+ * exact fabricated-data trap the details-page redesign had to avoid (never
+ * render the 0.0 as a real rating).
+ */
+export function e2eToyReviewSummary(overrides: Record<string, unknown> = {}) {
+  return {
+    reviewCount: 1,
+    hasAggregate: false,
+    overallAverage: 0,
+    conditionAverage: 0,
+    cleanlinessAverage: 0,
+    valueForMoneyAverage: 0,
+    funPlayValueAverage: 0,
+    descriptionAccuracyAverage: 0,
+    distribution: [0, 0, 0, 0, 0],
+    comments: [
+      {
+        id: 'review-e2e-1',
+        reviewerFirstName: 'Renata',
+        reviewerLastName: 'Renter',
+        reviewerAvatarUrl: null,
+        comment: 'Kids loved it, arrived clean.',
+        rentedDays: 3,
+        createdAt: '2026-07-20T10:00:00.000Z',
+      },
+    ],
+    ...overrides,
+  };
+}
+
 export function e2ePendingListing(overrides: Record<string, unknown> = {}) {
   return {
     id: 'pending-e2e-1',

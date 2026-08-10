@@ -27,6 +27,8 @@ export interface ChatState {
   sendingMessageError: string | null;
   pendingImage: PendingChatImage | null;
   sendingImageError: string | null;
+  /** In flight for `openConversationFromBooking` (the "Message {owner}" CTA). */
+  openingConversationFromBooking: boolean;
 }
 
 export const initialChatState: ChatState = {
@@ -40,4 +42,5 @@ export const initialChatState: ChatState = {
   sendingMessageError: null,
   pendingImage: null,
   sendingImageError: null,
+  openingConversationFromBooking: false,
 };

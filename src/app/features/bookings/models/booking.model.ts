@@ -18,6 +18,9 @@ export interface CreateBookingRequest {
   listingId: string;
   startDate: string;
   endDate: string;
+  // Optional free-text note to the owner (server trims; whitespace-only is treated as
+  // absent; >280 chars after trimming is rejected with `booking.note_too_long`).
+  note?: string | null;
 }
 
 export interface CreateBookingResponse {
@@ -71,6 +74,9 @@ export interface BookingDetail {
   completedAt: string | null;
   expiresAt: string | null;
   rejectionReason: string | null;
+  // Renter's free-text note to the owner, visible to both parties from Pending onward
+  // (not gated by status). Null when none was provided.
+  note: string | null;
   counterpartyId: string;
   counterpartyFirstName: string;
   counterpartyLastName: string;
@@ -92,4 +98,6 @@ export interface BookingRequest {
   totalPrice: number;
   status: BookingStatus;
   createdAt: string | null;
+  // Renter's free-text note to the owner. Null when none was provided.
+  note: string | null;
 }

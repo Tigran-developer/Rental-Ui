@@ -16,6 +16,8 @@ import {
 } from '../public-profiles/store/public-profiles.reducer';
 import { ReviewsEffects } from '../reviews/store/reviews.effects';
 import { reviewsFeatureKey, reviewsReducer } from '../reviews/store/reviews.reducer';
+import { ChatEffects } from '../chat/store/chat.effects';
+import { chatFeatureKey, chatReducer } from '../chat/store/chat.reducer';
 
 export const listingsRoutes: Routes = [
   {
@@ -31,6 +33,12 @@ export const listingsRoutes: Routes = [
       provideEffects(PublicProfilesEffects),
       provideState(reviewsFeatureKey, reviewsReducer),
       provideEffects(ReviewsEffects),
+      // The booking confirmation screen (`:id/book`) dispatches
+      // `openConversationFromBooking` for its "Message {owner}" CTA — the chat
+      // store is registered lazily per consuming route (like bookings/favorites/
+      // reviews above), never app-wide, so it must be provided here too.
+      provideState(chatFeatureKey, chatReducer),
+      provideEffects(ChatEffects),
     ],
     children: [
       {
