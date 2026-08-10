@@ -1164,6 +1164,7 @@
             [class.wizard__btn--hidden]="currentStep() === 1"
             (click)="goToPrevStep()"
             [disabled]="isSubmitting || currentStep() === 1"
+            [attr.aria-label]="'listings.createPage.wizard.back' | translate"
           >
             <i class="pi pi-chevron-left" aria-hidden="true"></i>
             <span class="wizard__btn-mobile-label">{{
@@ -1185,6 +1186,7 @@
               class="wizard__btn wizard__btn--primary"
               [class.wizard__btn--full]="currentStep() === 1"
               (click)="goToNextStep()"
+              [attr.aria-label]="getContinueLabelKey() | translate"
             >
               <span class="wizard__btn-mobile-label">{{ getContinueLabelKey() | translate }}</span>
               <span class="wizard__btn-stack wizard__btn-stack--end">
