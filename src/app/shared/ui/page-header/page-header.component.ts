@@ -16,6 +16,7 @@ export type PageHeaderMobileTitleAlign = 'center' | 'start';
   host: {
     '[class.ph-back-host]': '!!backLink()',
     '[class.ph--hide-on-desktop]': 'hideOnDesktop()',
+    '[class.ph--hide-title-desktop-host]': 'hideTitleOnDesktop()',
   },
 })
 export class PageHeaderComponent {
