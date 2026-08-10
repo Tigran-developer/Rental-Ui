@@ -573,11 +573,22 @@
 /* ── Specs quad: best age / condition / deposit / handover ──────────── */
 .detail-page__specquad {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* 2-up by default (also covers ≤1099px, unchanged/verified clean). 4-up
+     (the design's intended look) only kicks in at ≥1300px: a strict
+     `repeat(4, 1fr)` starting at 1100px squeezed the cells too narrow for
+     the longer hy/ru labels — measured overflow at 1100-1280px in hy/ru/en.
+     The ru label overflowed even at 1920px in a 4-up grid ("Рекомендуемый
+     возраст", scrollWidth 104 vs clientWidth 98), which the breakpoint
+     alone can't fix — see `.detail-page__specquad-label`'s `overflow-wrap`
+     below for that half of the fix. */
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--ui-space-12);
 
+  @media (min-width: 1300px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
   @media (max-width: 1099px) {
-    grid-template-columns: repeat(2, 1fr);
     gap: var(--ui-space-8);
   }
 }
@@ -631,6 +642,15 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--ui-color-text-secondary);
+  /* Had no wrap handling at all. hy/ru labels are single long words or
+     compound phrases ("Առաջարկվող տարիք", "Рекомендуемый возраст") whose
+     min-content width (the width of the longest unbreakable word) exceeds
+     the cell at 1100-1300px and even at 1920px for ru — without
+     `overflow-wrap`, a flex-column item's default sizing can't shrink below
+     that word width, so the label spilled out of its card. Same fix already
+     applied to `.detail-page__specquad-value` above for the same reason. */
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .detail-page__specquad-value {
@@ -683,30 +703,14 @@
   flex-direction: column;
   gap: 10px;
 
-  /* ≥1100px only: `.detail-page__pickup-grid`'s row stretches this column to
-     match the taller sibling (the map column, which also carries a place
-     label above the map and a locate-button/privacy-note tail below it —
-     grid's default `align-items: stretch`, no override needed). Rows keep
-     their own natural content height (`flex-shrink: 0` below) —
-     `justify-content: space-between` puts the leftover height into the GAPS
-     between rows instead of stretching each row's card taller than its
-     content, so 2 rows read as two normal-sized cards pinned to the top and
-     bottom of the column instead of two oversized ones with content
-     floating in the middle. The 10px `gap` above still acts as a floor
-     between rows even when `space-between` has room to spare (per the
-     flexbox spec, explicit `gap` is a minimum that `space-between`
-     distributes additional space around).
-
-     This aligns the column to the grid row (map + its own tail), not
-     pixel-exact to the map's own box specifically — true map-exact
-     alignment would need the map to be its own grid item (a template
-     restructure of `app-listing-location`'s usage here), which is out of
-     scope for this pass; flagged in the audit report as a follow-up
-     option. */
-  @media (min-width: 1100px) {
-    height: 100%;
-    justify-content: space-between;
-  }
+  /* Intentionally does NOT stretch to match the map column's height (grid's
+     default `align-items: stretch` would otherwise apply). A prior version
+     used `height: 100%` + `justify-content: space-between` to pin rows to
+     the top/bottom of the stretched column — with 3 rows against a ~581px
+     map, that pushed the measured gap between rows to ~195px instead of the
+     intended 10px. Rows just stack from the top of the column at their
+     natural height; the 10px `gap` above is the real, final gap. Do not
+     re-add `height: 100%` / `space-between` here. */
 }
 
 .detail-page__pickup-row {
@@ -1034,6 +1038,18 @@
 /* ── Desktop sidebar ──────────────────────────────────── */
 .detail-page__sidebar {
   min-width: 0;
+
+  /* `.detail-page__body` sets `align-items: start` at ≥1100px so the main
+     column's own content controls its height. That default also shrinks
+     THIS grid item to the height of its sticky child, which leaves
+     `position: sticky` zero travel room in its containing block — the CTA
+     card would just scroll away with the page instead of pinning. Stretch
+     only this item back to the full grid-row height (matching the main
+     column) so sticky has somewhere to travel; `align-items: start` on the
+     grid itself is left alone so it keeps governing everything else. */
+  @media (min-width: 1100px) {
+    align-self: stretch;
+  }
 }
 
 .detail-page__sidebar-sticky {
