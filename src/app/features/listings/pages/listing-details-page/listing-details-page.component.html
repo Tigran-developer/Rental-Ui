@@ -279,20 +279,17 @@
                 <h2 id="detail-pickup-heading" class="detail-page__section-title">
                   {{ 'listings.details.pickupDelivery.heading' | translate }}
                 </h2>
-                <div class="detail-page__pickup-grid">
-                  <div class="detail-page__pickup-map">
-                    <app-listing-location
-                      [listingId]="listing.id"
-                      [city]="listing.city"
-                      [district]="listing.district ?? null"
-                      [latitude]="listing.latitude ?? null"
-                      [longitude]="listing.longitude ?? null"
-                      [title]="listing.title"
-                      [imageUrl]="listingHeroImageUrl()"
-                    />
-                  </div>
+                <app-listing-location
+                  [listingId]="listing.id"
+                  [city]="listing.city"
+                  [district]="listing.district ?? null"
+                  [latitude]="listing.latitude ?? null"
+                  [longitude]="listing.longitude ?? null"
+                  [title]="listing.title"
+                  [imageUrl]="listingHeroImageUrl()"
+                >
                   @if (pickupDeliveryRows().length > 0) {
-                    <div class="detail-page__pickup-rows">
+                    <div sidePanel class="detail-page__pickup-rows">
                       @for (row of pickupDeliveryRows(); track row.id) {
                         <div class="detail-page__pickup-row">
                           <span class="detail-page__pickup-row-icon">
@@ -310,7 +307,7 @@
                       }
                     </div>
                   }
-                </div>
+                </app-listing-location>
               </section>
 
               <div class="detail-page__divider" aria-hidden="true"></div>

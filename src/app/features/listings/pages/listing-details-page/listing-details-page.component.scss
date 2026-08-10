@@ -688,29 +688,30 @@
 }
 
 /* ── Getting it / Pickup & delivery ──────────────────────────────────── */
-.detail-page__pickup-grid {
-  display: grid;
-  grid-template-columns: 1.3fr 1fr;
-  gap: var(--ui-space-16);
-
-  @media (max-width: 1099px) {
-    grid-template-columns: 1fr;
-  }
-}
-
+/* The 2-column layout (map beside rows) used to live here, in
+   `.detail-page__pickup-grid` wrapping a `.detail-page__pickup-map` column
+   and this `.detail-page__pickup-rows` column — that made BOTH columns as
+   tall as the taller one, so the rows aligned to `app-listing-location`'s
+   FULL height (label + map + button + note) rather than to the map card
+   alone, leaving a large void beside the rows. The grid now lives inside
+   `app-listing-location` itself (`listing-location.component.scss`), fed via
+   its `[sidePanel]` content-projection slot — only the map card sets the row
+   height the rows share, and the label/button/note stay above/below both
+   columns. This wrapper is just the rows list now, no grid of its own. */
 .detail-page__pickup-rows {
   display: flex;
   flex-direction: column;
   gap: 10px;
 
-  /* Intentionally does NOT stretch to match the map column's height (grid's
-     default `align-items: stretch` would otherwise apply). A prior version
-     used `height: 100%` + `justify-content: space-between` to pin rows to
-     the top/bottom of the stretched column — with 3 rows against a ~581px
-     map, that pushed the measured gap between rows to ~195px instead of the
-     intended 10px. Rows just stack from the top of the column at their
-     natural height; the 10px `gap` above is the real, final gap. Do not
-     re-add `height: 100%` / `space-between` here. */
+  /* Intentionally does NOT stretch to match the map card's height (grid's
+     default `align-items: stretch` would otherwise apply, now inside
+     `app-listing-location`'s own grid). A prior version used `height: 100%`
+     + `justify-content: space-between` to pin rows to the top/bottom of the
+     stretched column — with 3 rows against a ~581px map, that pushed the
+     measured gap between rows to ~195px instead of the intended 10px. Rows
+     just stack from the top at their natural height; the 10px `gap` above is
+     the real, final gap. Do not re-add `height: 100%` / `space-between`
+     here. */
 }
 
 .detail-page__pickup-row {

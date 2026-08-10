@@ -6,6 +6,45 @@
   display: flex;
   flex-direction: column;
   gap: var(--ui-space-14);
+
+  /* ≥1100px: the details page's own `.detail-page__pickup-grid` used to be
+     the 2-column grid (this component filling the left `1.3fr` column, the
+     page's own pickup rows filling the right `1fr` one) — that made BOTH
+     columns as tall as the taller one, so the rows aligned to this
+     component's full height (label + map + button + note, ~440px) instead
+     of to the map card alone (~260px), leaving a large void beside the
+     rows. The page now projects those rows into `[sidePanel]` here instead,
+     and this component owns the 2-column grid itself so only the map card
+     (not the label/button/note chrome around it) sets the row it shares
+     with the rows: `place` spans full width above, `map`/`rows` share one
+     row so the projected content lines up with the map card's own height,
+     and `below` (the locate button / geo-denied block / privacy note, see
+     `.listing-location__below`) spans full width beneath both columns —
+     matching the internal DOM order (label → map → button → note), which is
+     untouched. A named-area cell with no element in it (e.g. `map` when the
+     listing has no coordinates) just collapses to zero height, so this
+     degrades safely for every state, not only the "map renders" one.
+     Below 1100px this stays the plain flex column above, so the projected
+     rows fall in their natural DOM position — last, i.e. after the map
+     block — same as the page's own grid used to stack them today. */
+  @media (min-width: 1100px) {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    grid-template-areas:
+      'place place'
+      'map   rows'
+      'below below';
+    column-gap: var(--ui-space-16);
+    row-gap: var(--ui-space-14);
+    /* Grid's default `align-items: stretch` would otherwise inflate the map
+       card up to the ROWS column's height whenever 4 rows run taller than
+       the map (~262px) — literally the same bug this whole change fixes,
+       just relocated from "two full columns" to "one grid row". `start`
+       keeps the map at its own natural height in every case; when the rows
+       column is shorter (2-3 rows), it simply leaves the accepted leftover
+       gap beside the map instead of stretching to fill it. */
+    align-items: start;
+  }
 }
 
 .listing-location__place {
@@ -20,6 +59,46 @@
   i {
     font-size: 0.875rem;
     color: var(--ui-color-primary);
+  }
+
+  @media (min-width: 1100px) {
+    grid-area: place;
+  }
+}
+
+/* ── Below-the-map group (locate button / geo states / privacy note) ─────
+   A single grid item at ≥1100px so its contents keep stacking vertically at
+   their natural height inside the shared `below` area, instead of each
+   sharing that area individually (which would overlap them — a grid area is
+   one cell, not an implicit vertical stack). */
+.listing-location__below {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-14);
+
+  @media (min-width: 1100px) {
+    grid-area: below;
+  }
+}
+
+/* The disabled locate button in the `mapFailed` branch is a direct child
+   here (not wrapped in `.listing-location__below` — it's the only "below"
+   content in that branch), so it needs the same area assignment directly.
+   Harmless no-op for the OTHER `.listing-location__locate-btn` instance
+   nested inside `.listing-location__below` — `grid-area` only affects an
+   element that is itself a direct grid item. */
+.listing-location__locate-btn {
+  @media (min-width: 1100px) {
+    grid-area: below;
+  }
+}
+
+/* ── Projected pickup & delivery rows (details page's `[sidePanel]`) ───── */
+.listing-location__side-panel {
+  min-width: 0;
+
+  @media (min-width: 1100px) {
+    grid-area: rows;
   }
 }
 
@@ -46,6 +125,10 @@
   border-radius: var(--ui-radius-card);
   overflow: hidden;
   box-shadow: var(--ui-shadow-card);
+
+  @media (min-width: 1100px) {
+    grid-area: map;
+  }
 }
 
 /* ── Approximate-area pill (design decision #3: a warm, informative pill —
@@ -275,6 +358,10 @@
     var(--ui-color-surface) 24px
   );
   text-align: center;
+
+  @media (min-width: 1100px) {
+    grid-area: map;
+  }
 }
 
 .listing-location__fallback-icon {
