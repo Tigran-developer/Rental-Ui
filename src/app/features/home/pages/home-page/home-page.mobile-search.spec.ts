@@ -13,11 +13,44 @@ import {
 } from '../../../listings/store/listings.selectors';
 import { MyListingsApiService } from '../../../my-listings/services/my-listings-api.service';
 import {
+  selectHomeNearby,
   selectHomeSections,
   selectHomeSectionsError,
   selectHomeSectionsLoading,
 } from '../../store/home.selectors';
+import { initialHomeNearbyState } from '../../store/home.state';
 import { HomePageComponent } from './home-page.component';
+
+/**
+ * The hero now also mounts `app-home-hero-map` -> `app-map`, which is the
+ * only file allowed to import `leaflet` (see `map.component.ts`'s class doc
+ * comment). This spec's own assertions are all about the mobile search bar,
+ * not the map, so a minimal synchronous stub — same pattern
+ * `radius-origin-filter.component.spec.ts` uses — is enough to keep
+ * `ngAfterViewInit`'s dynamic `import('leaflet')` from reaching the real
+ * package (real tile requests, real DOM measurement) during these tests.
+ */
+vi.mock('leaflet', () => ({
+  map: vi.fn(() => ({
+    setView: vi.fn(),
+    on: vi.fn(),
+    getCenter: vi.fn(() => ({ lat: 40.1776, lng: 44.5126 })),
+    getZoom: vi.fn(() => 14),
+    getBounds: vi.fn(() => ({
+      getNorth: () => 40.2,
+      getSouth: () => 40.1,
+      getEast: () => 44.6,
+      getWest: () => 44.5,
+    })),
+    invalidateSize: vi.fn(),
+    removeLayer: vi.fn(),
+    remove: vi.fn(),
+  })),
+  tileLayer: vi.fn(() => ({ addTo: vi.fn(), on: vi.fn() })),
+  marker: vi.fn(() => ({ addTo: vi.fn(), getElement: vi.fn(() => null) })),
+  circle: vi.fn(() => ({ addTo: vi.fn(), on: vi.fn() })),
+  divIcon: vi.fn((options: unknown) => options),
+}));
 
 function createFixture() {
   TestBed.configureTestingModule({
@@ -33,6 +66,7 @@ function createFixture() {
           { selector: selectHomeSectionsLoading, value: false },
           { selector: selectHomeSectionsError, value: null },
           { selector: selectFavoriteIds, value: new Set<string>() },
+          { selector: selectHomeNearby, value: initialHomeNearbyState },
         ],
       }),
       { provide: MyListingsApiService, useValue: { getMyListings: () => of([]) } },
@@ -68,9 +102,7 @@ describe('HomePageComponent mobile revealed search', () => {
     TestBed.inject(HeaderSearchVisibilityService).setHidden(true);
     fixture.detectChanges();
 
-    const bar = (fixture.nativeElement as HTMLElement).querySelector(
-      '.home__mobile-search',
-    )!;
+    const bar = (fixture.nativeElement as HTMLElement).querySelector('.home__mobile-search')!;
 
     expect(bar.classList.contains('home__mobile-search--revealed')).toBe(false);
     expect(bar.hasAttribute('inert')).toBe(true);
@@ -86,9 +118,7 @@ describe('HomePageComponent mobile revealed search', () => {
     visibility.setHidden(false);
     fixture.detectChanges();
 
-    const bar = (fixture.nativeElement as HTMLElement).querySelector(
-      '.home__mobile-search',
-    )!;
+    const bar = (fixture.nativeElement as HTMLElement).querySelector('.home__mobile-search')!;
 
     expect(bar.classList.contains('home__mobile-search--revealed')).toBe(true);
     expect(bar.hasAttribute('inert')).toBe(false);

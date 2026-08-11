@@ -417,6 +417,52 @@
    `DorentSymbolComponent`'s hover-driven `animating` signal). */
 @include dr-symbol-motion.dr-symbol-motion('.app-map__pin.is-animating');
 
+/* ── `'twinkle'` marker variant (`markerVariant`, additive) ───────────────
+   Small, purely decorative dot — see map.component.ts's `markerVariant` doc
+   comment: never a tab stop, never a click target, unlike `.app-map__pin`
+   above. Plain global selector for the same reason every other Leaflet-
+   marker-pane rule in this file is (see the class doc comment's
+   `::ng-deep` history) — a template-rendered element inside a `divIcon`'s
+   raw HTML is never part of Angular's template. */
+.app-map__twinkle-wrap {
+  pointer-events: none;
+}
+
+.app-map__twinkle {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ui-color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 20%, transparent);
+  /* Static dot by default — the twinkle animation below only plays under
+     `prefers-reduced-motion: no-preference`, mirroring `.app-map__user-dot`'s
+     own halo pulse above (DESIGN_RULES.md §17: "motion that cannot be
+     disabled"). */
+  opacity: 0.85;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .app-map__twinkle {
+    /* `animation-delay` is set per-marker as an inline style by
+       `map.component.ts`'s `markerGroupHtml()` (`index * 0.32s`) — this rule
+       only supplies the shared duration/easing/keyframes every dot uses. */
+    animation: app-map-twinkle 2.6s ease-in-out infinite;
+  }
+}
+
+@keyframes app-map-twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
 /* ── `[app-map-overlay]` projection slot ──────────────────────────────────
    Where a caller renders its OWN popup UI (routerLink/translate/image/card
    stack — see map.component.ts's class doc comment for why `L.popup` isn't

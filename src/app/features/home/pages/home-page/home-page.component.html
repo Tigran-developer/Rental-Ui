@@ -54,38 +54,70 @@
 
     <!-- Hero -->
     <section class="home__hero">
-      <div class="home__hero-content">
-        <div class="home__hero-text">
-          <h1 class="home__hero-title">{{ 'home.hero.title' | translate }}</h1>
-          <p class="home__hero-subtitle">{{ 'home.hero.subtitle' | translate }}</p>
-        </div>
-        <form
-          #heroSearch
-          class="home__hero-search"
-          [formGroup]="searchForm"
-          (ngSubmit)="onSearchSubmit()"
-          [attr.aria-label]="'home.search.ariaLabel' | translate"
-        >
-          <i class="pi pi-search home__hero-search-icon" aria-hidden="true"></i>
-          <input
-            type="text"
-            class="home__hero-search-input"
-            formControlName="query"
-            [placeholder]="'home.search.placeholder' | translate"
+      <!-- Desktop: two columns, `.home__hero-content` (title/subtitle/search,
+           `flex: 1`) + `.home__hero-map` (fixed-width map panel). Below the
+           desktop breakpoint this row switches to `flex-direction: column`
+           (see home-page.component.scss), which stacks the SAME two elements
+           in the SAME source order — the map ends up directly under the
+           search bar with no extra markup needed for the mobile layout. -->
+      <div class="home__hero-row">
+        <div class="home__hero-content">
+          <div class="home__hero-text">
+            <h1 class="home__hero-title">{{ 'home.hero.title' | translate }}</h1>
+            <p class="home__hero-subtitle">{{ 'home.hero.subtitle' | translate }}</p>
+          </div>
+          <form
+            #heroSearch
+            class="home__hero-search"
+            [formGroup]="searchForm"
+            (ngSubmit)="onSearchSubmit()"
             [attr.aria-label]="'home.search.ariaLabel' | translate"
-          />
-          <button
-            type="submit"
-            class="home__hero-search-filter"
-            [attr.aria-label]="'home.search.filterAria' | translate"
           >
-            <i class="pi pi-chevron-right" aria-hidden="true"></i>
-          </button>
-        </form>
+            <i class="pi pi-search home__hero-search-icon" aria-hidden="true"></i>
+            <input
+              type="text"
+              class="home__hero-search-input"
+              formControlName="query"
+              [placeholder]="'home.search.placeholder' | translate"
+              [attr.aria-label]="'home.search.ariaLabel' | translate"
+            />
+            <button
+              type="submit"
+              class="home__hero-search-filter"
+              [attr.aria-label]="'home.search.filterAria' | translate"
+            >
+              <i class="pi pi-chevron-right" aria-hidden="true"></i>
+            </button>
+          </form>
+        </div>
+
+        <div class="home__hero-map">
+          <app-home-hero-map
+            [center]="vm.heroMap.center"
+            [userPin]="vm.heroMap.userPin"
+            [userAccuracyMeters]="vm.heroMap.userAccuracyMeters"
+            [radiusMeters]="vm.heroMap.radiusMeters"
+            [markers]="vm.heroMap.markers"
+            [nearbyCount]="vm.heroMap.nearbyCount"
+            [locating]="vm.heroMap.locating"
+            (requestMyArea)="onRequestMyArea()"
+          />
+        </div>
       </div>
     </section>
 
     <div class="home__container">
+      <!-- Trust strip -->
+      <div class="home__trust-strip">
+        <div class="home__trust-icon-wrap" aria-hidden="true">
+          <i class="pi pi-shield" aria-hidden="true"></i>
+        </div>
+        <div class="home__trust-content">
+          <strong class="home__trust-title">{{ 'home.trustStrip.title' | translate }}</strong>
+          <span class="home__trust-text">{{ 'home.trustStrip.text' | translate }}</span>
+        </div>
+      </div>
+
       <!-- Categories section -->
       <section class="home__section" aria-labelledby="home-categories-heading">
         <app-ui-section-header
@@ -198,17 +230,6 @@
           }
         }
       }
-
-      <!-- Trust strip -->
-      <div class="home__trust-strip">
-        <div class="home__trust-icon-wrap" aria-hidden="true">
-          <i class="pi pi-shield" aria-hidden="true"></i>
-        </div>
-        <div class="home__trust-content">
-          <strong class="home__trust-title">{{ 'home.trustStrip.title' | translate }}</strong>
-          <span class="home__trust-text">{{ 'home.trustStrip.text' | translate }}</span>
-        </div>
-      </div>
 
       <!-- Process section (Renting / Lending toggle + steps) -->
       <section class="home__process" aria-labelledby="home-process-heading">

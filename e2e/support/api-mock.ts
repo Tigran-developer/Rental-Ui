@@ -15,6 +15,16 @@ export interface ApiSeed {
   me?: unknown;
   /** GET /api/listings — items for the paged listings response. */
   listings?: unknown[];
+  /**
+   * GET /api/listings — `totalCount` on the same envelope, independent of
+   * `listings.length` (the count-only `pageSize: 1` request the Home hero
+   * map's granted-geolocation branch makes — `home.effects.ts`'s
+   * `loadNearbyPinsForOrigin$` — reads ONLY this field, never the returned
+   * `items` array). Defaults to `listings?.length ?? 0` so every existing
+   * caller that never set this keeps seeing the previous (items-length)
+   * behaviour unchanged.
+   */
+  listingsTotalCount?: number;
   /** GET /api/listings/:id — a single listing's full detail payload. */
   listingDetails?: unknown;
   /** GET /api/admin/listings/pending */
@@ -78,6 +88,7 @@ export async function mockApi(page: Page, seed: ApiSeed = {}): Promise<void> {
     if (pathname.endsWith('/api/listings') && method === 'GET') {
       return json(route, 200, {
         items: seed.listings ?? [],
+        totalCount: seed.listingsTotalCount ?? (seed.listings ?? []).length,
         page: 1,
         pageSize: 20,
         hasMore: false,

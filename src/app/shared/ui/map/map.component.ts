@@ -562,6 +562,17 @@ export class MapComponent implements AfterViewInit, OnDestroy {
    *  a group) goes through the exact same ADR-011/M-024
    *  immediate-vs-`animationiteration` branch a hover ending does. */
   readonly highlightedMarkerKey = input<string | null>(null);
+  /** `'brand'` (default): every existing caller's exact behaviour — the
+   *  `dorentSymbolMarkup()` ball icon, `interactive: true`/`keyboard: true`,
+   *  with hover/click/keyboard wiring (`createMarkerEntry()`) and a count
+   *  badge. `'twinkle'`: small, purely DECORATIVE dots (no `role`/`tabIndex`/
+   *  hover/click/keyboard listeners at all — never a tab stop, never
+   *  clickable) with a staggered fade animation, used by the Home hero's
+   *  ambient "nearby toys" preview map, where markers exist only for visual
+   *  texture and must never become keyboard-focusable noise. Strictly
+   *  additive: every branch this gates defaults to the pre-existing 'brand'
+   *  behaviour, so `map.component.spec.ts` needs no change. */
+  readonly markerVariant = input<'brand' | 'twinkle'>('brand');
   /** Translated `aria-label` for a single-listing marker (`count === 1`).
    *  Opaque to this file, exactly like `zoomInLabel`/`zoomOutLabel` — no
    *  ngx-translate import here. */
@@ -1246,10 +1257,20 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     return this.markerGroupLabel().replace('{count}', String(group.count));
   }
 
-  /** The catalog pin's inner HTML: the shared brand-ball markup (section C
-   *  of the Maps P2-2 plan — see `dorent-symbol.markup.ts`) plus a count
-   *  badge when more than one listing shares this group's coordinate. */
-  private markerGroupHtml(group: MapMarkerGroup, clipId: string): string {
+  /** The catalog pin's inner HTML. `'brand'` (default): the shared brand-ball
+   *  markup (section C of the Maps P2-2 plan — see `dorent-symbol.markup.ts`)
+   *  plus a count badge when more than one listing shares this group's
+   *  coordinate. `'twinkle'`: a single small decorative dot, no badge — see
+   *  `markerVariant`'s own doc comment. `index` staggers each dot's fade
+   *  animation (`index * 0.32s`, the approved design's own cadence) via an
+   *  inline `animation-delay`, since this raw HTML string is the only place
+   *  that can vary it per marker — the shared `@keyframes` in
+   *  map.component.scss has no per-element notion of "which marker is this". */
+  private markerGroupHtml(group: MapMarkerGroup, clipId: string, index: number): string {
+    if (this.markerVariant() === 'twinkle') {
+      const delaySeconds = (index * 0.32).toFixed(2);
+      return `<span class="app-map__twinkle" style="animation-delay: ${delaySeconds}s"></span>`;
+    }
     const badge = group.count > 1 ? `<span class="app-map__pin-badge">${group.count}</span>` : '';
     return dorentSymbolMarkup(clipId) + badge;
   }
@@ -1276,14 +1297,14 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       }
     }
 
-    for (const group of groups) {
+    groups.forEach((group, index) => {
       const existing = this.markerGroupLayers.get(group.key);
       if (existing) {
         this.updateMarkerEntry(existing, group);
-        continue;
+        return;
       }
-      this.markerGroupLayers.set(group.key, this.createMarkerEntry(L, map, group));
-    }
+      this.markerGroupLayers.set(group.key, this.createMarkerEntry(L, map, group, index));
+    });
   }
 
   /** Builds one group's marker + icon, wires its hover/click/keyboard
@@ -1299,22 +1320,34 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     L: typeof Leaflet,
     map: Leaflet.Map,
     group: MapMarkerGroup,
+    index: number,
   ): MarkerEntry {
+    const isTwinkle = this.markerVariant() === 'twinkle';
     const clipId = `dr-symbol-clip-map-${sanitizeForClipId(group.key)}`;
-    const icon = L.divIcon({
-      className: 'app-map__pin',
-      html: this.markerGroupHtml(group, clipId),
-      iconSize: [MapComponent.PIN_ICON_SIZE, MapComponent.PIN_ICON_SIZE],
-      // Bottom-CENTRE, not the box's vertical centre — the ball's ground
-      // contact point (its bottom edge in the 0-100 viewBox) must sit on the
-      // geo coordinate; the shadow ellipse painting further below it
-      // (`overflow: visible`) never shifts this.
-      iconAnchor: [MapComponent.PIN_ICON_SIZE / 2, MapComponent.PIN_ICON_SIZE],
-    });
+    const icon = isTwinkle
+      ? L.divIcon({
+          className: 'app-map__twinkle-wrap',
+          html: this.markerGroupHtml(group, clipId, index),
+          iconSize: [10, 10],
+          iconAnchor: [5, 5],
+        })
+      : L.divIcon({
+          className: 'app-map__pin',
+          html: this.markerGroupHtml(group, clipId, index),
+          iconSize: [MapComponent.PIN_ICON_SIZE, MapComponent.PIN_ICON_SIZE],
+          // Bottom-CENTRE, not the box's vertical centre — the ball's ground
+          // contact point (its bottom edge in the 0-100 viewBox) must sit on
+          // the geo coordinate; the shadow ellipse painting further below it
+          // (`overflow: visible`) never shifts this.
+          iconAnchor: [MapComponent.PIN_ICON_SIZE / 2, MapComponent.PIN_ICON_SIZE],
+        });
     const marker = L.marker([group.position.lat, group.position.lng], {
       icon,
-      interactive: true,
-      keyboard: true,
+      // `'twinkle'` markers are purely decorative — see `markerVariant`'s own
+      // doc comment: never interactive/keyboard-reachable, unlike the
+      // default 'brand' ball.
+      interactive: !isTwinkle,
+      keyboard: !isTwinkle,
     }).addTo(map);
 
     const el = marker.getElement?.() ?? null;
@@ -1327,7 +1360,11 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       desiredAnimating: false,
     };
 
-    if (el) {
+    // Everything below — role/tabIndex/aria-label, hover/click/keyboard
+    // wiring, active/animating state — is the 'brand' ball's interactive
+    // affordance. A 'twinkle' dot skips all of it: it must never become a
+    // tab stop or fire `markerHovered`/`markerActivated`.
+    if (el && !isTwinkle) {
       el.setAttribute('role', 'button');
       el.tabIndex = 0;
       el.setAttribute('aria-label', this.labelForGroup(group));
@@ -1391,6 +1428,9 @@ export class MapComponent implements AfterViewInit, OnDestroy {
    *  `count` changes without recreating the marker — see `syncMarkerGroups`'
    *  doc comment. */
   private updateMarkerEntry(entry: MarkerEntry, group: MapMarkerGroup): void {
+    // 'twinkle' dots have no aria-label/badge to keep in sync — see
+    // `markerVariant`'s own doc comment.
+    if (this.markerVariant() === 'twinkle') return;
     const el = entry.el;
     if (!el) return;
     el.setAttribute('aria-label', this.labelForGroup(group));
