@@ -1,4 +1,12 @@
-<div class="app-shell" [class.app-shell--browse]="isBrowsePage()" [class.app-shell--details]="isDetailsPage()" [class.app-shell--profile-child]="isProfileChildPage()" [class.app-shell--create]="isListingWizardPage()" [class.app-shell--booking]="isBookingPage()">
+<div
+  class="app-shell"
+  [class.app-shell--browse]="isBrowsePage()"
+  [class.app-shell--details]="isDetailsPage()"
+  [class.app-shell--profile-child]="isProfileChildPage()"
+  [class.app-shell--create]="isListingWizardPage()"
+  [class.app-shell--booking]="isBookingPage()"
+  [class.app-shell--admin]="isAdminConsolePage()"
+>
   <!-- Mobile app-open boot screen: mounted as a sibling BEFORE the `vm$` @if
        so it covers the shell during its own first render. Fades out (not
        cut) once auth is done initializing and the min-display time has
@@ -6,20 +14,24 @@
   <app-ui-boot-screen [visible]="showBootScreen()" />
 
   @if (vm$ | async; as vm) {
-    <app-header
-      [scrolled]="scrolled()"
-      [searchHidden]="headerSearchHidden()"
-      [isAuthenticated]="vm.isAuthenticated"
-      [isAuthPending]="vm.isAuthPending"
-      [userDisplayName]="vm.userDisplayName"
-      [userInitials]="vm.userInitials"
-      [unreadNotifCount]="unreadNotifCount()"
-      [unreadChatCount]="unreadChatCount()"
-      (signOutClick)="onSignOut()"
-      (openAuthClick)="openAuthDialog($event)"
-    />
+    <!-- The admin console (AdminShellComponent) provides its own top bar /
+         rail / mobile header — the global header is redundant chrome there. -->
+    @if (!isAdminConsolePage()) {
+      <app-header
+        [scrolled]="scrolled()"
+        [searchHidden]="headerSearchHidden()"
+        [isAuthenticated]="vm.isAuthenticated"
+        [isAuthPending]="vm.isAuthPending"
+        [userDisplayName]="vm.userDisplayName"
+        [userInitials]="vm.userInitials"
+        [unreadNotifCount]="unreadNotifCount()"
+        [unreadChatCount]="unreadChatCount()"
+        (signOutClick)="onSignOut()"
+        (openAuthClick)="openAuthDialog($event)"
+      />
+    }
 
-    <!-- Global toast overlay -->
+    <!-- Global toast overlay — stays mounted everywhere, including /admin. -->
     <p-toast position="top-center" />
 
     <main class="app-shell__content" [class.app-shell__content--with-bottom-nav]="showBottomNav()">
@@ -28,126 +40,124 @@
 
     <!-- ── Bottom navigation ─────────────────────────────────────── -->
     @if (showBottomNav()) {
-    <nav
-      class="app-bottom-nav"
-      [class.app-bottom-nav--admin]="vm.isAdmin"
-      [class.app-bottom-nav--guest]="vm.isGuest"
-      [attr.aria-label]="'app.shell.bottomNavAria' | translate"
-    >
-      @if (vm.isAdmin) {
-        <!-- Admin: Home | Moderate | Profile -->
-        <a
-          class="app-bottom-nav__item"
-          routerLink="/"
-          routerLinkActive="app-bottom-nav__item--active"
-          [routerLinkActiveOptions]="{ exact: true }"
-        >
-          <i class="pi pi-home app-bottom-nav__icon" aria-hidden="true"></i>
-          <span class="app-bottom-nav__label">{{ 'app.shell.nav.home' | translate }}</span>
-        </a>
-        <a
-          class="app-bottom-nav__item"
-          routerLink="/admin/listings/pending"
-          routerLinkActive="app-bottom-nav__item--active"
-          [routerLinkActiveOptions]="{ exact: false }"
-        >
-          <i class="pi pi-shield app-bottom-nav__icon" aria-hidden="true"></i>
-          <span class="app-bottom-nav__label">{{ 'app.shell.nav.moderationShort' | translate }}</span>
-        </a>
-        <a
-          class="app-bottom-nav__item"
-          routerLink="/profile"
-          routerLinkActive="app-bottom-nav__item--active"
-          [routerLinkActiveOptions]="{ exact: false }"
-        >
-          <i class="pi pi-user app-bottom-nav__icon" aria-hidden="true"></i>
-          <span class="app-bottom-nav__label">{{ 'app.shell.nav.profile' | translate }}</span>
-        </a>
-      } @else if (vm.isGuest) {
-        <!-- Guest: Home | Browse | Sign In -->
-        <a
-          class="app-bottom-nav__item"
-          routerLink="/"
-          routerLinkActive="app-bottom-nav__item--active"
-          [routerLinkActiveOptions]="{ exact: true }"
-        >
-          <i class="pi pi-home app-bottom-nav__icon" aria-hidden="true"></i>
-          <span class="app-bottom-nav__label">{{ 'app.shell.nav.home' | translate }}</span>
-        </a>
-        <a
-          class="app-bottom-nav__item"
-          routerLink="/listings"
-          routerLinkActive="app-bottom-nav__item--active"
-          [routerLinkActiveOptions]="{ exact: false }"
-        >
-          <i class="pi pi-search app-bottom-nav__icon" aria-hidden="true"></i>
-          <span class="app-bottom-nav__label">{{ 'app.shell.nav.browseShort' | translate }}</span>
-        </a>
-        <button
-          type="button"
-          class="app-bottom-nav__item"
-          (click)="openAuthDialog('login')"
-        >
-          <i class="pi pi-user app-bottom-nav__icon" aria-hidden="true"></i>
-          <span class="app-bottom-nav__label">{{ 'app.shell.nav.signIn' | translate }}</span>
-        </button>
-      } @else {
-        <!-- Authenticated: Home | Browse | Saved | Profile -->
-        <a
-          class="app-bottom-nav__item"
-          routerLink="/"
-          routerLinkActive="app-bottom-nav__item--active"
-          [routerLinkActiveOptions]="{ exact: true }"
-        >
-          <i class="pi pi-home app-bottom-nav__icon" aria-hidden="true"></i>
-          <span class="app-bottom-nav__label">{{ 'app.shell.nav.home' | translate }}</span>
-        </a>
-        <a
-          class="app-bottom-nav__item"
-          routerLink="/listings"
-          routerLinkActive="app-bottom-nav__item--active"
-          [routerLinkActiveOptions]="{ exact: false }"
-        >
-          <i class="pi pi-search app-bottom-nav__icon" aria-hidden="true"></i>
-          <span class="app-bottom-nav__label">{{ 'app.shell.nav.browseShort' | translate }}</span>
-        </a>
-        <a
-          class="app-bottom-nav__item"
-          routerLink="/favorites"
-          routerLinkActive="app-bottom-nav__item--active"
-          [routerLinkActiveOptions]="{ exact: false }"
-        >
-          <i class="pi pi-heart app-bottom-nav__icon" aria-hidden="true"></i>
-          <span class="app-bottom-nav__label">{{ 'app.shell.nav.savedShort' | translate }}</span>
-        </a>
-        <a
-          class="app-bottom-nav__item"
-          routerLink="/chat"
-          routerLinkActive="app-bottom-nav__item--active"
-          [routerLinkActiveOptions]="{ exact: false }"
-          [attr.aria-label]="'app.shell.nav.messages' | translate"
-        >
-          <span class="app-bottom-nav__icon-wrap">
-            <i class="pi pi-comments app-bottom-nav__icon" aria-hidden="true"></i>
-            @if (unreadChatCount() > 0) {
-              <span class="app-bottom-nav__badge" aria-hidden="true">
-                {{ unreadChatCount() > 99 ? '99+' : unreadChatCount() }}
-              </span>
-            }
-          </span>
-          <span class="app-bottom-nav__label">{{ 'app.shell.nav.messages' | translate }}</span>
-        </a>
-        <a
-          class="app-bottom-nav__item"
-          routerLink="/profile"
-          routerLinkActive="app-bottom-nav__item--active"
-          [routerLinkActiveOptions]="{ exact: false }"
-        >
-          <i class="pi pi-user app-bottom-nav__icon" aria-hidden="true"></i>
-          <span class="app-bottom-nav__label">{{ 'app.shell.nav.profile' | translate }}</span>
-        </a>
-      }
-    </nav>
+      <nav
+        class="app-bottom-nav"
+        [class.app-bottom-nav--admin]="vm.isAdmin"
+        [class.app-bottom-nav--guest]="vm.isGuest"
+        [attr.aria-label]="'app.shell.bottomNavAria' | translate"
+      >
+        @if (vm.isAdmin) {
+          <!-- Admin: Home | Moderate | Profile -->
+          <a
+            class="app-bottom-nav__item"
+            routerLink="/"
+            routerLinkActive="app-bottom-nav__item--active"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
+            <i class="pi pi-home app-bottom-nav__icon" aria-hidden="true"></i>
+            <span class="app-bottom-nav__label">{{ 'app.shell.nav.home' | translate }}</span>
+          </a>
+          <a
+            class="app-bottom-nav__item"
+            routerLink="/admin/listings/pending"
+            routerLinkActive="app-bottom-nav__item--active"
+            [routerLinkActiveOptions]="{ exact: false }"
+          >
+            <i class="pi pi-shield app-bottom-nav__icon" aria-hidden="true"></i>
+            <span class="app-bottom-nav__label">{{
+              'app.shell.nav.moderationShort' | translate
+            }}</span>
+          </a>
+          <a
+            class="app-bottom-nav__item"
+            routerLink="/profile"
+            routerLinkActive="app-bottom-nav__item--active"
+            [routerLinkActiveOptions]="{ exact: false }"
+          >
+            <i class="pi pi-user app-bottom-nav__icon" aria-hidden="true"></i>
+            <span class="app-bottom-nav__label">{{ 'app.shell.nav.profile' | translate }}</span>
+          </a>
+        } @else if (vm.isGuest) {
+          <!-- Guest: Home | Browse | Sign In -->
+          <a
+            class="app-bottom-nav__item"
+            routerLink="/"
+            routerLinkActive="app-bottom-nav__item--active"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
+            <i class="pi pi-home app-bottom-nav__icon" aria-hidden="true"></i>
+            <span class="app-bottom-nav__label">{{ 'app.shell.nav.home' | translate }}</span>
+          </a>
+          <a
+            class="app-bottom-nav__item"
+            routerLink="/listings"
+            routerLinkActive="app-bottom-nav__item--active"
+            [routerLinkActiveOptions]="{ exact: false }"
+          >
+            <i class="pi pi-search app-bottom-nav__icon" aria-hidden="true"></i>
+            <span class="app-bottom-nav__label">{{ 'app.shell.nav.browseShort' | translate }}</span>
+          </a>
+          <button type="button" class="app-bottom-nav__item" (click)="openAuthDialog('login')">
+            <i class="pi pi-user app-bottom-nav__icon" aria-hidden="true"></i>
+            <span class="app-bottom-nav__label">{{ 'app.shell.nav.signIn' | translate }}</span>
+          </button>
+        } @else {
+          <!-- Authenticated: Home | Browse | Saved | Profile -->
+          <a
+            class="app-bottom-nav__item"
+            routerLink="/"
+            routerLinkActive="app-bottom-nav__item--active"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
+            <i class="pi pi-home app-bottom-nav__icon" aria-hidden="true"></i>
+            <span class="app-bottom-nav__label">{{ 'app.shell.nav.home' | translate }}</span>
+          </a>
+          <a
+            class="app-bottom-nav__item"
+            routerLink="/listings"
+            routerLinkActive="app-bottom-nav__item--active"
+            [routerLinkActiveOptions]="{ exact: false }"
+          >
+            <i class="pi pi-search app-bottom-nav__icon" aria-hidden="true"></i>
+            <span class="app-bottom-nav__label">{{ 'app.shell.nav.browseShort' | translate }}</span>
+          </a>
+          <a
+            class="app-bottom-nav__item"
+            routerLink="/favorites"
+            routerLinkActive="app-bottom-nav__item--active"
+            [routerLinkActiveOptions]="{ exact: false }"
+          >
+            <i class="pi pi-heart app-bottom-nav__icon" aria-hidden="true"></i>
+            <span class="app-bottom-nav__label">{{ 'app.shell.nav.savedShort' | translate }}</span>
+          </a>
+          <a
+            class="app-bottom-nav__item"
+            routerLink="/chat"
+            routerLinkActive="app-bottom-nav__item--active"
+            [routerLinkActiveOptions]="{ exact: false }"
+            [attr.aria-label]="'app.shell.nav.messages' | translate"
+          >
+            <span class="app-bottom-nav__icon-wrap">
+              <i class="pi pi-comments app-bottom-nav__icon" aria-hidden="true"></i>
+              @if (unreadChatCount() > 0) {
+                <span class="app-bottom-nav__badge" aria-hidden="true">
+                  {{ unreadChatCount() > 99 ? '99+' : unreadChatCount() }}
+                </span>
+              }
+            </span>
+            <span class="app-bottom-nav__label">{{ 'app.shell.nav.messages' | translate }}</span>
+          </a>
+          <a
+            class="app-bottom-nav__item"
+            routerLink="/profile"
+            routerLinkActive="app-bottom-nav__item--active"
+            [routerLinkActiveOptions]="{ exact: false }"
+          >
+            <i class="pi pi-user app-bottom-nav__icon" aria-hidden="true"></i>
+            <span class="app-bottom-nav__label">{{ 'app.shell.nav.profile' | translate }}</span>
+          </a>
+        }
+      </nav>
     }
   }
 
@@ -167,9 +177,7 @@
             }}</a>
           </li>
           <li>
-            <a class="app-footer__link" routerLink="/faq">{{
-              'home.footer.faq' | translate
-            }}</a>
+            <a class="app-footer__link" routerLink="/faq">{{ 'home.footer.faq' | translate }}</a>
           </li>
           <li>
             <a class="app-footer__link" routerLink="/terms">{{

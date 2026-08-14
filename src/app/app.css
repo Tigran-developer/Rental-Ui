@@ -354,11 +354,7 @@
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 50%;
-  background: linear-gradient(
-    135deg,
-    var(--ui-color-primary) 0%,
-    var(--ui-color-secondary) 100%
-  );
+  background: linear-gradient(135deg, var(--ui-color-primary) 0%, var(--ui-color-secondary) 100%);
   color: #fff;
   font-size: 0.8125rem;
   font-weight: 700;
@@ -578,7 +574,6 @@
     0 0 0 4px rgba(255, 96, 8, 0.55);
 }
 
-
 .app-shell__content {
   background: var(--ui-color-background);
 }
@@ -625,6 +620,14 @@
 .app-shell--details .app-shell__content--with-bottom-nav,
 .app-shell--booking .app-shell__content--with-bottom-nav {
   padding-bottom: 0;
+}
+
+/* ── Admin console: AdminShellComponent owns its own topbar/rail/mobile
+      header + bottom nav, so the global header/footer/bottom-nav are hidden
+      (see app.ts isAdminConsolePage / isAdminConsoleUrl) and this shell's
+      content area is left with no reserved padding for them. ─────────── */
+.app-shell--admin .app-shell__content {
+  padding: 0;
 }
 
 /* —— Mobile bottom navigation (hidden on desktop) —— */
@@ -769,8 +772,14 @@
   }
 
   @keyframes bottom-nav-indicator-in {
-    from { opacity: 0; transform: translateX(-50%) scaleX(0.4); }
-    to   { opacity: 1; transform: translateX(-50%) scaleX(1); }
+    from {
+      opacity: 0;
+      transform: translateX(-50%) scaleX(0.4);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) scaleX(1);
+    }
   }
 
   .app-bottom-nav__icon {
@@ -860,7 +869,6 @@
     display: block;
     pointer-events: none;
   }
-
 }
 
 @media (min-width: 961px) {

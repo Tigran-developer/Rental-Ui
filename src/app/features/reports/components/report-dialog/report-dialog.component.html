@@ -1,0 +1,168 @@
+<div class="report-dialog__backdrop" (click)="onBackdropClick()" aria-hidden="true"></div>
+<div
+  class="report-dialog"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-label]="titleKey() | translate"
+>
+  <div class="report-dialog__header">
+    <span class="report-dialog__icon" aria-hidden="true">
+      <app-icon name="flag" [size]="16" />
+    </span>
+    <h2 class="report-dialog__title">{{ titleKey() | translate }}</h2>
+    <button
+      type="button"
+      class="report-dialog__close"
+      [attr.aria-label]="'reports.dialog.closeAria' | translate"
+      [disabled]="isSubmitting()"
+      (click)="closed.emit()"
+    >
+      <app-icon name="x" [size]="16" />
+    </button>
+  </div>
+
+  <div class="report-dialog__body">
+    @switch (phase()) {
+      @case ('success') {
+        <div class="report-dialog__outcome report-dialog__outcome--success">
+          <span class="report-dialog__outcome-icon" aria-hidden="true">
+            <app-icon name="check" [size]="22" />
+          </span>
+          <p class="report-dialog__outcome-title">
+            {{ 'reports.dialog.success.title' | translate }}
+          </p>
+          <p class="report-dialog__outcome-text">{{ 'reports.dialog.success.text' | translate }}</p>
+        </div>
+      }
+      @case ('alreadyReported') {
+        <div class="report-dialog__outcome report-dialog__outcome--info">
+          <span class="report-dialog__outcome-icon" aria-hidden="true">
+            <app-icon name="flag" [size]="22" />
+          </span>
+          <p class="report-dialog__outcome-title">
+            {{ 'reports.dialog.alreadyReported.title' | translate }}
+          </p>
+          <p class="report-dialog__outcome-text">
+            {{ 'reports.dialog.alreadyReported.text' | translate }}
+          </p>
+        </div>
+      }
+      @case ('error') {
+        <div class="report-dialog__outcome report-dialog__outcome--error">
+          <span class="report-dialog__outcome-icon" aria-hidden="true">
+            <app-icon name="x" [size]="22" />
+          </span>
+          <p class="report-dialog__outcome-title">{{ 'reports.dialog.error.title' | translate }}</p>
+          <p class="report-dialog__outcome-text">
+            @if (errorMessageKey(); as key) {
+              {{ key | translate }}
+            } @else {
+              {{ errorMessage() }}
+            }
+          </p>
+        </div>
+      }
+      @default {
+        <fieldset class="report-dialog__fieldset" [disabled]="isSubmitting()">
+          <legend class="report-dialog__legend">
+            {{ 'reports.dialog.reasonLabel' | translate }}
+          </legend>
+          <div
+            class="report-dialog__reasons"
+            role="radiogroup"
+            [attr.aria-label]="'reports.dialog.reasonLabel' | translate"
+          >
+            @for (reason of reasons; track reason.key) {
+              <button
+                type="button"
+                class="report-dialog__reason"
+                [class.report-dialog__reason--selected]="selectedReason() === reason.key"
+                role="radio"
+                [attr.aria-checked]="selectedReason() === reason.key"
+                (click)="selectReason(reason.key)"
+              >
+                <span class="report-dialog__reason-dot" aria-hidden="true"></span>
+                <i [class]="reason.icon" aria-hidden="true"></i>
+                <span class="report-dialog__reason-label">{{
+                  'reports.reasons.' + reason.key + '.label' | translate
+                }}</span>
+              </button>
+            }
+          </div>
+
+          <label class="report-dialog__detail-label" for="report-dialog-detail">
+            {{ 'reports.dialog.detailLabel' | translate }}
+          </label>
+          <textarea
+            id="report-dialog-detail"
+            class="report-dialog__detail-input"
+            rows="3"
+            [value]="detail()"
+            [placeholder]="'reports.dialog.detailPlaceholder' | translate"
+            (input)="onDetailInput($event)"
+          ></textarea>
+        </fieldset>
+      }
+    }
+  </div>
+
+  <div class="report-dialog__footer">
+    @switch (phase()) {
+      @case ('success') {
+        <button
+          type="button"
+          class="report-dialog__btn report-dialog__btn--primary"
+          (click)="closed.emit()"
+        >
+          {{ 'reports.dialog.done' | translate }}
+        </button>
+      }
+      @case ('alreadyReported') {
+        <button
+          type="button"
+          class="report-dialog__btn report-dialog__btn--primary"
+          (click)="closed.emit()"
+        >
+          {{ 'reports.dialog.close' | translate }}
+        </button>
+      }
+      @case ('error') {
+        <button
+          type="button"
+          class="report-dialog__btn report-dialog__btn--secondary"
+          (click)="closed.emit()"
+        >
+          {{ 'reports.dialog.cancel' | translate }}
+        </button>
+        <button
+          type="button"
+          class="report-dialog__btn report-dialog__btn--primary"
+          (click)="tryAgain()"
+        >
+          {{ 'reports.dialog.tryAgain' | translate }}
+        </button>
+      }
+      @default {
+        <button
+          type="button"
+          class="report-dialog__btn report-dialog__btn--secondary"
+          [disabled]="isSubmitting()"
+          (click)="closed.emit()"
+        >
+          {{ 'reports.dialog.cancel' | translate }}
+        </button>
+        <button
+          type="button"
+          class="report-dialog__btn report-dialog__btn--primary"
+          [disabled]="!canSubmit()"
+          (click)="submit()"
+        >
+          @if (isSubmitting()) {
+            <span class="report-dialog__spinner" aria-hidden="true"></span>
+          }
+          {{ 'reports.dialog.submit' | translate }}
+        </button>
+      }
+    }
+  </div>
+</div>

@@ -1,0 +1,295 @@
+// A focus-trapped centered dialog, same visual recipe as the admin console's dialogs
+// (`admin-user-profile-dialog`, `admin-report-detail-dialog`) reused here for the public-site
+// report-submission flow so the two dialog languages in this app stay consistent.
+:host {
+  display: contents;
+}
+
+.report-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ui-z-modal);
+  background: rgba(20, 15, 5, 0.42);
+}
+
+.report-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  z-index: calc(var(--ui-z-modal) + 1);
+  width: 440px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+  height: fit-content;
+  background: var(--ui-color-surface);
+  border-radius: var(--ui-radius-card);
+  border: 1px solid var(--ui-color-border);
+  box-shadow: 0 24px 60px -20px rgba(20, 15, 5, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.report-dialog__header {
+  padding: var(--ui-space-20) var(--ui-space-20) var(--ui-space-16);
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-10);
+  border-bottom: 1px solid var(--ui-color-border);
+  flex-shrink: 0;
+}
+
+.report-dialog__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-color-danger-surface);
+  color: var(--ui-color-danger);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.report-dialog__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 800;
+  color: var(--ui-color-text-primary);
+}
+
+.report-dialog__close {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-color-surface-muted);
+  border: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  color: var(--ui-color-text-primary);
+}
+
+.report-dialog__close:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.report-dialog__body {
+  padding: var(--ui-space-20);
+  overflow-y: auto;
+}
+
+.report-dialog__fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.report-dialog__fieldset:disabled {
+  opacity: 0.7;
+}
+
+.report-dialog__legend {
+  padding: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--ui-color-text-primary);
+  margin-bottom: var(--ui-space-10);
+}
+
+.report-dialog__reasons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-8);
+  margin-bottom: var(--ui-space-16);
+}
+
+.report-dialog__reason {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1.5px solid var(--ui-color-border);
+  background: var(--ui-color-surface);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: var(--ui-color-text-primary);
+}
+
+.report-dialog__reason i {
+  font-size: 0.9375rem;
+  color: var(--ui-color-text-secondary);
+}
+
+.report-dialog__reason--selected {
+  border-color: var(--ui-color-primary);
+  background: var(--ui-color-primary-wash);
+}
+
+.report-dialog__reason--selected i {
+  color: var(--ui-color-primary);
+}
+
+.report-dialog__reason-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--ui-color-border);
+  background: var(--ui-color-surface);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.report-dialog__reason--selected .report-dialog__reason-dot {
+  border-color: var(--ui-color-primary);
+  background: var(--ui-color-primary);
+}
+
+.report-dialog__reason--selected .report-dialog__reason-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.report-dialog__reason-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.report-dialog__detail-label {
+  display: block;
+  margin-bottom: var(--ui-space-6);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ui-color-text-secondary);
+}
+
+.report-dialog__detail-input {
+  width: 100%;
+  min-height: 72px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1.5px solid var(--ui-color-border-input);
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--ui-color-text-primary);
+  background: var(--ui-color-surface);
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+// ── Outcome panels (success / already-reported / error) ──
+.report-dialog__outcome {
+  text-align: center;
+  padding: var(--ui-space-16) var(--ui-space-8);
+}
+
+.report-dialog__outcome-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--ui-radius-pill);
+  display: grid;
+  place-items: center;
+  margin: 0 auto var(--ui-space-12);
+}
+
+.report-dialog__outcome--success .report-dialog__outcome-icon {
+  background: var(--ui-color-success-surface);
+  color: var(--ui-color-success);
+}
+
+.report-dialog__outcome--info .report-dialog__outcome-icon {
+  background: var(--ui-color-primary-wash);
+  color: var(--ui-color-primary);
+}
+
+.report-dialog__outcome--error .report-dialog__outcome-icon {
+  background: var(--ui-color-danger-surface);
+  color: var(--ui-color-danger);
+}
+
+.report-dialog__outcome-title {
+  margin: 0 0 4px;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: var(--ui-color-text-primary);
+}
+
+.report-dialog__outcome-text {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--ui-color-text-secondary);
+  line-height: 1.5;
+}
+
+.report-dialog__footer {
+  padding: var(--ui-space-14) var(--ui-space-20);
+  border-top: 1px solid var(--ui-color-border);
+  display: flex;
+  gap: var(--ui-space-10);
+  flex-shrink: 0;
+}
+
+.report-dialog__btn {
+  flex: 1;
+  height: 44px;
+  border-radius: var(--ui-radius-12);
+  border: 0;
+  font-size: 0.84375rem;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-space-8);
+}
+
+.report-dialog__btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.report-dialog__btn--secondary {
+  background: var(--ui-color-surface-muted);
+  color: var(--ui-color-text-primary);
+}
+
+.report-dialog__btn--primary {
+  background: var(--ui-color-primary);
+  color: var(--ui-color-on-primary);
+}
+
+.report-dialog__spinner {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-top-color: #fff;
+  animation: report-dialog-spin 700ms linear infinite;
+}
+
+@keyframes report-dialog-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.report-dialog__close:focus-visible,
+.report-dialog__reason:focus-visible,
+.report-dialog__detail-input:focus-visible,
+.report-dialog__btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-ring);
+}

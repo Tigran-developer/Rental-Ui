@@ -63,10 +63,7 @@ function isListingDetailsUrl(url: string): boolean {
   // Public listing detail (/listings/:id) and owner listing detail (/my-listings/:id)
   // both suppress the global header on mobile and the global bottom nav so each page's
   // own back link + action bar serve as the sole navigation.
-  return (
-    /^\/listings\/(?!create$)[^/]+$/.test(path) ||
-    /^\/my-listings\/[^/]+$/.test(path)
-  );
+  return /^\/listings\/(?!create$)[^/]+$/.test(path) || /^\/my-listings\/[^/]+$/.test(path);
 }
 
 function isBookingFlowUrl(url: string): boolean {
@@ -90,6 +87,14 @@ function isListingWizardUrl(url: string): boolean {
 
 export function isHomeUrl(url: string): boolean {
   return url.split('?')[0].split('#')[0] === '/';
+}
+
+/** The admin console (`/admin/**`) provides its own top bar / rail / mobile
+ *  header+bottom-nav (`AdminShellComponent`) — the global header, footer,
+ *  and 3-item admin bottom nav are redundant chrome there and are hidden. */
+export function isAdminConsoleUrl(url: string): boolean {
+  const path = url.split('?')[0];
+  return path === '/admin' || path.startsWith('/admin/');
 }
 
 function isChatUrl(url: string): boolean {
@@ -148,17 +153,26 @@ export class App {
   // Global unread-chat badge: sums unreadCount across conversations, polled
   // while authenticated (see ChatBadgeService).
   protected readonly unreadChatCount = this.chatBadge.unreadCount;
-  protected readonly scrolled          = signal(false);
-  protected readonly showFooter        = signal(!isListingDetailsUrl(this.router.url) && !isListingWizardUrl(this.router.url) && !isBookingFlowUrl(this.router.url) && !isChatUrl(this.router.url));
-  protected readonly showBottomNav     = signal(!isChatThreadUrl(this.router.url));
-  protected readonly isBrowsePage      = signal(isListingsBrowseUrl(this.router.url));
-  protected readonly isDetailsPage     = signal(isListingDetailsUrl(this.router.url));
+  protected readonly scrolled = signal(false);
+  protected readonly showFooter = signal(
+    !isListingDetailsUrl(this.router.url) &&
+      !isListingWizardUrl(this.router.url) &&
+      !isBookingFlowUrl(this.router.url) &&
+      !isChatUrl(this.router.url) &&
+      !isAdminConsoleUrl(this.router.url),
+  );
+  protected readonly showBottomNav = signal(
+    !isChatThreadUrl(this.router.url) && !isAdminConsoleUrl(this.router.url),
+  );
+  protected readonly isBrowsePage = signal(isListingsBrowseUrl(this.router.url));
+  protected readonly isDetailsPage = signal(isListingDetailsUrl(this.router.url));
   protected readonly isProfileChildPage = signal(isProfileChildUrl(this.router.url));
   protected readonly isListingWizardPage = signal(isListingWizardUrl(this.router.url));
-  protected readonly isBookingPage     = signal(isBookingFlowUrl(this.router.url));
-  protected readonly isHomePage        = signal(isHomeUrl(this.router.url));
-  protected readonly showAuthDialog    = signal(false);
-  protected readonly authDialogMode    = signal<'login' | 'register'>('login');
+  protected readonly isBookingPage = signal(isBookingFlowUrl(this.router.url));
+  protected readonly isHomePage = signal(isHomeUrl(this.router.url));
+  protected readonly isAdminConsolePage = signal(isAdminConsoleUrl(this.router.url));
+  protected readonly showAuthDialog = signal(false);
+  protected readonly authDialogMode = signal<'login' | 'register'>('login');
 
   // The scroll-revealed header search is a HOME-ONLY behaviour. Gating the
   // service flag on the route here means every other page keeps the header
@@ -240,11 +254,12 @@ export class App {
         isGuest,
         isAuthPending,
         isAdmin,
-        userDisplayName:
-          user === null ? null : `${user.firstName} ${user.lastName}`.trim(),
+        userDisplayName: user === null ? null : `${user.firstName} ${user.lastName}`.trim(),
         userEmail: user?.email ?? null,
         userInitials:
-          user === null ? null : ((user.firstName?.[0] ?? '') + (user.lastName?.[0] ?? '')).toUpperCase() || null,
+          user === null
+            ? null
+            : ((user.firstName?.[0] ?? '') + (user.lastName?.[0] ?? '')).toUpperCase() || null,
       };
     }),
   );
@@ -276,14 +291,21 @@ export class App {
       )
       .subscribe((event) => {
         const url = event.urlAfterRedirects;
-        this.showFooter.set(!isListingDetailsUrl(url) && !isListingWizardUrl(url) && !isBookingFlowUrl(url) && !isChatUrl(url));
-        this.showBottomNav.set(!isChatThreadUrl(url));
+        this.showFooter.set(
+          !isListingDetailsUrl(url) &&
+            !isListingWizardUrl(url) &&
+            !isBookingFlowUrl(url) &&
+            !isChatUrl(url) &&
+            !isAdminConsoleUrl(url),
+        );
+        this.showBottomNav.set(!isChatThreadUrl(url) && !isAdminConsoleUrl(url));
         this.isBrowsePage.set(isListingsBrowseUrl(url));
         this.isDetailsPage.set(isListingDetailsUrl(url));
         this.isProfileChildPage.set(isProfileChildUrl(url));
         this.isListingWizardPage.set(isListingWizardUrl(url));
         this.isBookingPage.set(isBookingFlowUrl(url));
         this.isHomePage.set(isHomeUrl(url));
+        this.isAdminConsolePage.set(isAdminConsoleUrl(url));
       });
   }
 

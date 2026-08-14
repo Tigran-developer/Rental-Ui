@@ -1,0 +1,64 @@
+// Panel chrome (Home hero design): 20px desktop / 16px mobile radius,
+// overflow:hidden so app-map's own (differently-radiused) inner surface
+// never peeks past this frame's corners, a hairline border, and a soft
+// downward shadow that separates the panel from the hero's own background.
+.hero-map {
+  position: relative;
+  width: 100%;
+  border-radius: var(--ui-radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--ui-color-border);
+  box-shadow: 0 14px 34px -16px rgba(20, 15, 5, 0.32);
+}
+
+// Overrides the JS-bound desktop height (`[style.height]`, `height` input,
+// default 330px) at the same breakpoint `home-page.component.scss` switches
+// the hero row from a row back to a stacked column — see that file's
+// `.home__hero-row`. A plain class-level `height` rule here would lose to
+// the inline style regardless of media-query source order, so this is the
+// one deliberate, contained override point for the mobile figure the design
+// specifies (196px) instead of threading a second breakpoint-aware input
+// through the caller.
+@media (max-width: 1023px) {
+  .hero-map {
+    height: 196px !important;
+    border-radius: var(--ui-radius-card);
+  }
+}
+
+// Top-left, NOT bottom-left: `app-map` reserves the bottom-left corner for
+// its own MapTiler-logo licence requirement (`.app-map__maptiler-logo`,
+// map.component.scss) and the bottom-right for Leaflet's attribution
+// control — both mandatory, always shown, never to be covered (see
+// map.component.ts's class doc comment). The approved design drew this pill
+// bottom-left against raw OSM tiles with no MapTiler logo, so that placement
+// is unsafe against this app's actual (MapTiler-by-default) tile source.
+// Top-left is genuinely free instead: the zoom stack only renders top-RIGHT,
+// and only when `interactive` — this map is always frozen, so it never
+// renders at all.
+.hero-map__pill {
+  position: absolute;
+  left: var(--ui-space-12);
+  top: var(--ui-space-12);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-6);
+  padding: 8px 13px;
+  border-radius: var(--ui-radius-pill);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 3px 10px -3px rgba(20, 15, 5, 0.28);
+  backdrop-filter: blur(4px);
+  font-size: 12.5px;
+  font-weight: 800;
+  white-space: nowrap;
+  color: var(--ui-color-text-primary);
+}
+
+.hero-map__pill-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ui-color-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-success) 20%, transparent);
+}

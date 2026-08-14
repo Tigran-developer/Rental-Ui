@@ -81,38 +81,56 @@
         </app-listings-map>
       </div>
 
-      @switch (geoState()) {
-        @case ('granted') {
-          <div class="listing-location__distance" role="status">
-            <span class="listing-location__distance-icon">
-              <i class="pi pi-directions" aria-hidden="true"></i>
-            </span>
-            <span class="listing-location__distance-text">
-              <b>
-                {{
-                  'listings.details.location.distanceFromYou'
-                    | translate: { distance: distanceDisplay() }
-                }}
-              </b>
-              <small>{{ 'listings.details.location.distanceLegend' | translate }}</small>
-              @if (!lowAccuracy() && accuracyDisplay(); as accuracy) {
-                <small>
-                  {{ 'listings.details.location.accuracyLabel' | translate: { accuracy } }}
-                </small>
-              }
-            </span>
-          </div>
+      <div class="listing-location__below">
+        @switch (geoState()) {
+          @case ('granted') {
+            <div class="listing-location__distance" role="status">
+              <span class="listing-location__distance-icon">
+                <i class="pi pi-directions" aria-hidden="true"></i>
+              </span>
+              <span class="listing-location__distance-text">
+                <b>
+                  {{
+                    'listings.details.location.distanceFromYou'
+                      | translate: { distance: distanceDisplay() }
+                  }}
+                </b>
+                <small>{{ 'listings.details.location.distanceLegend' | translate }}</small>
+                @if (!lowAccuracy() && accuracyDisplay(); as accuracy) {
+                  <small>
+                    {{ 'listings.details.location.accuracyLabel' | translate: { accuracy } }}
+                  </small>
+                }
+              </span>
+            </div>
 
-          @if (lowAccuracy()) {
+            @if (lowAccuracy()) {
+              <div class="listing-location__geo-denied">
+                <div class="listing-location__geo-denied-msg">
+                  <i class="pi pi-info-circle" aria-hidden="true"></i>
+                  <span>
+                    {{ 'listings.details.location.lowAccuracyMessage' | translate }}
+                    @if (accuracyDisplay(); as accuracy) {
+                      {{ 'listings.details.location.accuracyLabel' | translate: { accuracy } }}
+                    }
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  class="listing-location__pick-btn"
+                  (click)="openManualPicker()"
+                >
+                  <i class="pi pi-map-marker" aria-hidden="true"></i>
+                  {{ 'listings.details.location.pickPointButton' | translate }}
+                </button>
+              </div>
+            }
+          }
+          @case ('denied') {
             <div class="listing-location__geo-denied">
               <div class="listing-location__geo-denied-msg">
                 <i class="pi pi-info-circle" aria-hidden="true"></i>
-                <span>
-                  {{ 'listings.details.location.lowAccuracyMessage' | translate }}
-                  @if (accuracyDisplay(); as accuracy) {
-                    {{ 'listings.details.location.accuracyLabel' | translate: { accuracy } }}
-                  }
-                </span>
+                <span>{{ 'listings.details.location.geoDeniedMessage' | translate }}</span>
               </div>
               <button
                 type="button"
@@ -124,45 +142,29 @@
               </button>
             </div>
           }
-        }
-        @case ('denied') {
-          <div class="listing-location__geo-denied">
-            <div class="listing-location__geo-denied-msg">
-              <i class="pi pi-info-circle" aria-hidden="true"></i>
-              <span>{{ 'listings.details.location.geoDeniedMessage' | translate }}</span>
-            </div>
+          @default {
             <button
               type="button"
-              class="listing-location__pick-btn"
-              (click)="openManualPicker()"
+              class="listing-location__locate-btn"
+              [disabled]="geoState() === 'locating'"
+              (click)="requestMyLocation()"
             >
-              <i class="pi pi-map-marker" aria-hidden="true"></i>
-              {{ 'listings.details.location.pickPointButton' | translate }}
+              <i class="pi pi-compass" aria-hidden="true"></i>
+              {{
+                (geoState() === 'locating'
+                  ? 'listings.details.location.myLocationLocating'
+                  : 'listings.details.location.myLocationButton'
+                ) | translate
+              }}
             </button>
-          </div>
+          }
         }
-        @default {
-          <button
-            type="button"
-            class="listing-location__locate-btn"
-            [disabled]="geoState() === 'locating'"
-            (click)="requestMyLocation()"
-          >
-            <i class="pi pi-compass" aria-hidden="true"></i>
-            {{
-              (geoState() === 'locating'
-                ? 'listings.details.location.myLocationLocating'
-                : 'listings.details.location.myLocationButton'
-              ) | translate
-            }}
-          </button>
-        }
-      }
 
-      <p class="listing-location__privacy-note">
-        <i class="pi pi-shield" aria-hidden="true"></i>
-        <span>{{ 'listings.details.location.privacyNote' | translate }}</span>
-      </p>
+        <p class="listing-location__privacy-note">
+          <i class="pi pi-shield" aria-hidden="true"></i>
+          <span>{{ 'listings.details.location.privacyNote' | translate }}</span>
+        </p>
+      </div>
 
       <app-location-picker
         [open]="showPointPicker()"
@@ -192,4 +194,8 @@
       />
     }
   }
+
+  <div class="listing-location__side-panel">
+    <ng-content select="[sidePanel]" />
+  </div>
 </div>

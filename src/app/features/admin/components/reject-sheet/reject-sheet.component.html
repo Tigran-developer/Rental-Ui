@@ -1,0 +1,87 @@
+<div class="reject-sheet__backdrop" (click)="onBackdropClick()" aria-hidden="true"></div>
+<div
+  class="reject-sheet"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-label]="'admin.pendingListings.rejectSheet.title' | translate"
+>
+  <div class="reject-sheet__handle" aria-hidden="true"></div>
+
+  <div class="reject-sheet__header">
+    <h2 class="reject-sheet__title">{{ 'admin.pendingListings.rejectSheet.title' | translate }}</h2>
+    <p class="reject-sheet__subtitle">
+      @if (title()) {
+        {{ 'admin.review.rejectPanel.mobileSubtitle' | translate: { title: title() } }}
+      } @else {
+        {{ 'admin.pendingListings.rejectSheet.subtitle' | translate }}
+      }
+    </p>
+  </div>
+
+  <div class="reject-sheet__content">
+    <div
+      class="reject-sheet__reasons"
+      role="radiogroup"
+      [attr.aria-label]="'admin.review.rejectPanel.question' | translate"
+    >
+      @for (reason of reasons; track reason.key) {
+        <button
+          type="button"
+          class="reject-sheet__reason-row"
+          [class.reject-sheet__reason-row--selected]="reasonSel() === reason.key"
+          [disabled]="busy()"
+          role="radio"
+          [attr.aria-checked]="reasonSel() === reason.key"
+          (click)="reasonSelect.emit(reason.key)"
+        >
+          <span class="reject-sheet__reason-dot" aria-hidden="true"></span>
+          <span class="reject-sheet__reason-text">
+            <span class="reject-sheet__reason-title">{{
+              'admin.pendingListings.rejectSheet.reasons.' + reason.key + '.title' | translate
+            }}</span>
+            <span class="reject-sheet__reason-desc">{{
+              'admin.pendingListings.rejectSheet.reasons.' + reason.key + '.description' | translate
+            }}</span>
+          </span>
+        </button>
+      }
+    </div>
+
+    <div class="reject-sheet__note-wrap">
+      <label class="reject-sheet__note-label" for="reject-sheet-note">
+        {{ 'admin.pendingListings.rejectSheet.noteLabel' | translate }}
+      </label>
+      <textarea
+        id="reject-sheet-note"
+        class="reject-sheet__textarea"
+        rows="3"
+        [disabled]="busy()"
+        [value]="note()"
+        [placeholder]="'admin.pendingListings.rejectSheet.notePlaceholder' | translate"
+        (input)="onNoteInput($event)"
+      ></textarea>
+    </div>
+  </div>
+
+  <div class="reject-sheet__footer">
+    <button
+      type="button"
+      class="reject-sheet__btn reject-sheet__btn--cancel"
+      [disabled]="busy()"
+      (click)="cancel.emit()"
+    >
+      {{ 'admin.pendingListings.rejectSheet.cancel' | translate }}
+    </button>
+    <button
+      type="button"
+      class="reject-sheet__btn reject-sheet__btn--confirm"
+      [disabled]="!reasonSel() || busy()"
+      (click)="confirm.emit()"
+    >
+      @if (busy()) {
+        <span class="reject-sheet__spinner" aria-hidden="true"></span>
+      }
+      {{ 'admin.review.rejectPanel.confirmMobile' | translate }}
+    </button>
+  </div>
+</div>

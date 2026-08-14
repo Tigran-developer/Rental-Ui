@@ -1,0 +1,426 @@
+<app-admin-page-header
+  [title]="'admin.users.page.title' | translate"
+  [subtitle]="'admin.users.page.subtitle' | translate"
+>
+  @if (isDesktop()) {
+    <div class="users-page__search" role="search">
+      <app-icon name="search" [size]="15" />
+      <input
+        type="search"
+        class="users-page__search-input"
+        [value]="searchInput()"
+        [placeholder]="'admin.users.page.searchPlaceholder' | translate"
+        [attr.aria-label]="'admin.users.page.searchPlaceholder' | translate"
+        (input)="onSearchInput($event)"
+      />
+    </div>
+    <div class="users-page__sort" (keydown)="onSortKeydown($event)">
+      <button
+        #sortTrigger
+        type="button"
+        class="users-page__sort-trigger"
+        [class.users-page__sort-trigger--open]="sortMenuOpen()"
+        aria-haspopup="listbox"
+        [attr.aria-expanded]="sortMenuOpen()"
+        (click)="toggleSortMenu()"
+      >
+        <app-icon name="sort" [size]="15" />
+        {{ sortLabelKey() | translate }}
+      </button>
+      @if (sortMenuOpen()) {
+        <div class="users-page__sort-backdrop" (click)="closeSortMenu()" aria-hidden="true"></div>
+        <div
+          class="users-page__sort-menu"
+          role="listbox"
+          [attr.aria-label]="'admin.users.page.sortAria' | translate"
+        >
+          @for (option of sortOptions; track option.id) {
+            <button
+              type="button"
+              role="option"
+              [attr.aria-selected]="sort() === option.id"
+              class="users-page__sort-option"
+              [class.users-page__sort-option--active]="sort() === option.id"
+              (click)="selectSort(option.id)"
+            >
+              {{ option.labelKey | translate }}
+              @if (sort() === option.id) {
+                <app-icon name="check" [size]="14" />
+              }
+            </button>
+          }
+        </div>
+      }
+    </div>
+  }
+</app-admin-page-header>
+
+@if (!isDesktop()) {
+  <div class="users-page__mobile-controls">
+    <div class="users-page__search users-page__search--mobile" role="search">
+      <app-icon name="search" [size]="15" />
+      <input
+        type="search"
+        class="users-page__search-input"
+        [value]="searchInput()"
+        [placeholder]="'admin.users.page.searchPlaceholderShort' | translate"
+        [attr.aria-label]="'admin.users.page.searchPlaceholderShort' | translate"
+        (input)="onSearchInput($event)"
+      />
+    </div>
+    <div class="users-page__sort" (keydown)="onSortKeydown($event)">
+      <button
+        #sortTrigger
+        type="button"
+        class="users-page__sort-trigger-icon"
+        aria-haspopup="listbox"
+        [attr.aria-expanded]="sortMenuOpen()"
+        [attr.aria-label]="'admin.users.page.sortAria' | translate"
+        (click)="toggleSortMenu()"
+      >
+        <app-icon name="sort" [size]="17" />
+      </button>
+      @if (sortMenuOpen()) {
+        <div
+          class="users-page__sort-backdrop users-page__sort-backdrop--sheet"
+          (click)="closeSortMenu()"
+          aria-hidden="true"
+        ></div>
+        <div
+          class="users-page__sort-sheet"
+          role="listbox"
+          [attr.aria-label]="'admin.users.page.sortAria' | translate"
+        >
+          <div class="users-page__sort-sheet-handle" aria-hidden="true"></div>
+          <div class="users-page__sort-sheet-title">
+            {{ 'admin.users.page.sortAria' | translate }}
+          </div>
+          @for (option of sortOptions; track option.id) {
+            <button
+              type="button"
+              role="option"
+              [attr.aria-selected]="sort() === option.id"
+              class="users-page__sort-sheet-option"
+              [class.users-page__sort-sheet-option--active]="sort() === option.id"
+              (click)="selectSort(option.id)"
+            >
+              {{ option.labelKey | translate }}
+              @if (sort() === option.id) {
+                <app-icon name="check" [size]="16" />
+              }
+            </button>
+          }
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<div class="users-page__stats">
+  <app-admin-stat-card
+    [value]="statsReady() ? summary().totalUsers : null"
+    [label]="'admin.users.stats.total' | translate"
+  />
+  <app-admin-stat-card
+    [value]="statsReady() ? summary().verifiedCount : null"
+    [label]="'admin.users.stats.verified' | translate"
+  />
+  <app-admin-stat-card
+    [value]="statsReady() ? summary().pendingCount : null"
+    [label]="'admin.users.stats.pending' | translate"
+  />
+  <app-admin-stat-card
+    [value]="statsReady() ? summary().suspendedCount : null"
+    [label]="'admin.users.stats.suspended' | translate"
+  />
+</div>
+
+<app-admin-tabs
+  [tabs]="tabs()"
+  [value]="statusFilter()"
+  [ariaLabel]="'admin.users.page.tabsAria' | translate"
+  (valueChange)="selectTab($event)"
+/>
+
+@if (error() !== null) {
+  <div class="users-page__error" role="alert">
+    <p-message severity="error" styleClass="users-page__error-message">
+      <div class="users-page__error-content">
+        <strong>{{ 'admin.users.page.errorTitle' | translate }}</strong>
+        <span>{{ error() }}</span>
+      </div>
+    </p-message>
+    <button type="button" class="users-page__retry-btn" (click)="retry()">
+      {{ 'listings.common.retry' | translate }}
+    </button>
+  </div>
+}
+
+@if (showInitialSkeleton()) {
+  @if (isDesktop()) {
+    <div class="users-page__table" aria-busy="true">
+      <div class="users-page__table-head">
+        <span>{{ 'admin.users.table.user' | translate }}</span>
+        <span>{{ 'admin.users.table.status' | translate }}</span>
+        <span>{{ 'admin.users.table.flags' | translate }}</span>
+        <span class="users-page__col-end">{{ 'admin.users.table.actions' | translate }}</span>
+      </div>
+      @for (i of [0, 1, 2, 3, 4]; track i) {
+        <div class="users-page__skeleton-row">
+          <p-skeleton shape="circle" size="40px" />
+          <p-skeleton width="60%" height="1rem" />
+          <p-skeleton width="70px" height="1.375rem" borderRadius="999px" />
+          <p-skeleton width="24px" height="1rem" />
+          <p-skeleton width="34px" height="32px" borderRadius="8px" />
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="users-page__cards" aria-busy="true">
+      @for (i of [0, 1, 2, 3, 4]; track i) {
+        <div class="users-page__skeleton-card">
+          <p-skeleton shape="circle" size="44px" />
+          <div class="users-page__skeleton-card-body">
+            <p-skeleton width="60%" height="1rem" />
+            <p-skeleton width="40%" height="0.85rem" />
+          </div>
+        </div>
+      }
+    </div>
+  }
+}
+
+@if (showEmpty()) {
+  <div class="users-page__empty-wrap">
+    <app-ui-empty-state
+      tone="neutral"
+      icon="pi pi-users"
+      [title]="'admin.users.empty.title' | translate"
+      [description]="'admin.users.empty.description' | translate"
+    />
+  </div>
+}
+
+@if (!showInitialSkeleton() && items().length > 0) {
+  @if (isDesktop()) {
+    <div
+      class="users-page__table"
+      role="table"
+      [attr.aria-label]="'admin.users.page.title' | translate"
+    >
+      <div class="users-page__table-head" role="row">
+        <span role="columnheader">{{ 'admin.users.table.user' | translate }}</span>
+        <span role="columnheader">{{ 'admin.users.table.status' | translate }}</span>
+        <span role="columnheader">{{ 'admin.users.table.flags' | translate }}</span>
+        <span role="columnheader" class="users-page__col-end">{{
+          'admin.users.table.actions' | translate
+        }}</span>
+      </div>
+      @for (user of items(); track user.id; let last = $last) {
+        <div class="users-page__row" role="row" [class.users-page__row--last]="last">
+          <div class="users-page__user-cell" role="cell">
+            <button
+              type="button"
+              class="users-page__avatar-btn"
+              [attr.aria-label]="
+                'admin.users.table.viewProfileAria' | translate: { name: displayName(user) }
+              "
+              (click)="openProfile(user)"
+            >
+              <app-ui-avatar [name]="displayName(user)" size="md" />
+            </button>
+            <div class="users-page__user-text">
+              <button type="button" class="users-page__name-btn" (click)="openProfile(user)">
+                <span class="users-page__name">{{ displayName(user) }}</span>
+                @if (user.isIdConfirmed) {
+                  <app-icon
+                    name="verified"
+                    [size]="14"
+                    [attr.aria-label]="'admin.users.profile.verifiedAria' | translate"
+                  />
+                }
+              </button>
+              <div class="users-page__meta">
+                {{
+                  'admin.users.table.meta'
+                    | translate
+                      : {
+                          role:
+                            ('admin.users.role.' + user.marketplaceRole.toLowerCase() | translate),
+                          listings: user.listingCount,
+                          rentals: user.rentalCount,
+                          joined: (user.createdAt | date: 'MMM y'),
+                        }
+                }}
+              </div>
+            </div>
+          </div>
+          <div role="cell">
+            <app-admin-user-status-pill [status]="user.status" />
+          </div>
+          <div role="cell">
+            @if (user.flagCount > 0) {
+              <button
+                type="button"
+                class="users-page__flags-btn"
+                [attr.aria-label]="
+                  'admin.users.table.viewFlagsAria'
+                    | translate: { name: displayName(user), count: user.flagCount }
+                "
+                (click)="viewReports(user.id)"
+              >
+                <app-icon name="flag" [size]="12" />
+                {{ user.flagCount }}
+              </button>
+            } @else {
+              <span class="users-page__flags-empty" aria-hidden="true">&mdash;</span>
+            }
+          </div>
+          <div class="users-page__actions-cell" role="cell">
+            <button
+              type="button"
+              class="users-page__menu-trigger"
+              [class.users-page__menu-trigger--open]="isMenuOpen(user.id)"
+              aria-haspopup="menu"
+              [attr.aria-expanded]="isMenuOpen(user.id)"
+              [attr.aria-label]="
+                'admin.users.table.actionsAria' | translate: { name: displayName(user) }
+              "
+              (click)="toggleMenu(user.id)"
+            >
+              <app-icon name="dots" [size]="16" />
+            </button>
+            @if (isMenuOpen(user.id)) {
+              <app-admin-user-actions-panel
+                [user]="user"
+                [isDesktop]="true"
+                [busy]="isBusy(user.id)"
+                [canSuspend]="canSuspend(user)"
+                [suspendDisabledReasonKey]="suspendReasonKey(user)"
+                (cancel)="closeMenu()"
+                (verify)="verify(user.id); closeMenu()"
+                (suspend)="suspend(user); closeMenu()"
+                (reactivate)="reactivate(user.id); closeMenu()"
+              />
+            }
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="users-page__cards">
+      @for (user of items(); track user.id) {
+        <div class="users-page__card">
+          <button
+            type="button"
+            class="users-page__avatar-btn"
+            [attr.aria-label]="
+              'admin.users.table.viewProfileAria' | translate: { name: displayName(user) }
+            "
+            (click)="openProfile(user)"
+          >
+            <app-ui-avatar [name]="displayName(user)" size="md" />
+          </button>
+          <div class="users-page__card-body">
+            <button type="button" class="users-page__name-btn" (click)="openProfile(user)">
+              <span class="users-page__name">{{ displayName(user) }}</span>
+              @if (user.isIdConfirmed) {
+                <app-icon
+                  name="verified"
+                  [size]="13"
+                  [attr.aria-label]="'admin.users.profile.verifiedAria' | translate"
+                />
+              }
+            </button>
+            <div class="users-page__card-meta">
+              <app-admin-user-status-pill [status]="user.status" size="sm" />
+              @if (user.flagCount > 0) {
+                <button
+                  type="button"
+                  class="users-page__flags-pill"
+                  [attr.aria-label]="
+                    'admin.users.table.viewFlagsAria'
+                      | translate: { name: displayName(user), count: user.flagCount }
+                  "
+                  (click)="viewReports(user.id)"
+                >
+                  <app-icon name="flag" [size]="10" />
+                  {{ user.flagCount }}
+                </button>
+              }
+              <span class="users-page__card-role">{{
+                'admin.users.role.' + user.marketplaceRole.toLowerCase() | translate
+              }}</span>
+            </div>
+          </div>
+          <div class="users-page__actions-cell">
+            <button
+              type="button"
+              class="users-page__menu-trigger"
+              aria-haspopup="menu"
+              [attr.aria-expanded]="isMenuOpen(user.id)"
+              [attr.aria-label]="
+                'admin.users.table.actionsAria' | translate: { name: displayName(user) }
+              "
+              (click)="toggleMenu(user.id)"
+            >
+              <app-icon name="dots" [size]="16" />
+            </button>
+            @if (isMenuOpen(user.id)) {
+              <app-admin-user-actions-panel
+                [user]="user"
+                [isDesktop]="false"
+                [busy]="isBusy(user.id)"
+                [canSuspend]="canSuspend(user)"
+                [suspendDisabledReasonKey]="suspendReasonKey(user)"
+                (cancel)="closeMenu()"
+                (verify)="verify(user.id); closeMenu()"
+                (suspend)="suspend(user); closeMenu()"
+                (reactivate)="reactivate(user.id); closeMenu()"
+              />
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  @if (totalPages() > 1) {
+    <nav class="users-page__pager" [attr.aria-label]="'admin.users.page.pagerAria' | translate">
+      <button
+        type="button"
+        class="users-page__pager-btn"
+        [disabled]="page() <= 1"
+        (click)="goToPage(page() - 1)"
+      >
+        {{ 'admin.users.page.pagerPrev' | translate }}
+      </button>
+      <span class="users-page__pager-status">
+        {{ 'admin.users.page.pagerStatus' | translate: { page: page(), total: totalPages() } }}
+      </span>
+      <button
+        type="button"
+        class="users-page__pager-btn"
+        [disabled]="page() >= totalPages()"
+        (click)="goToPage(page() + 1)"
+      >
+        {{ 'admin.users.page.pagerNext' | translate }}
+      </button>
+    </nav>
+  }
+}
+
+@if (profileUser(); as user) {
+  <app-admin-user-profile-dialog
+    [user]="user"
+    [isDesktop]="isDesktop()"
+    [busy]="isBusy(user.id)"
+    [canSuspend]="canSuspend(user)"
+    [suspendDisabledReasonKey]="suspendReasonKey(user)"
+    (close)="closeProfile()"
+    (verify)="verify(user.id)"
+    (suspend)="suspend(user)"
+    (reactivate)="reactivate(user.id)"
+    (viewReports)="viewReports(user.id)"
+  />
+}

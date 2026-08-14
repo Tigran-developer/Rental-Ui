@@ -17,6 +17,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { distinctUntilChanged, map, of, switchMap } from 'rxjs';
 
 import { AuthDialogComponent } from '../../../auth/components/auth-dialog/auth-dialog.component';
+import { ReportDialogComponent } from '../../../reports/components/report-dialog/report-dialog.component';
 import { AvatarComponent } from '../../../../shared/ui/avatar/avatar.component';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
 import { DramCurrencyPipe } from '../../../../shared/utils/dram-currency.pipe';
@@ -94,7 +95,10 @@ export function resolveConditionLabelKey(value: string | null | undefined): stri
   if (typeof value !== 'string') {
     return null;
   }
-  const normalized = value.trim().toLowerCase().replace(/[\s_-]+/g, '');
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '');
   switch (normalized) {
     case 'new':
       return 'listings.details.conditionValues.new';
@@ -178,7 +182,9 @@ export interface DetailRow {
 }
 
 function deliveryLabelKey(type: DeliveryType): string {
-  return type === 'Courier' ? 'listings.createForm.delivery.deliver' : 'listings.createForm.delivery.pickup';
+  return type === 'Courier'
+    ? 'listings.createForm.delivery.deliver'
+    : 'listings.createForm.delivery.pickup';
 }
 
 function deliveryHintKey(type: DeliveryType): string {
@@ -201,6 +207,7 @@ function deliveryHintKey(type: DeliveryType): string {
     NgTemplateOutlet,
     PageHeaderComponent,
     RatingSummaryComponent,
+    ReportDialogComponent,
     ReviewCardComponent,
     RouterLink,
     SkeletonModule,
@@ -229,6 +236,21 @@ export class ListingDetailsPageComponent {
   private readonly currentUser = this.store.selectSignal(selectAuthUser);
   protected readonly showAuthDialog = signal(false);
   protected readonly reviewsExpanded = signal(false);
+
+  /** The "Report this listing" affordance is a safety control, not a primary action — hidden
+   *  for guests (it requires authentication) and on your own listing (the server enforces this
+   *  too via `report.cannot_report_own`, but there is no reason to ever offer it here). Owners
+   *  viewing their own listing are normally redirected to `/my-listings/:id` (see the
+   *  constructor `effect` below) before this would even render, but the guard stays cheap
+   *  insurance against that redirect's own render frame. */
+  protected readonly showReportDialog = signal(false);
+  protected readonly canReportListing = computed(() => {
+    const listing = this.displayListing();
+    const user = this.currentUser();
+    return (
+      this.isAuthenticated() && listing !== null && user !== null && user.id !== listing.owner.id
+    );
+  });
 
   private readonly myBookingsSignal = this.store.selectSignal(selectMyBookings);
 
@@ -432,7 +454,9 @@ export class ListingDetailsPageComponent {
     return new Date(p.memberSince).getFullYear().toString();
   });
 
-  protected readonly ownerIsVerified = computed(() => this.ownerPublicProfile()?.isVerified === true);
+  protected readonly ownerIsVerified = computed(
+    () => this.ownerPublicProfile()?.isVerified === true,
+  );
 
   /** Owner stat row on the owner card — only stats the public profile actually
    *  returns. `responseRate` is deliberately excluded: it's hardcoded `null`
@@ -608,7 +632,8 @@ export class ListingDetailsPageComponent {
         id: 'minRental',
         icon: 'pi pi-calendar',
         labelKey: 'listings.createForm.minRental.label',
-        valueKey: listing.minRentalDays === 1 ? 'listings.booking.night' : 'listings.booking.nights',
+        valueKey:
+          listing.minRentalDays === 1 ? 'listings.booking.night' : 'listings.booking.nights',
         valueParams: { count: listing.minRentalDays },
       });
     }
@@ -696,6 +721,15 @@ export class ListingDetailsPageComponent {
       return;
     }
     this.store.dispatch(ListingsActions.toggleFavoriteOptimistic({ listingId: listing.id }));
+  }
+
+  protected openReportDialog(): void {
+    if (!this.canReportListing()) return;
+    this.showReportDialog.set(true);
+  }
+
+  protected closeReportDialog(): void {
+    this.showReportDialog.set(false);
   }
 
   protected retryLoad(): void {

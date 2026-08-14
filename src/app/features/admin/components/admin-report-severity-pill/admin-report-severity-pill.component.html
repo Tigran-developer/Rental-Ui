@@ -1,0 +1,12 @@
+<span
+  class="admin-report-severity-pill"
+  [class]="
+    'admin-report-severity-pill--' +
+    severity().toLowerCase() +
+    ' admin-report-severity-pill--' +
+    size()
+  "
+>
+  <span class="admin-report-severity-pill__dot" aria-hidden="true"></span>
+  {{ labelKey() | translate }}
+</span>

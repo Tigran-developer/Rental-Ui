@@ -1,0 +1,325 @@
+<app-admin-page-header
+  [title]="'admin.categories.page.title' | translate"
+  [subtitle]="'admin.categories.page.subtitle' | translate"
+>
+  <button type="button" class="categories-page__new-btn" (click)="toggleCreate()">
+    <app-icon name="plus" [size]="15" />
+    {{ 'admin.categories.page.newCategory' | translate }}
+  </button>
+</app-admin-page-header>
+
+<div class="categories-page__stats">
+  <app-admin-stat-card
+    [value]="statsReady() ? summary().totalCategories : null"
+    [label]="'admin.categories.stats.categories' | translate"
+  />
+  <app-admin-stat-card
+    [value]="statsReady() ? summary().visibleCount : null"
+    [label]="'admin.categories.stats.visible' | translate"
+  />
+  <app-admin-stat-card
+    [value]="statsReady() ? summary().totalListedToys : null"
+    [label]="'admin.categories.stats.listedToys' | translate"
+  />
+</div>
+
+@if (error() !== null) {
+  <div class="categories-page__error" role="alert">
+    <p-message severity="error" styleClass="categories-page__error-message">
+      <div class="categories-page__error-content">
+        <strong>{{ 'admin.categories.page.errorTitle' | translate }}</strong>
+        <span>{{ error() }}</span>
+      </div>
+    </p-message>
+    <button type="button" class="categories-page__retry-btn" (click)="retry()">
+      {{ 'listings.common.retry' | translate }}
+    </button>
+  </div>
+}
+
+@if (adding()) {
+  <div class="categories-page__create-panel">
+    <app-category-form-panel
+      [name]="newName()"
+      [iconName]="newIcon()"
+      [colorHex]="newColor()"
+      [busy]="isCreating()"
+      [nameErrorMessage]="createNameErrorMessage()"
+      [namePlaceholder]="'admin.categories.form.namePlaceholder' | translate"
+      (nameChange)="newName.set($event)"
+      (iconChange)="newIcon.set($event)"
+      (colorChange)="newColor.set($event)"
+      (submitName)="submitCreate()"
+    />
+    <div class="categories-page__panel-footer">
+      <button
+        type="button"
+        class="categories-page__btn categories-page__btn--cancel"
+        [disabled]="isCreating()"
+        (click)="cancelCreate()"
+      >
+        {{ 'admin.categories.form.cancel' | translate }}
+      </button>
+      <button
+        type="button"
+        class="categories-page__btn categories-page__btn--confirm"
+        [disabled]="isCreating() || newName().trim().length === 0"
+        (click)="submitCreate()"
+      >
+        @if (isCreating()) {
+          <span class="categories-page__spinner" aria-hidden="true"></span>
+        }
+        {{ 'admin.categories.form.addCategory' | translate }}
+      </button>
+    </div>
+  </div>
+}
+
+@if (showInitialSkeleton()) {
+  @if (isDesktop()) {
+    <div class="categories-page__table" aria-busy="true">
+      <div class="categories-page__table-head">
+        <span></span>
+        <span>{{ 'admin.categories.table.category' | translate }}</span>
+        <span class="categories-page__col-center">{{
+          'admin.categories.table.listings' | translate
+        }}</span>
+        <span>{{ 'admin.categories.table.visibility' | translate }}</span>
+        <span>{{ 'admin.categories.table.actions' | translate }}</span>
+      </div>
+      @for (i of [0, 1, 2, 3, 4]; track i) {
+        <div class="categories-page__skeleton-row">
+          <p-skeleton shape="circle" size="38px" />
+          <p-skeleton width="50%" height="1rem" />
+          <p-skeleton width="24px" height="1rem" styleClass="categories-page__col-center" />
+          <p-skeleton width="70px" height="1.375rem" borderRadius="999px" />
+          <p-skeleton width="90px" height="2rem" borderRadius="8px" />
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="categories-page__cards" aria-busy="true">
+      @for (i of [0, 1, 2, 3, 4]; track i) {
+        <div class="categories-page__skeleton-card">
+          <p-skeleton shape="circle" size="42px" />
+          <div class="categories-page__skeleton-card-body">
+            <p-skeleton width="60%" height="1rem" />
+            <p-skeleton width="40%" height="0.85rem" />
+          </div>
+        </div>
+      }
+    </div>
+  }
+}
+
+@if (showEmpty()) {
+  <div class="categories-page__empty-wrap">
+    <app-ui-empty-state
+      tone="neutral"
+      icon="pi pi-tags"
+      [title]="'admin.categories.empty.title' | translate"
+      [description]="'admin.categories.empty.description' | translate"
+    />
+  </div>
+}
+
+@if (!showInitialSkeleton() && categories().length > 0) {
+  @if (isDesktop()) {
+    <div class="categories-page__table">
+      <div class="categories-page__table-head">
+        <span></span>
+        <span>{{ 'admin.categories.table.category' | translate }}</span>
+        <span class="categories-page__col-center">{{
+          'admin.categories.table.listings' | translate
+        }}</span>
+        <span>{{ 'admin.categories.table.visibility' | translate }}</span>
+        <span>{{ 'admin.categories.table.actions' | translate }}</span>
+      </div>
+      @for (category of categories(); track category.id; let i = $index; let last = $last) {
+        @if (editingId() === category.id) {
+          <div class="categories-page__edit-row" [class.categories-page__edit-row--last]="last">
+            <app-category-form-panel
+              [name]="editName()"
+              [iconName]="editIcon()"
+              [colorHex]="editColor()"
+              [busy]="isEditBusy(category.id)"
+              [nameErrorMessage]="editNameErrorMessage()"
+              [namePlaceholder]="'admin.categories.form.namePlaceholder' | translate"
+              (nameChange)="editName.set($event)"
+              (iconChange)="editIcon.set($event)"
+              (colorChange)="editColor.set($event)"
+              (submitName)="confirmEdit()"
+            />
+            <div class="categories-page__panel-footer">
+              <button
+                type="button"
+                class="categories-page__btn categories-page__btn--cancel"
+                [disabled]="isEditBusy(category.id)"
+                (click)="cancelEdit()"
+              >
+                {{ 'admin.categories.form.cancel' | translate }}
+              </button>
+              <button
+                type="button"
+                class="categories-page__btn categories-page__btn--confirm"
+                [disabled]="isEditBusy(category.id) || editName().trim().length === 0"
+                (click)="confirmEdit()"
+              >
+                @if (isEditBusy(category.id)) {
+                  <span class="categories-page__spinner" aria-hidden="true"></span>
+                }
+                {{ 'admin.categories.form.saveChanges' | translate }}
+              </button>
+            </div>
+          </div>
+        } @else {
+          <div
+            class="categories-page__row"
+            [class.categories-page__row--last]="last"
+            [class.categories-page__row--hidden]="!category.isVisible"
+          >
+            <div class="categories-page__reorder">
+              <button
+                type="button"
+                class="categories-page__reorder-btn categories-page__reorder-btn--up"
+                [disabled]="i === 0 || isReordering()"
+                [attr.aria-label]="
+                  'admin.categories.table.moveUp' | translate: { name: category.name }
+                "
+                (click)="moveUp(i)"
+              >
+                <app-icon name="chevronD" [size]="13" />
+              </button>
+              <button
+                type="button"
+                class="categories-page__reorder-btn"
+                [disabled]="last || isReordering()"
+                [attr.aria-label]="
+                  'admin.categories.table.moveDown' | translate: { name: category.name }
+                "
+                (click)="moveDown(i)"
+              >
+                <app-icon name="chevronD" [size]="13" />
+              </button>
+            </div>
+            <div class="categories-page__name-cell">
+              <span
+                class="categories-page__tile"
+                [style.background]="category.colorHex || defaultColor"
+                aria-hidden="true"
+              >
+                <app-icon [name]="category.iconName || defaultIcon" [size]="17" />
+              </span>
+              <span class="categories-page__name">{{ category.name }}</span>
+            </div>
+            <div class="categories-page__count">{{ category.listingCount }}</div>
+            <div>
+              <app-category-visibility-toggle
+                [checked]="category.isVisible"
+                [disabled]="isEditBusy(category.id)"
+                (toggle)="toggleVisibility(category)"
+              />
+            </div>
+            <div class="categories-page__actions">
+              <button
+                type="button"
+                class="categories-page__change-btn"
+                (click)="startEdit(category)"
+              >
+                {{ 'admin.categories.table.change' | translate }}
+              </button>
+              <button
+                type="button"
+                class="categories-page__delete-btn"
+                [attr.aria-label]="
+                  'admin.categories.table.deleteAria' | translate: { name: category.name }
+                "
+                (click)="startDelete(category)"
+              >
+                <app-icon name="trash" [size]="14" />
+              </button>
+            </div>
+          </div>
+        }
+      }
+    </div>
+  } @else {
+    <div class="categories-page__cards">
+      @for (category of categories(); track category.id) {
+        <div
+          class="categories-page__card"
+          [class.categories-page__card--hidden]="!category.isVisible"
+        >
+          <span
+            class="categories-page__tile"
+            [style.background]="category.colorHex || defaultColor"
+            aria-hidden="true"
+          >
+            <app-icon [name]="category.iconName || defaultIcon" [size]="19" />
+          </span>
+          <div class="categories-page__card-body">
+            <div class="categories-page__card-name">{{ category.name }}</div>
+            <div class="categories-page__card-count">
+              {{
+                listingCountKey(category.listingCount) | translate: { count: category.listingCount }
+              }}
+            </div>
+          </div>
+          <app-category-visibility-toggle
+            [checked]="category.isVisible"
+            [disabled]="isEditBusy(category.id)"
+            (toggle)="toggleVisibility(category)"
+          />
+          <button
+            type="button"
+            class="categories-page__icon-btn"
+            [attr.aria-label]="'admin.categories.table.change' | translate"
+            (click)="startEdit(category)"
+          >
+            <app-icon name="edit" [size]="16" />
+          </button>
+          <button
+            type="button"
+            class="categories-page__icon-btn categories-page__icon-btn--danger"
+            [attr.aria-label]="
+              'admin.categories.table.deleteAria' | translate: { name: category.name }
+            "
+            (click)="startDelete(category)"
+          >
+            <app-icon name="trash" [size]="16" />
+          </button>
+        </div>
+      }
+    </div>
+  }
+}
+
+@if (!isDesktop() && editingId() !== null) {
+  <app-category-edit-sheet
+    [name]="editName()"
+    [iconName]="editIcon()"
+    [colorHex]="editColor()"
+    [busy]="isEditBusy(editingId()!)"
+    [nameErrorMessage]="editNameErrorMessage()"
+    (nameChange)="editName.set($event)"
+    (iconChange)="editIcon.set($event)"
+    (colorChange)="editColor.set($event)"
+    (cancel)="cancelEdit()"
+    (confirm)="confirmEdit()"
+  />
+}
+
+@if (deletingCategory(); as category) {
+  <app-category-delete-dialog
+    [categoryName]="category.name"
+    [listingCount]="category.listingCount"
+    [otherCategories]="deleteOtherCategories()"
+    [isDesktop]="isDesktop()"
+    [busy]="deleteDialogBusy()"
+    [errorMessage]="deleteDialogErrorMessage()"
+    (cancel)="cancelDelete()"
+    (confirmSimple)="confirmDeleteSimple()"
+    (confirmExisting)="confirmDeleteExisting($event)"
+    (confirmNew)="confirmDeleteNew($event)"
+  />
+}

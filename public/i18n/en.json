@@ -69,6 +69,14 @@
       "title": "Every toy is reviewed",
       "text": "Hygiene, photos and condition checked before listings go live."
     },
+    "heroMap": {
+      "nearbyCount": "{{count}} toys nearby",
+      "cityCount": "{{count}} toys in Yerevan",
+      "ariaLabel": "Map showing toys available near you",
+      "markerLabel": "Toy nearby",
+      "markerGroupLabel": "{count} toys nearby",
+      "showMyArea": "Show my area"
+    },
     "featured": {
       "pricePerDay": "{{amount}} per day",
       "emptyTitle": "No toys yet",
@@ -149,7 +157,7 @@
       }
     },
     "faq": {
-      "title": "Frequently asked questions",
+      "title": "FAQ's",
       "helpTitle": "Still have questions?",
       "helpText": "Send us an email and we’ll get back to you as soon as possible.",
       "helpCta": "Send us an email",
@@ -445,6 +453,7 @@
       "shareLabel": "Share",
       "saveLabel": "Save",
       "savedLabel": "Saved",
+      "reportLabel": "Report",
       "linkCopied": "Link copied to clipboard",
       "messageOwner": "Message owner",
       "handoverLabel": "Handover",
@@ -1373,11 +1382,532 @@
           "unsafeItem": {
             "title": "Unsafe item",
             "description": "Choking hazard, recalled, or broken"
+          },
+          "hygiene": {
+            "title": "Hygiene",
+            "description": "No cleaning or hygiene details"
+          },
+          "pricing": {
+            "title": "Pricing",
+            "description": "Unrealistic pricing"
+          },
+          "other": {
+            "title": "Other",
+            "description": "Doesn't fit any of the above"
           }
         }
       },
       "common": {
         "notAvailable": "Not available"
+      }
+    },
+    "overview": {
+      "page": {
+        "title": "Overview",
+        "subtitle": "Marketplace moderation at a glance",
+        "errorTitle": "Unable to load the overview"
+      },
+      "stats": {
+        "awaitingReview": {
+          "label": "Awaiting review",
+          "oldest": "oldest {{time}}",
+          "caughtUp": "queue is empty"
+        },
+        "liveListings": {
+          "label": "Live listings",
+          "addedThisWeek": "+{{count}} this week"
+        },
+        "categories": {
+          "label": "Categories",
+          "visible": "{{count}} visible"
+        },
+        "reports": {
+          "label": "Open reports",
+          "needsAction": "needs action",
+          "allClear": "all clear"
+        }
+      },
+      "cta": {
+        "kicker": "Priority",
+        "titleOne": "1 toy is waiting for your review",
+        "title": "{{count}} toys are waiting for your review",
+        "subtitle": "Keep the review time under {{hours}} hours so owners can start earning quickly.",
+        "caughtUpTitle": "You're all caught up",
+        "caughtUpSubtitle": "No toys are waiting for review right now.",
+        "button": "Open review queue"
+      },
+      "activity": {
+        "title": "Recent moderation",
+        "errorTitle": "Unable to load recent activity",
+        "removedActor": "Removed moderator",
+        "empty": {
+          "title": "No activity yet",
+          "description": "Moderation actions will show up here as they happen."
+        },
+        "lines": {
+          "ListingApproved": "{{actor}} approved {{target}}",
+          "ListingRejected": "{{actor}} rejected {{target}}",
+          "ListingRecategorised": "{{actor}} recategorised {{target}}",
+          "CategoryCreated": "{{actor}} created the category {{target}}",
+          "CategoryRenamed": "{{actor}} renamed the category {{target}}",
+          "CategoryReordered": "{{actor}} reordered the categories",
+          "CategoryVisibilityChanged": "{{actor}} changed visibility for {{target}}",
+          "CategoryDeleted": "{{actor}} deleted the category {{target}}",
+          "UserVerified": "{{actor}} verified {{target}}",
+          "UserSuspended": "{{actor}} suspended {{target}}",
+          "UserReactivated": "{{actor}} reactivated {{target}}",
+          "ReportResolved": "{{actor}} resolved a report on {{target}}",
+          "ReportDismissed": "{{actor}} dismissed a report on {{target}}",
+          "ReportReopened": "{{actor}} reopened a report on {{target}}",
+          "generic": "{{actor}} updated {{target}}"
+        }
+      },
+      "time": {
+        "justNow": "just now",
+        "minutesAgo": "{{value}}m ago",
+        "hoursAgo": "{{value}}h ago",
+        "daysAgo": "{{value}}d ago",
+        "weeksAgo": "{{value}}w ago",
+        "monthsAgo": "{{value}}mo ago",
+        "yearsAgo": "{{value}}y ago"
+      }
+    },
+    "review": {
+      "tabs": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "page": {
+        "title": "Listing review",
+        "subtitle": "Approve new toys or send them back to owners with a clear reason.",
+        "awaitingReview": "{{count}} awaiting review",
+        "tabsAria": "Review status",
+        "errorTitle": "Unable to load the review queue",
+        "pagerAria": "Queue pages",
+        "pagerPrev": "Previous",
+        "pagerNext": "Next",
+        "pagerStatus": "Page {{page}} of {{total}}"
+      },
+      "empty": {
+        "title": "All caught up",
+        "pending": "No listings are waiting for review.",
+        "approved": "No approved listings yet.",
+        "rejected": "No rejected listings yet."
+      },
+      "card": {
+        "unverified": "Unverified",
+        "listingCountOne": "1 listing",
+        "listingCount": "{{count}} listings",
+        "perDay": "/ day",
+        "rejectedFor": "Reason:"
+      },
+      "category": {
+        "label": "Category",
+        "none": "Uncategorised",
+        "suggestion": "Owner picked “{{owner}}” — suggested “{{suggested}}”."
+      },
+      "checklist": {
+        "photos": "Clear photos",
+        "safety": "Age & safety",
+        "hygiene": "Hygiene noted"
+      },
+      "actions": {
+        "approve": "Approve",
+        "reject": "Reject…",
+        "inspect": "Inspect"
+      },
+      "rejectPanel": {
+        "question": "Why is this listing being rejected?",
+        "confirm": "Reject & notify owner",
+        "confirmMobile": "Reject & notify",
+        "mobileSubtitle": "“{{title}}” — the owner sees this reason and can resubmit."
+      }
+    },
+    "inspect": {
+      "page": {
+        "errorTitle": "Unable to load this listing",
+        "backToQueue": "Review queue",
+        "mobileTitle": "Review item"
+      },
+      "category": {
+        "hint": "Set the category before approving — renters browse by this.",
+        "suggestion": "Owner chose {{owner}}. Suggested {{suggested}}.",
+        "apply": "Apply"
+      },
+      "description": {
+        "title": "Owner's description"
+      },
+      "attributes": {
+        "photos": "Photos",
+        "photosValue": "{{count}} uploaded",
+        "condition": "Condition",
+        "deposit": "Deposit",
+        "noDeposit": "No deposit"
+      },
+      "owner": {
+        "label": "Owner",
+        "rating": "Rating",
+        "listings": "Listings",
+        "rentals": "Rentals",
+        "memberSince": "Member since",
+        "identity": "Identity",
+        "identityVerified": "Verified",
+        "identityUnverified": "Not verified",
+        "flags": "Flags",
+        "flagsCount": "{{count}} open report(s)",
+        "viewProfile": "View public profile"
+      },
+      "checklist": {
+        "title": "Compliance checklist",
+        "pass": "Pass",
+        "missing": "Missing"
+      },
+      "decision": {
+        "approve": "Approve listing",
+        "reject": "Reject with reason"
+      }
+    },
+    "categories": {
+      "page": {
+        "title": "Categories",
+        "subtitle": "Curate the toy taxonomy renters browse. Reorder, rename, hide, or add categories.",
+        "newCategory": "New category",
+        "errorTitle": "Unable to load categories"
+      },
+      "stats": {
+        "categories": "Categories",
+        "visible": "Visible to renters",
+        "listedToys": "Listed toys"
+      },
+      "form": {
+        "iconLabel": "Icon",
+        "colorLabel": "Color",
+        "namePlaceholder": "Category name, e.g. Musical Instruments",
+        "cancel": "Cancel",
+        "addCategory": "Add category",
+        "saveChanges": "Save changes"
+      },
+      "table": {
+        "category": "Category",
+        "listings": "Listings",
+        "visibility": "Visibility",
+        "actions": "Actions",
+        "change": "Change",
+        "deleteAria": "Delete {{name}}",
+        "moveUp": "Move {{name}} up",
+        "moveDown": "Move {{name}} down"
+      },
+      "card": {
+        "listingCountOne": "1 live listing",
+        "listingCount": "{{count}} live listings"
+      },
+      "empty": {
+        "title": "No categories yet",
+        "description": "Add your first category to start organising toy listings."
+      },
+      "visibility": {
+        "visible": "Visible",
+        "hidden": "Hidden",
+        "toggleAriaShow": "Show category",
+        "toggleAriaHide": "Hide category",
+        "tooltipShow": "Add this category back to the renter-facing category list and filter.",
+        "tooltipHide": "Hides this category from the renter-facing category list and filter. Its listings stay visible in browse, search, the map, and the home page."
+      },
+      "editSheet": {
+        "title": "Edit category"
+      },
+      "deleteDialog": {
+        "title": "Delete “{{name}}”?",
+        "subtitle": "This can’t be undone.",
+        "hasListingsOne": "1 live listing is in this category. Reassign it before deleting.",
+        "hasListings": "{{count}} live listings are in this category. Reassign them before deleting.",
+        "noListings": "This category has no listings and will be removed immediately.",
+        "reassignLabel": "Move listings to",
+        "selectPlaceholder": "Select a category…",
+        "newCategoryOption": "+ Move to a new category…",
+        "newCategoryPlaceholder": "New category name",
+        "cancel": "Cancel",
+        "confirmSimple": "Delete category",
+        "confirmReassign": "Reassign & delete"
+      },
+      "toast": {
+        "createSuccessTitle": "Category created",
+        "createSuccess": "The new category is live.",
+        "deleteSuccessTitle": "Category deleted",
+        "deleteSuccess": "The category was removed.",
+        "deletePartialFailureTitle": "Category not deleted",
+        "deletePartialFailure": "The new category was created, but moving the listings and deleting the old category failed. Please retry the delete — the new category is now available as a reassign target.",
+        "actionFailureTitle": "Action failed"
+      },
+      "errors": {
+        "nameTaken": "A category with this name already exists.",
+        "invalidName": "Enter a valid category name.",
+        "invalidColor": "Choose a valid color.",
+        "orderMismatch": "The category order is out of date. Refreshing the list.",
+        "reassignRequired": "Choose where to move this category's listings.",
+        "reassignInvalid": "Choose a valid category to move the listings to.",
+        "notFound": "This category no longer exists.",
+        "reassignTargetNotFound": "The selected category no longer exists. Choose another."
+      }
+    },
+    "users": {
+      "page": {
+        "title": "Users",
+        "subtitle": "Owners and renters, their verification status, and account actions.",
+        "searchPlaceholder": "Search name or email",
+        "searchPlaceholderShort": "Search users",
+        "sortAria": "Sort by",
+        "tabsAria": "User status",
+        "errorTitle": "Unable to load users",
+        "pagerAria": "User pages",
+        "pagerPrev": "Previous",
+        "pagerNext": "Next",
+        "pagerStatus": "Page {{page}} of {{total}}"
+      },
+      "stats": {
+        "total": "Total users",
+        "verified": "Verified",
+        "pending": "Pending ID",
+        "suspended": "Suspended"
+      },
+      "tabs": {
+        "all": "All",
+        "pending": "Pending ID",
+        "suspended": "Suspended"
+      },
+      "sort": {
+        "name": "Name (A–Z)",
+        "newest": "Newest first",
+        "listings": "Most listings",
+        "rentals": "Most rentals",
+        "flags": "Most flags"
+      },
+      "status": {
+        "active": "Active",
+        "pending": "Pending ID",
+        "suspended": "Suspended"
+      },
+      "role": {
+        "renter": "Renter",
+        "owner": "Owner",
+        "both": "Both"
+      },
+      "table": {
+        "user": "User",
+        "status": "Status",
+        "flags": "Flags",
+        "actions": "Actions",
+        "meta": "{{role}} · {{listings}} listed · {{rentals}} rentals · joined {{joined}}",
+        "viewProfileAria": "View {{name}}'s profile",
+        "viewFlagsAria": "View {{count}} report(s) for {{name}}",
+        "actionsAria": "Actions for {{name}}"
+      },
+      "actions": {
+        "menuAria": "Actions for {{name}}",
+        "verify": "Verify user",
+        "suspend": "Suspend",
+        "reactivate": "Reactivate",
+        "cancel": "Cancel",
+        "suspendDisabledSelf": "You can't suspend your own account.",
+        "suspendDisabledAdmin": "Admin accounts can't be suspended from here."
+      },
+      "profile": {
+        "dialogAria": "{{name}}'s profile",
+        "closeAria": "Close",
+        "verifiedAria": "Identity verified",
+        "listings": "Listings",
+        "rentals": "Rentals",
+        "flags": "Flags",
+        "role": "Role",
+        "memberSince": "Member since",
+        "identity": "Identity",
+        "identityVerified": "Verified",
+        "identityUnverified": "Not verified",
+        "viewReports": "View {{count}} report(s)"
+      },
+      "empty": {
+        "title": "No users match",
+        "description": "Try a different search term or switch tabs."
+      },
+      "toast": {
+        "verifySuccessTitle": "User verified",
+        "verifySuccess": "The user's identity has been confirmed.",
+        "suspendSuccessTitle": "User suspended",
+        "suspendSuccess": "The account has been suspended.",
+        "reactivateSuccessTitle": "User reactivated",
+        "reactivateSuccess": "The account is active again.",
+        "actionFailureTitle": "Action failed"
+      },
+      "errors": {
+        "cannotSuspendSelf": "You can't suspend your own account.",
+        "cannotSuspendAdmin": "Admin accounts can't be suspended.",
+        "userNotFound": "This user no longer exists."
+      }
+    },
+    "reports": {
+      "page": {
+        "title": "Reports & flags",
+        "subtitle": "Listings, users, and messages reported by the community. Resolve or dismiss each.",
+        "searchPlaceholder": "Search reports by target, reporter, or reason...",
+        "searchPlaceholderShort": "Search reports",
+        "tabsAria": "Report status",
+        "errorTitle": "Unable to load reports",
+        "pagerAria": "Report pages",
+        "pagerPrev": "Previous",
+        "pagerNext": "Next",
+        "pagerStatus": "Page {{page}} of {{total}}"
+      },
+      "stats": {
+        "open": "Open reports",
+        "resolved": "Resolved",
+        "dismissed": "Dismissed",
+        "all": "All reports"
+      },
+      "tabs": {
+        "open": "Open",
+        "resolved": "Resolved",
+        "dismissed": "Dismissed",
+        "all": "All"
+      },
+      "severity": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
+      "status": {
+        "open": "Open",
+        "resolved": "Resolved",
+        "dismissed": "Dismissed"
+      },
+      "time": {
+        "justNow": "Just now",
+        "minutesAgo": "{{value}}m ago",
+        "hoursAgo": "{{value}}h ago",
+        "daysAgo": "{{value}}d ago"
+      },
+      "card": {
+        "meta": "Reported by {{reporter}} · {{time}}"
+      },
+      "actions": {
+        "resolve": "Resolve",
+        "dismiss": "Dismiss",
+        "reopen": "Reopen",
+        "openReport": "Open report"
+      },
+      "empty": {
+        "title": "Nothing here",
+        "description": "No reports match this view right now."
+      },
+      "filterBanner": {
+        "text": "Showing {{count}} report(s) filtered to this user.",
+        "clear": "Show all reports"
+      },
+      "detail": {
+        "dialogAria": "Report on {{target}}",
+        "closeAria": "Close",
+        "typeListing": "Listing report",
+        "typeUser": "Member report",
+        "typeMessage": "Message report",
+        "reportedBy": "Reported by",
+        "reporterEmail": "Reporter email",
+        "submitted": "Submitted",
+        "targetType": "Report type",
+        "whatWasReported": "What was reported",
+        "reporterNote": "Reporter's note",
+        "resolutionNote": "Resolution note",
+        "noteLabel": "Add a note (optional)",
+        "notePlaceholder": "E.g. Confirmed with the owner — item pulled from listing."
+      },
+      "toast": {
+        "resolveSuccessTitle": "Report resolved",
+        "resolveSuccess": "The report has been marked resolved.",
+        "dismissSuccessTitle": "Report dismissed",
+        "dismissSuccess": "The report has been dismissed.",
+        "reopenSuccessTitle": "Report reopened",
+        "reopenSuccess": "The report is open again.",
+        "actionFailureTitle": "Action failed"
+      },
+      "errors": {
+        "reportNotFound": "This report no longer exists."
+      }
+    },
+    "console": {
+      "nav": {
+        "overview": "Overview",
+        "review": "Listing review",
+        "categories": "Categories",
+        "users": "Users",
+        "reports": "Reports & flags"
+      },
+      "chrome": {
+        "brandAria": "DoRent admin console home",
+        "adminPill": "Admin",
+        "searchPlaceholder": "Search listings, users, categories...",
+        "notificationsAria": "Notifications",
+        "moderatorRole": "Moderator",
+        "moderation": "Moderation",
+        "navAria": "Moderation navigation",
+        "mobileSubtitle": "Moderation console",
+        "queueHealth": {
+          "title": "Queue health",
+          "pending": "Pending",
+          "avgReview": "Avg. review time",
+          "flagged": "Flagged",
+          "hoursValue": "{{hours}} h"
+        }
+      },
+      "comingSoon": {
+        "title": "Coming soon",
+        "description": "This section of the admin console is being built — check back soon."
+      },
+      "statusBadge": {
+        "pending": "Awaiting review",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "flag": "Needs category fix"
+      }
+    }
+  },
+  "reports": {
+    "reasons": {
+      "noShow": { "label": "No-show at pickup or handover" },
+      "unsafeItem": { "label": "Unsafe or broken item" },
+      "misleadingPhotos": { "label": "Misleading photos or description" },
+      "offPlatformPayment": { "label": "Asked to pay off-platform" },
+      "rudeMessages": { "label": "Rude or abusive messages" },
+      "spam": { "label": "Spam or scam" },
+      "other": { "label": "Other" }
+    },
+    "dialog": {
+      "titleListing": "Report this listing",
+      "titleUser": "Report this user",
+      "titleMessage": "Report this conversation",
+      "closeAria": "Close",
+      "reasonLabel": "Why are you reporting this?",
+      "detailLabel": "Add details (optional)",
+      "detailPlaceholder": "Anything that helps our moderators understand what happened...",
+      "cancel": "Cancel",
+      "submit": "Submit report",
+      "done": "Done",
+      "close": "Close",
+      "tryAgain": "Try again",
+      "success": {
+        "title": "Report submitted",
+        "text": "Thanks for letting us know — our moderation team will review it."
+      },
+      "alreadyReported": {
+        "title": "Already reported",
+        "text": "You've already reported this, and it's being reviewed by our team."
+      },
+      "error": {
+        "title": "Couldn't submit your report"
+      },
+      "errors": {
+        "cannotReportOwn": "You can't report your own listing or profile.",
+        "userBlocked": "Your account can't submit reports right now.",
+        "invalidReason": "Choose a valid reason and try again.",
+        "targetNotFound": "This no longer exists — it may have been removed."
       }
     }
   },
@@ -1579,6 +2109,7 @@
     "verifiedUser": "Verified user",
     "idConfirmed": "ID confirmed",
     "emailPhone": "Email & phone",
+    "reportUser": "Report user",
     "verifiedBadgeAria": "Verified user",
     "viewAllToys": "View all toys",
     "viewAllToysAria": "View all toys from this owner",

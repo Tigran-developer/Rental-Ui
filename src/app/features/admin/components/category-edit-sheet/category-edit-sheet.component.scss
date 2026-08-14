@@ -1,0 +1,105 @@
+// Values with no matching design token (13px sheet-content radii, 22px top-corner radius)
+// are hardcoded straight from admin-mobile.jsx's editing bottom sheet.
+:host {
+  display: contents;
+}
+
+.category-edit-sheet__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ui-z-modal);
+  background: rgba(20, 15, 5, 0.42);
+}
+
+.category-edit-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: calc(var(--ui-z-modal) + 1);
+  max-height: 88vh;
+  overflow-y: auto;
+  background: var(--ui-color-surface);
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2);
+  padding: 20px 18px calc(20px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+}
+
+.category-edit-sheet__handle {
+  width: 40px;
+  height: 4px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-color-border);
+  margin: 0 auto 16px;
+}
+
+.category-edit-sheet__title {
+  margin: 0 0 16px;
+  font-size: 1.0625rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--ui-color-text-primary);
+}
+
+.category-edit-sheet__body {
+  margin-bottom: 4px;
+}
+
+.category-edit-sheet__footer {
+  display: flex;
+  gap: var(--ui-space-8);
+  margin-top: 20px;
+}
+
+.category-edit-sheet__btn {
+  flex: 1;
+  height: 46px;
+  border-radius: var(--ui-radius-12);
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.category-edit-sheet__btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.category-edit-sheet__btn--cancel {
+  border: 1px solid var(--ui-color-border);
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text-primary);
+}
+
+.category-edit-sheet__btn--confirm {
+  border: 0;
+  background: var(--ui-color-primary);
+  color: var(--ui-color-on-primary);
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-space-8);
+}
+
+.category-edit-sheet__spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-top-color: #fff;
+  animation: category-edit-sheet-spin 700ms linear infinite;
+}
+
+@keyframes category-edit-sheet-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.category-edit-sheet__btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-ring);
+}

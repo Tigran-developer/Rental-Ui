@@ -1,0 +1,61 @@
+.admin-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: var(--ui-radius-pill);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.admin-status-badge--md {
+  padding: 3px 10px;
+  font-size: 0.75rem;
+}
+
+.admin-status-badge--sm {
+  padding: 2px 8px;
+  font-size: 0.6875rem;
+}
+
+.admin-status-badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* pending — "Awaiting review" */
+.admin-status-badge--pending {
+  background: var(--dash-warn-surface);
+  color: var(--dash-warn-text);
+}
+.admin-status-badge--pending .admin-status-badge__dot {
+  background: var(--dash-warn);
+}
+
+/* approved */
+.admin-status-badge--approved {
+  background: var(--ui-color-success-surface);
+  color: var(--ui-color-success);
+}
+.admin-status-badge--approved .admin-status-badge__dot {
+  background: var(--ui-color-success);
+}
+
+/* rejected */
+.admin-status-badge--rejected {
+  background: var(--ui-color-danger-surface);
+  color: var(--ui-color-danger);
+}
+.admin-status-badge--rejected .admin-status-badge__dot {
+  background: var(--ui-color-danger);
+}
+
+/* flag — "Needs category fix" */
+.admin-status-badge--flag {
+  background: var(--dash-blue-surface);
+  color: var(--dash-blue-text);
+}
+.admin-status-badge--flag .admin-status-badge__dot {
+  background: var(--dash-blue);
+}

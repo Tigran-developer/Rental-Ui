@@ -1,0 +1,69 @@
+// Track/thumb sizes (38x22 / 18px, matching admin-desktop.jsx's toggle) are hardcoded — no
+// design token covers a switch's own geometry.
+:host {
+  display: inline-flex;
+}
+
+.category-visibility-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-8);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.category-visibility-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.category-visibility-toggle__track {
+  width: 38px;
+  height: 22px;
+  border-radius: var(--ui-radius-pill);
+  background: #cfcac1;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.category-visibility-toggle__track--on {
+  background: var(--ui-color-success);
+}
+
+.category-visibility-toggle__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--ui-radius-pill);
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: left 0.15s;
+}
+
+.category-visibility-toggle__track--on .category-visibility-toggle__thumb {
+  left: 18px;
+}
+
+.category-visibility-toggle__label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ui-color-text-secondary);
+}
+
+.category-visibility-toggle__label--on {
+  color: var(--ui-color-success);
+}
+
+.category-visibility-toggle:focus-visible {
+  outline: none;
+}
+
+.category-visibility-toggle:focus-visible .category-visibility-toggle__track {
+  box-shadow: var(--ui-focus-ring);
+}

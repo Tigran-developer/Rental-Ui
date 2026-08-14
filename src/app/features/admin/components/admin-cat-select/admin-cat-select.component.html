@@ -1,0 +1,47 @@
+<div class="admin-cat-select">
+  <button
+    #trigger
+    type="button"
+    class="admin-cat-select__trigger"
+    [class.admin-cat-select__trigger--flagged]="flagged()"
+    [disabled]="disabled()"
+    [attr.aria-expanded]="isOpen()"
+    [attr.aria-haspopup]="true"
+    (click)="toggle()"
+  >
+    <span class="admin-cat-select__tile" aria-hidden="true">
+      <app-icon name="tag" [size]="12" />
+    </span>
+    <span class="admin-cat-select__name">{{
+      selectedCategory()?.name ?? ('admin.review.category.none' | translate)
+    }}</span>
+    <app-icon name="chevronD" [size]="13" />
+  </button>
+
+  @if (isOpen()) {
+    <div
+      class="admin-cat-select__panel"
+      role="listbox"
+      [attr.aria-label]="'admin.review.category.label' | translate"
+    >
+      @for (category of categories(); track category.id) {
+        <button
+          type="button"
+          class="admin-cat-select__option"
+          [class.admin-cat-select__option--selected]="isSelected(category)"
+          role="option"
+          [attr.aria-selected]="isSelected(category)"
+          (click)="select(category)"
+        >
+          <span class="admin-cat-select__option-tile" aria-hidden="true">
+            <app-icon name="tag" [size]="12" />
+          </span>
+          <span class="admin-cat-select__option-name">{{ category.name }}</span>
+          @if (isSelected(category)) {
+            <app-icon name="check" [size]="14" />
+          }
+        </button>
+      }
+    </div>
+  }
+</div>

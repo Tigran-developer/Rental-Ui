@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   HostListener,
   afterRenderEffect,
   computed,
@@ -8,6 +9,7 @@ import {
   input,
   signal,
   untracked,
+  viewChildren,
 } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { DialogModule } from 'primeng/dialog';
@@ -46,6 +48,21 @@ export class ListingGalleryComponent {
    *  A single field, not two copies of the string, so the two can never
    *  drift apart. */
   protected readonly lightboxMaskClass = 'listing-gallery__lightbox-mask';
+
+  /** Marker class on the lightbox's own "empty chrome" surfaces (the topbar,
+   *  the stage backdrop around the photo, the thumbnail strip's padding) —
+   *  read by `onWindowMousedown()` below alongside `lightboxMaskClass`. The
+   *  fullscreen redesign covers the entire `.p-dialog-mask` with our own
+   *  content, so a real mask click is effectively unreachable; this class
+   *  reproduces the same "click the dark area to dismiss" affordance the
+   *  mask itself used to provide. See `onWindowMousedown()`'s doc comment. */
+  protected readonly lightboxBackdropClass = 'listing-gallery__lightbox-backdrop';
+
+  /** One button per thumbnail in the lightbox's own filmstrip (template ref
+   *  `#lightboxThumbBtn`), in DOM order — used only to scroll the active
+   *  thumb into view on navigation, see the `afterRenderEffect` below. */
+  private readonly lightboxThumbButtons =
+    viewChildren<ElementRef<HTMLButtonElement>>('lightboxThumbBtn');
 
   /** The element that had focus right before `openLightbox()` opened the
    *  dialog (whichever mosaic tile / hero tap / thumb the visitor actually
@@ -105,6 +122,22 @@ export class ListingGalleryComponent {
       this.lastFocusedElement = null;
       this.focusReturnPending.set(false);
     });
+
+    /** Keeps the active thumb in the lightbox's own filmstrip scrolled into
+     *  view whenever the lightbox is open and its index changes — whether
+     *  the visitor got there via the arrows, the keyboard, or clicking a
+     *  different thumb directly. `afterRenderEffect` (not a plain `effect`)
+     *  because it must read the DOM nodes the template just produced;
+     *  `scrollIntoView` is guarded with optional chaining rather than an
+     *  explicit platform check because `afterRenderEffect` callbacks never
+     *  run during server-side rendering to begin with — the guard is only
+     *  for test doubles that may not implement it. */
+    afterRenderEffect(() => {
+      if (!this.lightboxOpen()) return;
+      const index = this.lightboxIndex();
+      const button = this.lightboxThumbButtons()[index]?.nativeElement;
+      button?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    });
   }
 
   protected selectIndex(index: number): void {
@@ -161,13 +194,23 @@ export class ListingGalleryComponent {
   protected lightboxPrev(): void {
     const length = this.sortedImages().length;
     if (length === 0) return;
-    this.lightboxIndex.update((i) => ((i - 1) % length + length) % length);
+    this.lightboxIndex.update((i) => (((i - 1) % length) + length) % length);
   }
 
   protected lightboxNext(): void {
     const length = this.sortedImages().length;
     if (length === 0) return;
     this.lightboxIndex.update((i) => (i + 1) % length);
+  }
+
+  /** Jump straight to a photo via its thumbnail in the lightbox's own
+   *  filmstrip — distinct from the mobile hero's `selectIndex()`, which
+   *  drives a different signal (`activeIndex`) entirely. */
+  protected lightboxSelectIndex(index: number): void {
+    const length = this.sortedImages().length;
+    if (length === 0) return;
+    const safe = ((index % length) + length) % length;
+    this.lightboxIndex.set(safe);
   }
 
   /**
@@ -217,15 +260,26 @@ export class ListingGalleryComponent {
    *
    * Bound at `window` (not on the mask element itself — PrimeNG renders it
    * outside this component's own DOM subtree via the overlay, same reason
-   * as `onWindowKeydown()`) and fires ONLY when the mousedown's `target` IS
-   * the mask element itself (identified by `lightboxMaskClass`, unique to
-   * this dialog). PrimeNG's own mask div is the direct parent of the dialog
-   * container (`primeng-dialog.mjs`'s inline template), so a click that
-   * starts anywhere inside the dialog content — the image, the nav
-   * buttons, the close button — always has `event.target` somewhere INSIDE
-   * `.listing-gallery__lightbox`, never the mask div, and never reaches
-   * here. `mousedown` (not `click`) mirrors PrimeNG's own reference
-   * implementation.
+   * as `onWindowKeydown()`) and fires when the mousedown's `target` IS
+   * either the mask element itself (identified by `lightboxMaskClass`,
+   * unique to this dialog) OR one of the lightbox's own backdrop surfaces
+   * (identified by `lightboxBackdropClass` — the topbar, the stage's empty
+   * area around the photo, the thumbnail strip's padding). PrimeNG's own
+   * mask div is the direct parent of the dialog container
+   * (`primeng-dialog.mjs`'s inline template), so a click that starts
+   * anywhere inside actual content — the image, the nav buttons, the close
+   * button, a thumbnail — always has `event.target` somewhere INSIDE one of
+   * those content elements, never the mask div and never a backdrop
+   * surface, and never reaches here. `mousedown` (not `click`) mirrors
+   * PrimeNG's own reference implementation.
+   *
+   * The `lightboxBackdropClass` half of this check exists because the
+   * fullscreen redesign (the lightbox now fills the whole viewport, not a
+   * floating 92vw/86vh box) means our own markup covers the ENTIRE mask —
+   * there is no longer any real mask pixel left for a visitor to click.
+   * Without this, "click the dark area to dismiss" would silently stop
+   * working the moment the lightbox went fullscreen, even though it still
+   * looks exactly as dismissable as before.
    */
   @HostListener('window:mousedown', ['$event'])
   protected onWindowMousedown(event: MouseEvent): void {
@@ -233,7 +287,11 @@ export class ListingGalleryComponent {
       return;
     }
     const target = event.target;
-    if (target instanceof HTMLElement && target.classList.contains(this.lightboxMaskClass)) {
+    if (
+      target instanceof HTMLElement &&
+      (target.classList.contains(this.lightboxMaskClass) ||
+        target.classList.contains(this.lightboxBackdropClass))
+    ) {
       this.closeLightbox();
     }
   }

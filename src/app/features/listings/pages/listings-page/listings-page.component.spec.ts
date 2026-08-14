@@ -106,6 +106,31 @@ class FakeResizeObserver {
 }
 vi.stubGlobal('ResizeObserver', FakeResizeObserver);
 
+/**
+ * Captures the callback the component registers so a test can fire a
+ * synthetic intersection event, and records every instance created so a test
+ * can grab the observer attached to the infinite-scroll sentinel. Installed
+ * on `globalThis` at module load — i.e. before any `TestBed.createComponent`
+ * — because `ListingsPageComponent.intersectionObserverSupported` reads
+ * `typeof IntersectionObserver !== 'undefined'` at field-initialiser time.
+ */
+class FakeIntersectionObserver {
+  static instances: FakeIntersectionObserver[] = [];
+
+  constructor(private readonly callback: (entries: [{ isIntersecting: boolean }]) => void) {
+    FakeIntersectionObserver.instances.push(this);
+  }
+
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+
+  trigger(isIntersecting: boolean): void {
+    this.callback([{ isIntersecting }]);
+  }
+}
+vi.stubGlobal('IntersectionObserver', FakeIntersectionObserver);
+
 const BASE_FILTERS = {
   query: null,
   city: null,
@@ -117,7 +142,15 @@ const BASE_FILTERS = {
   districtIds: [],
 };
 
-async function navigateToListings(url: string) {
+interface ListingsPageSelectorOverrides {
+  readonly hasMore?: boolean;
+  readonly loading?: boolean;
+  readonly error?: string | null;
+}
+
+async function navigateToListings(url: string, overrides: ListingsPageSelectorOverrides = {}) {
+  FakeIntersectionObserver.instances = [];
+
   TestBed.configureTestingModule({
     imports: [TranslateModule.forRoot()],
     providers: [
@@ -128,10 +161,10 @@ async function navigateToListings(url: string) {
           { selector: selectFavoriteIds, value: new Set<string>() },
           { selector: selectListingCategories, value: [] },
           { selector: selectListingItems, value: [makeListingPreview()] },
-          { selector: selectListingsError, value: null },
+          { selector: selectListingsError, value: overrides.error ?? null },
           { selector: selectListingsFilters, value: BASE_FILTERS },
-          { selector: selectListingsHasMore, value: false },
-          { selector: selectListingsLoading, value: false },
+          { selector: selectListingsHasMore, value: overrides.hasMore ?? false },
+          { selector: selectListingsLoading, value: overrides.loading ?? false },
           { selector: selectListingsOriginCoords, value: null },
           { selector: selectListingsOriginSource, value: null },
           { selector: selectListingsOriginDenied, value: false },
@@ -221,5 +254,108 @@ describe('ListingsPageComponent — Maps P2-2 view toggle', () => {
     const lastCall = updateFiltersCalls.at(-1);
     expect(lastCall.filters).toEqual({ ...BASE_FILTERS, categoryId: 'abc-123' });
     expect(Object.prototype.hasOwnProperty.call(lastCall.filters, 'view')).toBe(false);
+  });
+});
+
+/**
+ * Infinite scroll: replaces the manual "Load more" button with an
+ * `IntersectionObserver` on a sentinel rendered after the grid (only in
+ * list view, only while `hasMore && !hasError` — see the template). The
+ * component's dispatch guard lives in a `Signal` effect that re-evaluates
+ * on every `vm()`/`viewMode()` change, not just on intersection-boundary
+ * crossings — see `listings-page.component.ts` for why. `FakeIntersectionObserver`
+ * (module scope, above) records the callback the component registers so
+ * these tests can fire a synthetic intersection event by hand.
+ */
+describe('ListingsPageComponent — infinite scroll', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  async function flush(harness: RouterTestingHarness) {
+    harness.detectChanges();
+    await vi.advanceTimersByTimeAsync(0);
+    harness.detectChanges();
+  }
+
+  function loadNextPageDispatches(store: MockStore) {
+    return (store.dispatch as ReturnType<typeof vi.fn>).mock.calls
+      .map((call) => call[0])
+      .filter((action) => action.type === ListingsActions.loadNextPage.type);
+  }
+
+  it('dispatches loadNextPage when the sentinel intersects', async () => {
+    const { harness, el, store } = await navigateToListings('/listings', {
+      hasMore: true,
+      loading: false,
+      error: null,
+    });
+
+    const sentinel = el.querySelector('.listings-page__scroll-sentinel');
+    expect(sentinel).not.toBeNull();
+    expect(sentinel!.getAttribute('aria-hidden')).toBe('true');
+
+    expect(FakeIntersectionObserver.instances).toHaveLength(1);
+    FakeIntersectionObserver.instances[0].trigger(true);
+    await flush(harness);
+
+    expect(loadNextPageDispatches(store)).toHaveLength(1);
+  });
+
+  it('does not dispatch while a page is already loading', async () => {
+    const { harness, el, store } = await navigateToListings('/listings', {
+      hasMore: true,
+      loading: true,
+      error: null,
+    });
+
+    // The sentinel stays mounted while loading (it only depends on
+    // hasMore/hasError) — the append skeleton is the visible "loading"
+    // indicator; the guard against a duplicate/in-flight dispatch lives in
+    // the effect, not in whether the sentinel exists.
+    expect(el.querySelector('.listings-page__scroll-sentinel')).not.toBeNull();
+
+    FakeIntersectionObserver.instances[0].trigger(true);
+    await flush(harness);
+
+    expect(loadNextPageDispatches(store)).toHaveLength(0);
+  });
+
+  it('does not dispatch when hasMore is false', async () => {
+    const { el, store } = await navigateToListings('/listings', {
+      hasMore: false,
+      loading: false,
+      error: null,
+    });
+
+    // Nothing left to load ⇒ the template never renders the sentinel, so
+    // there is nothing for an IntersectionObserver to fire on.
+    expect(el.querySelector('.listings-page__scroll-sentinel')).toBeNull();
+    expect(loadNextPageDispatches(store)).toHaveLength(0);
+  });
+
+  it('does not dispatch in map view', async () => {
+    const { harness, el, store } = await navigateToListings('/listings', {
+      hasMore: true,
+      loading: false,
+      error: null,
+    });
+
+    expect(el.querySelector('.listings-page__scroll-sentinel')).not.toBeNull();
+    const observer = FakeIntersectionObserver.instances[0];
+
+    // Switch to map view — the sentinel's `@if` (list view only) removes it
+    // from the DOM and the attach effect disconnects the real observer, but
+    // `observer` here still holds the callback closure, letting the test
+    // simulate a stale/late browser callback racing the view switch.
+    await harness.navigateByUrl('/listings?view=map', ListingsPageComponent);
+    await flush(harness);
+
+    expect(el.querySelector('.listings-page__scroll-sentinel')).toBeNull();
+    expect(el.querySelector('app-listings-map')).not.toBeNull();
+
+    observer.trigger(true);
+    await flush(harness);
+
+    expect(loadNextPageDispatches(store)).toHaveLength(0);
   });
 });

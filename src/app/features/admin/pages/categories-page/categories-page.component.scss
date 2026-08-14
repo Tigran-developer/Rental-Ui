@@ -1,0 +1,381 @@
+// Measurements without a matching design token (52/1fr/130/120/140px table columns, 38px row
+// tile, 999px pill radius on the toggle, etc.) come straight from `admin-desktop.jsx`'s
+// `AdminCategoriesDesktop` / `admin-mobile.jsx`'s `AdminCategoriesMobile`.
+:host {
+  display: block;
+}
+
+// ── "New category" primary button (admin-page-header action slot) ──
+.categories-page__new-btn {
+  height: 42px;
+  padding: 0 var(--ui-space-18);
+  border-radius: var(--ui-radius-12);
+  border: 0;
+  background: var(--ui-color-primary);
+  color: var(--ui-color-on-primary);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-8);
+  box-shadow: 0 3px 10px -2px rgba(255, 96, 8, 0.4);
+}
+
+// ── Stat row ──
+.categories-page__stats {
+  display: flex;
+  gap: var(--ui-space-12);
+  margin-bottom: var(--ui-space-16);
+}
+
+.categories-page__stats > * {
+  flex: 1;
+}
+
+// ── Error state ──
+.categories-page__error {
+  margin-bottom: var(--ui-space-16);
+}
+
+.categories-page__error-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.categories-page__retry-btn {
+  margin-top: var(--ui-space-8);
+  height: 36px;
+  padding: 0 var(--ui-space-16);
+  border-radius: var(--ui-radius-pill);
+  border: 1px solid var(--ui-color-border);
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+// ── Create / edit panel shell ──
+.categories-page__create-panel {
+  background: var(--ui-color-surface);
+  border: 1.5px solid var(--ui-color-primary);
+  border-radius: var(--ui-radius-card);
+  padding: var(--ui-space-16);
+  margin-bottom: var(--ui-space-14);
+}
+
+.categories-page__panel-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--ui-space-8);
+  margin-top: var(--ui-space-16);
+}
+
+.categories-page__btn {
+  height: 42px;
+  padding: 0 var(--ui-space-18);
+  border-radius: var(--ui-radius-12);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.categories-page__btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.categories-page__btn--cancel {
+  border: 1px solid var(--ui-color-border);
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text-primary);
+}
+
+.categories-page__btn--confirm {
+  border: 0;
+  background: var(--ui-color-primary);
+  color: var(--ui-color-on-primary);
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-8);
+}
+
+.categories-page__spinner {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-top-color: #fff;
+  animation: categories-page-spin 700ms linear infinite;
+}
+
+@keyframes categories-page-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ── Empty state ──
+.categories-page__empty-wrap {
+  padding: var(--ui-space-32) 0;
+}
+
+// ── Desktop table ──
+.categories-page__table {
+  background: var(--ui-color-surface);
+  border-radius: var(--ui-radius-card);
+  border: 1px solid var(--ui-color-border);
+  overflow: hidden;
+}
+
+.categories-page__table-head {
+  display: grid;
+  grid-template-columns: 52px 1fr 130px 120px 140px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--ui-color-border);
+  background: var(--ui-color-background);
+}
+
+.categories-page__table-head span {
+  font-size: 0.65625rem;
+  font-weight: 800;
+  color: var(--ui-color-text-secondary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.categories-page__col-center {
+  text-align: center;
+}
+
+.categories-page__row {
+  display: grid;
+  grid-template-columns: 52px 1fr 130px 120px 140px;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ui-color-border);
+}
+
+.categories-page__row--last {
+  border-bottom: 0;
+}
+
+.categories-page__row--hidden {
+  opacity: 0.55;
+}
+
+.categories-page__reorder {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.categories-page__reorder-btn {
+  width: 22px;
+  height: 16px;
+  border-radius: 5px;
+  background: var(--ui-color-surface-muted);
+  border: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+  color: var(--ui-color-text-secondary);
+  transform: rotate(180deg);
+}
+
+.categories-page__reorder-btn--up {
+  transform: none;
+}
+
+.categories-page__reorder-btn:disabled {
+  background: transparent;
+  cursor: default;
+  opacity: 0.3;
+}
+
+.categories-page__name-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-12);
+  min-width: 0;
+}
+
+.categories-page__tile {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--ui-radius-12);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--ui-color-text-primary);
+}
+
+.categories-page__name {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--ui-color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.categories-page__count {
+  text-align: center;
+  font-size: 0.84375rem;
+  font-weight: 700;
+  color: var(--ui-color-text-primary);
+}
+
+.categories-page__actions {
+  display: flex;
+  gap: var(--ui-space-6);
+  justify-content: flex-end;
+}
+
+.categories-page__change-btn {
+  height: 32px;
+  padding: 0 13px;
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-color-surface-muted);
+  border: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ui-color-text-primary);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.categories-page__delete-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-color-danger-surface);
+  border: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--ui-color-danger);
+}
+
+.categories-page__change-btn:focus-visible,
+.categories-page__delete-btn:focus-visible,
+.categories-page__reorder-btn:focus-visible,
+.categories-page__new-btn:focus-visible,
+.categories-page__btn:focus-visible,
+.categories-page__icon-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-ring);
+}
+
+// ── Desktop inline edit row ──
+.categories-page__edit-row {
+  padding: var(--ui-space-16);
+  border-bottom: 1px solid var(--ui-color-border);
+  background: var(--ui-color-background);
+}
+
+.categories-page__edit-row--last {
+  border-bottom: 0;
+}
+
+// ── Loading skeleton (desktop table shape) ──
+.categories-page__skeleton-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 130px 120px 140px;
+  align-items: center;
+  gap: var(--ui-space-12);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ui-color-border);
+}
+
+// ── Mobile card list ──
+.categories-page__cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-10);
+}
+
+.categories-page__card {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-12);
+  padding: var(--ui-space-12);
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-card);
+}
+
+.categories-page__card--hidden {
+  opacity: 0.55;
+}
+
+.categories-page__card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.categories-page__card-name {
+  font-size: 0.90625rem;
+  font-weight: 800;
+  color: var(--ui-color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.categories-page__card-count {
+  font-size: 0.71875rem;
+  color: var(--ui-color-text-secondary);
+  margin-top: 1px;
+}
+
+.categories-page__icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ui-radius-12);
+  background: var(--ui-color-surface-muted);
+  border: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  color: var(--ui-color-text-primary);
+}
+
+.categories-page__icon-btn--danger {
+  background: var(--ui-color-danger-surface);
+  color: var(--ui-color-danger);
+}
+
+.categories-page__skeleton-card {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-12);
+  padding: var(--ui-space-12);
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-card);
+}
+
+.categories-page__skeleton-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-8);
+}
+
+@media (max-width: 960px) {
+  .categories-page__stats {
+    flex-wrap: wrap;
+  }
+
+  .categories-page__stats > * {
+    flex-basis: calc(50% - var(--ui-space-6));
+  }
+}

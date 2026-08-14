@@ -1,0 +1,54 @@
+// Visual recipe copied from `admin-status-badge` (dot + pill). Colour mapping per
+// `USER_STATUS` in `admin-shared.jsx`: active -> success, pending -> warn (reusing the
+// existing `--dash-warn*` tokens already used for the listing "Awaiting review" pill, rather
+// than the design's literal #FFF3E0/#B8720A — no dedicated token for that exact pair exists),
+// suspended -> danger.
+.admin-user-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: var(--ui-radius-pill);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-user-status-pill--md {
+  padding: 3px 10px;
+  font-size: 0.71875rem;
+}
+
+.admin-user-status-pill--sm {
+  padding: 2px 8px;
+  font-size: 0.65625rem;
+}
+
+.admin-user-status-pill__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.admin-user-status-pill--active {
+  background: var(--ui-color-success-surface);
+  color: var(--ui-color-success);
+}
+.admin-user-status-pill--active .admin-user-status-pill__dot {
+  background: var(--ui-color-success);
+}
+
+.admin-user-status-pill--pending {
+  background: var(--dash-warn-surface);
+  color: var(--dash-warn-text);
+}
+.admin-user-status-pill--pending .admin-user-status-pill__dot {
+  background: var(--dash-warn);
+}
+
+.admin-user-status-pill--suspended {
+  background: var(--ui-color-danger-surface);
+  color: var(--ui-color-danger);
+}
+.admin-user-status-pill--suspended .admin-user-status-pill__dot {
+  background: var(--ui-color-danger);
+}

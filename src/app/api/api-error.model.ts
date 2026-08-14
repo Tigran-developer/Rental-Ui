@@ -23,6 +23,42 @@ export type KnownApiErrorCode =
   | 'admin.forbidden'
   | 'admin.listing_not_found'
   | 'admin.invalid_listing_status'
+  // 400. Not yet listed here before this sync — found while re-verifying
+  // AdminListingsController.FromError alongside the categories work below.
+  | 'admin.invalid_reject_reason'
+  // admin.category_* — AdminCategoriesService (admin console Phase 2, Categories screen).
+  // 404: the {id:guid} route segment doesn't resolve to a category (Update/UpdateVisibility/
+  // Delete) — AdminCategoriesController.FromError.
+  | 'admin.category_not_found'
+  // 400 in BOTH controllers: a category referenced by a REQUEST VALUE (not the route id) doesn't
+  // exist — AdminCategoriesController's DELETE `?reassignToCategoryId=`, and reused as-is by
+  // AdminListingsController for `PATCH /{id}/category`'s body `categoryId` (the recategorise
+  // target). Same code, same 400 status, deliberately shared across both controllers.
+  | 'admin.category_reassign_target_not_found'
+  | 'admin.category_name_taken'
+  | 'admin.category_invalid_name'
+  | 'admin.category_invalid_color'
+  | 'admin.category_order_mismatch'
+  | 'admin.category_reassign_required'
+  | 'admin.category_reassign_invalid'
+  // admin.user_* — AdminUsersService (admin console Phase 3, Users screen). 404 on GET
+  // /{id} and all three mutation routes; the two 400s are Suspend-only — AdminUsersController.
+  | 'admin.user_not_found'
+  | 'admin.cannot_suspend_self'
+  | 'admin.cannot_suspend_admin'
+  // admin.report_not_found — AdminReportsService (admin console Phase 4, Reports & flags
+  // screen). 404 on GET /{id} and all three triage mutations (resolve/dismiss/reopen); those
+  // three are otherwise idempotent 200 no-ops when the report is already in the target state
+  // — AdminReportsController.
+  | 'admin.report_not_found'
+  // admin.report_target_filter_incomplete / admin.report_invalid_target_filter — the Reports
+  // queue's optional `targetType`/`targetId` filter (used by the Users screen's
+  // `/admin/reports?userId=` deep link, translated client-side to
+  // `targetType=User&targetId=<id>`). Both 400 on GET /api/admin/reports: `targetId` supplied
+  // without `targetType` is incomplete; a `targetType` that doesn't parse to
+  // Listing/User/Message is invalid — AdminReportsController.
+  | 'admin.report_target_filter_incomplete'
+  | 'admin.report_invalid_target_filter'
   // auth.* — AuthService
   | 'auth.duplicate_email'
   | 'auth.invalid_credentials'
@@ -83,6 +119,17 @@ export type KnownApiErrorCode =
   | 'notification.unauthenticated'
   | 'notification.invalid_filter'
   | 'notification.not_found'
+  // report.* — ReportsService (admin console Phase 4: user-facing POST /api/reports). Any
+  // authenticated, non-blocked user. invalid_reason/invalid_target_type/cannot_report_own are
+  // 400; already_reported is 409 (an open report already exists for this reporter+target);
+  // target_not_found is 404 — ReportsController.
+  | 'report.unauthenticated'
+  | 'report.user_blocked'
+  | 'report.invalid_reason'
+  | 'report.invalid_target_type'
+  | 'report.target_not_found'
+  | 'report.cannot_report_own'
+  | 'report.already_reported'
   // review.* — ReviewsService
   | 'review.unauthenticated'
   | 'review.booking_not_found'

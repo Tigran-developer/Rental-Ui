@@ -1,10 +1,11 @@
 import {
   makeAdmin,
+  makeAdminListingDetail,
+  makeAdminListingSummary,
   makeBookingDetail,
   makeBookingRequest,
   makeListingPreview,
   makeMyBooking,
-  makePendingListing,
   makeReviewStatus,
   makeUser,
 } from './fixtures';
@@ -26,7 +27,8 @@ describe('test fixtures', () => {
     expect(makeMyBooking({ status: 'Completed' }).status).toBe('Completed');
     expect(makeBookingRequest().status).toBe('PendingApproval');
     expect(makeBookingDetail({ role: 'renter' }).role).toBe('renter');
-    expect(makePendingListing({ title: 'X' }).title).toBe('X');
+    expect(makeAdminListingSummary({ title: 'X' }).title).toBe('X');
+    expect(makeAdminListingDetail({ status: 'Approved' }).status).toBe('Approved');
     expect(makeReviewStatus({ canReviewToy: false }).canReviewToy).toBe(false);
   });
 });

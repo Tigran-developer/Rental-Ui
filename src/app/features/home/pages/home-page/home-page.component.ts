@@ -19,10 +19,13 @@ import { Observable, combineLatest, map, of, switchMap } from 'rxjs';
 
 import { EmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { LoadingSkeletonComponent } from '../../../../shared/ui/loading-skeleton/loading-skeleton.component';
+import type { MapLatLng, MapMarkerGroup } from '../../../../shared/ui/map/map.component';
 import { AuthDialogComponent } from '../../../auth/components/auth-dialog/auth-dialog.component';
 import { selectIsAuthenticated } from '../../../auth/store/auth.selectors';
 import { selectFavoriteIds } from '../../../favorites/store/favorites.selectors';
+import { YEREVAN_CENTER } from '../../../listings/components/location-picker/location-picker.component';
 import type { ListingCategoryOption } from '../../../listings/models/create-listing.model';
+import { kmToMeters } from '../../../listings/models/radius-scale.util';
 import * as ListingsActions from '../../../listings/store/listings.actions';
 import {
   selectListingCategories,
@@ -31,8 +34,10 @@ import {
 import { ListingCardComponent } from '../../../listings/components/listing-card/listing-card.component';
 import { MyListingsApiService } from '../../../my-listings/services/my-listings-api.service';
 import type { HomeSectionResponse } from '../../models/home-section.model';
-import { HomeSectionsActions } from '../../store/home.actions';
+import { HomeNearbyActions, HomeSectionsActions } from '../../store/home.actions';
+import type { HomeNearbyState } from '../../store/home.state';
 import {
+  selectHomeNearby,
   selectHomeSections,
   selectHomeSectionsError,
   selectHomeSectionsLoading,
@@ -41,6 +46,7 @@ import {
   CategoryTileComponent,
   type HomeCategoryTileVm,
 } from '../../components/category-tile/category-tile.component';
+import { HomeHeroMapComponent } from '../../components/hero-map/hero-map.component';
 import { SectionHeaderComponent } from '../../../../shared/ui/section-header/section-header.component';
 import { UiInputComponent } from '../../../../shared/ui/input/ui-input.component';
 import { HeaderSearchVisibilityService } from '../../../../shared/ui/app-header/header-search-visibility.service';
@@ -78,6 +84,88 @@ interface HomePageViewModel {
   readonly sections: HomeSectionResponse[];
   readonly sectionsLoading: boolean;
   readonly sectionsError: string | null;
+  /** Hero map inputs, derived from `HomeNearbyState` — see
+   *  `deriveHeroMapViewModel` below for the granted/fallback/loading rules. */
+  readonly heroMap: HeroMapViewModel;
+}
+
+interface HeroMapViewModel {
+  readonly center: MapLatLng;
+  readonly userPin: MapLatLng | null;
+  readonly userAccuracyMeters: number | null;
+  readonly radiusMeters: number | null;
+  readonly markers: MapMarkerGroup[];
+  readonly nearbyCount: number | null;
+  readonly locating: boolean;
+}
+
+/**
+ * Ceiling (metres) for `userAccuracyMeters` passed to the hero map — see
+ * `deriveHeroMapViewModel`'s own comment on the clamp itself for why this
+ * exists at all (M-027 family: an honest but huge accuracy value washes out
+ * the whole small panel). Deliberately clamped HERE, at the Home boundary,
+ * not inside `GeolocationService` (which never lies about what the browser
+ * reported — `/listings` and the listing-detail map both still need the
+ * real, unclamped value) or `MapComponent` (a shared, generic map — it has
+ * no notion of "this particular panel is only 196px tall").
+ *
+ * Derived from the SHORTER dimension across both hero-map sizes (mobile's
+ * 196px-tall panel — narrower than desktop's 330px, so it's the binding
+ * case) at zoom 14, the ONLY zoom the granted branch ever renders at
+ * (`HOME_NEARBY_DEFAULT_RADIUS_KM` is a fixed 1.2km, and
+ * `deriveHeroMapZoom(1200)` always returns 14 — see hero-map.component.ts):
+ *
+ *   metresPerPixel = 156543.03392 * cos(latitude) / 2^zoom
+ *                  ≈ 156543.03392 * cos(40.1776°) / 16384
+ *                  ≈ 7.31 m/px  (Yerevan's own latitude, Leaflet's standard
+ *                    Web Mercator formula — the same one `L.Circle`'s own
+ *                    on-screen sizing uses)
+ *   ceiling ≈ 196px * 7.31 m/px ≈ 1433m, rounded down to a clean number.
+ *
+ * This is a "reasonable ceiling" (the visible extent at the derived zoom),
+ * not an exact "the circle must fully fit" bound — at exactly this radius
+ * the circle can still extend past the shorter edge; the point is to stop
+ * an order-of-magnitude-larger WiFi/IP fix (kilometres, not metres — exactly
+ * what `GeolocationService`'s `FALLBACK_OPTIONS` returns for a desktop with
+ * no GPS radio) from washing out the entire panel.
+ */
+const HOME_HERO_ACCURACY_CEILING_METERS = 1400;
+
+/**
+ * Maps `HomeNearbyState` to the hero map's own inputs. `userPin`/
+ * `userAccuracyMeters`/`radiusMeters` are all suppressed together whenever
+ * the origin isn't a genuinely resolved geolocation fix (still loading, or
+ * showing the Yerevan fallback — `isFallback`) — there is no real "your
+ * location"/"your radius" to show in either of those cases, only `center`
+ * (falling back to `YEREVAN_CENTER` before the very first resolution) and
+ * whatever `pins` have already arrived for the map to still render
+ * meaningfully.
+ *
+ * `userAccuracyMeters` gets a SECOND gate on top of `granted`: an accuracy
+ * value beyond `HOME_HERO_ACCURACY_CEILING_METERS` is suppressed (`null`,
+ * no circle) rather than drawn — the M-027 family of failure, an honest
+ * uncertainty value rendered at a scale where it destroys the view. The
+ * blue `userPin` dot itself is NEVER suppressed by this — only the circle
+ * around it; a visitor who granted geolocation still sees where they are,
+ * just without a circle that would otherwise cover the whole panel.
+ */
+function deriveHeroMapViewModel(nearby: HomeNearbyState): HeroMapViewModel {
+  const granted = nearby.origin !== null && !nearby.isFallback;
+  const accuracyMeters =
+    granted &&
+    nearby.accuracyMeters !== null &&
+    nearby.accuracyMeters <= HOME_HERO_ACCURACY_CEILING_METERS
+      ? nearby.accuracyMeters
+      : null;
+  return {
+    center: nearby.origin ?? YEREVAN_CENTER,
+    userPin: granted ? nearby.origin : null,
+    userAccuracyMeters: accuracyMeters,
+    radiusMeters: granted ? kmToMeters(nearby.radiusKm) : null,
+    markers: nearby.pins,
+    nearbyCount: nearby.nearbyCount,
+    locating: nearby.locating,
+  };
 }
 
 const DEFAULT_VISUAL: CategoryVisual = {
@@ -253,6 +341,7 @@ const selectHomeSource = createSelector(
     ListingCardComponent,
     LoadingSkeletonComponent,
     CategoryTileComponent,
+    HomeHeroMapComponent,
     SectionHeaderComponent,
     UiInputComponent,
     LanguageSelectorComponent,
@@ -270,8 +359,7 @@ export class HomePageComponent implements OnInit {
   private readonly headerSearchVisibility = inject(HeaderSearchVisibilityService);
   private readonly destroyRef = inject(DestroyRef);
 
-  private readonly heroSearchRef =
-    viewChild<ElementRef<HTMLElement>>('heroSearch');
+  private readonly heroSearchRef = viewChild<ElementRef<HTMLElement>>('heroSearch');
   private heroSearchObserver: IntersectionObserver | null = null;
 
   protected readonly processSteps = PROCESS_STEPS;
@@ -314,40 +402,48 @@ export class HomePageComponent implements OnInit {
     this.store.select(selectHomeSectionsLoading),
     this.store.select(selectHomeSectionsError),
     this.store.select(selectFavoriteIds),
+    this.store.select(selectHomeNearby),
   ]).pipe(
-    map(([source, sections, sectionsLoading, sectionsError, favoriteIds]): HomePageViewModel => {
-      const mappedCategories: HomeCategoryTileVm[] = source.categories.map(
-        (category): HomeCategoryTileVm => {
-          const visual =
-            CATEGORY_VISUALS[category.slug.toLowerCase()] ?? DEFAULT_VISUAL;
-          return {
-            id: category.id,
-            slug: category.slug,
-            label: category.name,
-            imageUrl: category.imageUrl ?? null,
-            iconName: category.iconName ?? null,
-            icon: visual.icon,
-            tintA: visual.tintA,
-            tintB: visual.tintB,
-          };
-        },
-      );
-
-      return {
-        categories: mappedCategories,
-        showCategoriesSkeleton:
-          source.categoriesLoading && mappedCategories.length === 0,
-        showCategoriesEmpty:
-          !source.categoriesLoading && mappedCategories.length === 0,
-        isAuthenticated: source.isAuthenticated,
-        sections: sections.map((s) => ({
-          ...s,
-          items: s.items.map((i) => ({ ...i, isFavorite: favoriteIds.has(i.id) })),
-        })),
+    map(
+      ([
+        source,
+        sections,
         sectionsLoading,
         sectionsError,
-      };
-    }),
+        favoriteIds,
+        nearby,
+      ]): HomePageViewModel => {
+        const mappedCategories: HomeCategoryTileVm[] = source.categories.map(
+          (category): HomeCategoryTileVm => {
+            const visual = CATEGORY_VISUALS[category.slug.toLowerCase()] ?? DEFAULT_VISUAL;
+            return {
+              id: category.id,
+              slug: category.slug,
+              label: category.name,
+              imageUrl: category.imageUrl ?? null,
+              iconName: category.iconName ?? null,
+              icon: visual.icon,
+              tintA: visual.tintA,
+              tintB: visual.tintB,
+            };
+          },
+        );
+
+        return {
+          categories: mappedCategories,
+          showCategoriesSkeleton: source.categoriesLoading && mappedCategories.length === 0,
+          showCategoriesEmpty: !source.categoriesLoading && mappedCategories.length === 0,
+          isAuthenticated: source.isAuthenticated,
+          sections: sections.map((s) => ({
+            ...s,
+            items: s.items.map((i) => ({ ...i, isFavorite: favoriteIds.has(i.id) })),
+          })),
+          sectionsLoading,
+          sectionsError,
+          heroMap: deriveHeroMapViewModel(nearby),
+        };
+      },
+    ),
   );
 
   constructor() {
@@ -387,6 +483,7 @@ export class HomePageComponent implements OnInit {
   ngOnInit(): void {
     this.store.dispatch(ListingsActions.loadListingCategories());
     this.store.dispatch(HomeSectionsActions.load());
+    this.store.dispatch(HomeNearbyActions.init());
   }
 
   private disconnectHeroSearchObserver(): void {
@@ -427,6 +524,13 @@ export class HomePageComponent implements OnInit {
 
   protected retryHomeSections(): void {
     this.store.dispatch(HomeSectionsActions.load());
+  }
+
+  /** The hero map's own opt-in "show my area" button — see
+   *  `HomeNearbyActions`'s doc comment for why geolocation is never
+   *  requested any other way. */
+  protected onRequestMyArea(): void {
+    this.store.dispatch(HomeNearbyActions.requestMyArea());
   }
 
   protected scrollCarousel(carousel: HTMLElement, direction: -1 | 1): void {

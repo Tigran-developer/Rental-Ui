@@ -1,0 +1,50 @@
+<div
+  class="hero-map"
+  [style.height]="height()"
+  role="group"
+  [attr.aria-label]="'home.heroMap.ariaLabel' | translate"
+>
+  <app-map
+    [center]="center()"
+    [zoom]="zoom()"
+    [pin]="center()"
+    [showPin]="false"
+    [userPin]="userPin()"
+    [userAccuracyMeters]="userAccuracyMeters()"
+    [circleRadiusMeters]="radiusMeters()"
+    [markers]="markers()"
+    [markerVariant]="'twinkle'"
+    [markerLabel]="'home.heroMap.markerLabel' | translate"
+    [markerGroupLabel]="'home.heroMap.markerGroupLabel' | translate"
+    height="100%"
+  >
+    @if (nearbyCount() !== null) {
+      <div app-map-overlay class="hero-map__pill">
+        <span class="hero-map__pill-dot" aria-hidden="true"></span>
+        {{ nearbyCountKey() | translate: { count: nearbyCount() } }}
+      </div>
+    }
+
+    <!-- Opt-in geolocation control — bottom-right, `app-map`'s own
+         `[app-map-actions]` slot (already reserved clear of Leaflet's
+         attribution control) and its unscoped `.app-map__btn` class, the
+         same "my location" pattern `LocationPickerComponent` uses. Hidden
+         once `granted()` — nothing left to opt into. The ONE intentional
+         tab stop this panel adds (see this component's own class doc
+         comment). -->
+    @if (!granted()) {
+      <button
+        type="button"
+        app-map-actions
+        class="app-map__btn"
+        [disabled]="locating()"
+        [style.opacity]="locating() ? 0.6 : 1"
+        [attr.aria-label]="'home.heroMap.showMyArea' | translate"
+        [attr.aria-busy]="locating() ? 'true' : null"
+        (click)="requestMyArea.emit()"
+      >
+        <i class="pi pi-compass" aria-hidden="true"></i>
+      </button>
+    }
+  </app-map>
+</div>

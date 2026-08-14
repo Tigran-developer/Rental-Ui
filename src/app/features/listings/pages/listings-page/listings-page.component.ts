@@ -2,10 +2,13 @@ import { Location } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
+  ElementRef,
   computed,
   effect,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -55,6 +58,13 @@ import {
   selectListingsPageSize,
 } from '../../store/listings.selectors';
 import type { ParamMap } from '@angular/router';
+
+/**
+ * Starts the next-page fetch before the sentinel actually reaches the
+ * viewport edge, so new cards are in place by the time the user scrolls
+ * that far — same idea as `HERO_SEARCH_ROOT_MARGIN` in the home page.
+ */
+const SCROLL_SENTINEL_ROOT_MARGIN = '400px 0px';
 
 const BOOKING_STATUS_PRIORITY: Partial<Record<BookingStatus, number>> = {
   Active: 6,
@@ -194,6 +204,20 @@ export class ListingsPageComponent {
   private readonly translate = inject(TranslateService);
   private readonly listingsApi = inject(ListingsApiService);
   private readonly languageService = inject(LanguageService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  /** Infinite-scroll trigger for list view — see the constructor's
+   *  `scrollSentinelIntersecting`/dispatch effects below. Not rendered (and
+   *  therefore never observed) in map view or once there is nothing left to
+   *  load — see the template's own `@if`. */
+  private readonly scrollSentinelRef = viewChild<ElementRef<HTMLElement>>('scrollSentinel');
+  private scrollSentinelObserver: IntersectionObserver | null = null;
+  private readonly scrollSentinelIntersecting = signal(false);
+  /** Drives the manual "Load more" fallback in the template: browsers
+   *  without `IntersectionObserver` (or a test/SSR environment) never get an
+   *  auto-load trigger, so the button must stay reachable instead of leaving
+   *  the page a dead end. */
+  protected readonly intersectionObserverSupported = typeof IntersectionObserver !== 'undefined';
 
   protected readonly isAuthenticated = this.store.selectSignal(selectIsAuthenticated);
   protected readonly showAuthDialog = signal(false);
@@ -381,6 +405,56 @@ export class ListingsPageComponent {
         this.store.dispatch(BookingsActions.loadMyBookings());
       }
     });
+
+    // (Re)attaches the observer whenever the sentinel element mounts/unmounts
+    // — it only exists in the DOM while list view has more pages and no
+    // error (see the template), so this also tears the observer down for
+    // free when the user switches to map view or the last page fails.
+    // Pattern mirrors the hero-search observer in home-page.component.ts.
+    effect(() => {
+      const element = this.scrollSentinelRef()?.nativeElement ?? null;
+
+      this.disconnectScrollSentinelObserver();
+      this.scrollSentinelIntersecting.set(false);
+
+      if (element === null || typeof IntersectionObserver === 'undefined') {
+        return;
+      }
+
+      const observer = new IntersectionObserver(
+        ([entry]) => this.scrollSentinelIntersecting.set(entry.isIntersecting),
+        { threshold: 0, rootMargin: SCROLL_SENTINEL_ROOT_MARGIN },
+      );
+      observer.observe(element);
+      this.scrollSentinelObserver = observer;
+    });
+
+    // Fires the actual page fetch. Kept separate from the observer-attach
+    // effect above so it re-evaluates on every `vm()` change too, not only on
+    // intersection-boundary crossings — an `IntersectionObserver` callback
+    // only fires when the element crosses in/out of the root, so on a short
+    // viewport where the sentinel never leaves it (a handful of new cards
+    // don't push it off screen), a page landing wouldn't otherwise trigger
+    // the next one and the list would get stuck. Re-running this effect on
+    // every `vm()` emission (loading flips back to false, `hasMore` updates)
+    // keeps requesting the next page for as long as the sentinel stays
+    // visible and there is more to load.
+    effect(() => {
+      if (!this.scrollSentinelIntersecting()) return;
+      if (this.viewMode() !== 'list') return;
+
+      const v = this.vm();
+      if (!v || v.loading || !v.hasMore || v.hasError) return;
+
+      this.loadMore();
+    });
+
+    this.destroyRef.onDestroy(() => this.disconnectScrollSentinelObserver());
+  }
+
+  private disconnectScrollSentinelObserver(): void {
+    this.scrollSentinelObserver?.disconnect();
+    this.scrollSentinelObserver = null;
   }
 
   // URL is the source of truth; the queryParamMap subscription above handles all reloads.

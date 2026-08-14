@@ -1,0 +1,214 @@
+// Layout/measurements follow `AdminOverviewDesktop` / `AdminOverviewMobileBody`
+// (admin-desktop.jsx / admin.jsx). The rail's own "Queue health" panel is NOT duplicated here —
+// it renders once in `AdminShellComponent`, visible on every `/admin/*` page (see
+// `overview-page.component.ts`'s doc comment).
+:host {
+  display: block;
+}
+
+// ── Error state ──
+.overview-page__error {
+  margin: var(--ui-space-16) 0;
+}
+
+.overview-page__error-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.overview-page__retry-btn {
+  margin-top: var(--ui-space-8);
+  height: 36px;
+  padding: 0 var(--ui-space-16);
+  border-radius: var(--ui-radius-pill);
+  border: 1px solid var(--ui-color-border);
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+// ── Stat tiles ──
+.overview-page__stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--ui-space-12);
+  margin-bottom: var(--ui-space-16);
+}
+
+// ── CTA + activity ──
+.overview-page__body {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: var(--ui-space-14);
+  align-items: stretch;
+}
+
+.overview-page__cta {
+  display: flex;
+  flex-direction: column;
+  padding: var(--ui-space-24);
+  border-radius: var(--ui-radius-card);
+  background: var(--ui-color-secondary);
+  color: #fff;
+}
+
+.overview-page__cta-kicker {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.overview-page__cta-title {
+  margin-top: var(--ui-space-8);
+  font-size: 1.375rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.overview-page__cta--caught-up .overview-page__cta-title {
+  font-size: 1.25rem;
+}
+
+.overview-page__cta-subtitle {
+  margin: var(--ui-space-10) 0 0;
+  font-size: 0.8125rem;
+  opacity: 0.8;
+  line-height: 1.5;
+  max-width: 22rem;
+}
+
+.overview-page__cta-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-8);
+  height: 44px;
+  padding: 0 var(--ui-space-20);
+  margin-top: auto;
+  border-radius: var(--ui-radius-12);
+  border: 0;
+  background: var(--ui-color-primary);
+  color: #fff;
+  font-size: 0.84375rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.overview-page__cta-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-ring);
+}
+
+:host ::ng-deep .overview-page__cta-skeleton .p-skeleton {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+// ── Recent moderation feed ──
+.overview-page__activity {
+  padding: var(--ui-space-18);
+  border-radius: var(--ui-radius-card);
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border);
+}
+
+.overview-page__activity-title {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--ui-color-text-primary);
+  margin-bottom: var(--ui-space-12);
+}
+
+.overview-page__activity-error {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-10);
+  font-size: 0.8125rem;
+  color: var(--ui-color-danger);
+}
+
+.overview-page__activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-12);
+}
+
+.overview-page__activity-row {
+  display: flex;
+  gap: var(--ui-space-10);
+  align-items: flex-start;
+}
+
+.overview-page__activity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+.overview-page__activity-dot--success {
+  background: var(--ui-color-success);
+}
+
+.overview-page__activity-dot--danger {
+  background: var(--ui-color-danger);
+}
+
+.overview-page__activity-dot--info {
+  background: var(--dash-blue);
+}
+
+.overview-page__activity-dot--neutral {
+  background: var(--ui-color-text-hint);
+}
+
+.overview-page__activity-text {
+  min-width: 0;
+}
+
+.overview-page__activity-line {
+  font-size: 0.8125rem;
+  color: var(--ui-color-text-primary);
+  line-height: 1.45;
+}
+
+.overview-page__activity-detail {
+  font-size: 0.6875rem;
+  color: var(--ui-color-text-secondary);
+  margin-top: 1px;
+}
+
+.overview-page__activity-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-12);
+}
+
+.overview-page__activity-skeleton-row {
+  display: flex;
+  gap: var(--ui-space-10);
+  align-items: flex-start;
+}
+
+.overview-page__activity-skeleton-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+@media (max-width: 960px) {
+  .overview-page__stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .overview-page__body {
+    grid-template-columns: 1fr;
+  }
+}

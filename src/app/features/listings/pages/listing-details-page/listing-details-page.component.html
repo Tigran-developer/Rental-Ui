@@ -1,6 +1,5 @@
 <div class="detail-page">
   <div class="detail-page__container page-container">
-
     <app-ui-page-header
       [title]="listingTitle()"
       backLink="/listings"
@@ -67,20 +66,25 @@
 
     @if (showContent() && displayListing(); as listing) {
       <article class="detail-page__article">
-
         <!-- Breadcrumb (desktop only) -->
         <nav
           class="detail-page__breadcrumb"
           [attr.aria-label]="'listings.details.subNavAria' | translate"
         >
           <ol>
-            <li><a routerLink="/">{{ 'listings.details.breadcrumb.home' | translate }}</a></li>
+            <li>
+              <a routerLink="/">{{ 'listings.details.breadcrumb.home' | translate }}</a>
+            </li>
             <li class="detail-page__breadcrumb-sep" aria-hidden="true">›</li>
-            <li><a routerLink="/listings">{{ 'listings.details.breadcrumb.listings' | translate }}</a></li>
+            <li>
+              <a routerLink="/listings">{{ 'listings.details.breadcrumb.listings' | translate }}</a>
+            </li>
             @if (categoryName(); as cat) {
               <li class="detail-page__breadcrumb-sep" aria-hidden="true">›</li>
               <li>
-                <a routerLink="/listings" [queryParams]="{ categoryId: listing.category?.id }">{{ cat }}</a>
+                <a routerLink="/listings" [queryParams]="{ categoryId: listing.category?.id }">{{
+                  cat
+                }}</a>
               </li>
             }
             <li class="detail-page__breadcrumb-sep" aria-hidden="true">›</li>
@@ -97,7 +101,10 @@
         @if (trustBadges().length > 0) {
           <div class="detail-page__trust-strip">
             @for (badge of trustBadges(); track badge.label) {
-              <span class="detail-page__trust-chip" [class]="'detail-page__trust-chip detail-page__trust-chip--' + badge.tone">
+              <span
+                class="detail-page__trust-chip"
+                [class]="'detail-page__trust-chip detail-page__trust-chip--' + badge.tone"
+              >
                 <i [class]="badge.icon" aria-hidden="true"></i>
                 <span>{{ badge.label }}</span>
               </span>
@@ -107,45 +114,64 @@
 
         <div class="detail-page__body">
           <div class="detail-page__main">
-
             <!-- User booking relationship panel -->
             <!-- Hidden for finished states (Rejected / Completed) since no action is needed -->
             @if (isAuthenticated() && userBooking(); as booking) {
               @if (booking.status !== 'Rejected' && booking.status !== 'Completed') {
-              <div
-                class="detail-page__relationship"
-                [class]="'detail-page__relationship--' + booking.status.toLowerCase()"
-                role="status"
-              >
-                <div class="detail-page__relationship-body">
-                  <span class="detail-page__relationship-label">
-                    @switch (booking.status) {
-                      @case ('PendingApproval') { {{ 'listings.details.relationship.rentalRequested' | translate }} }
-                      @case ('Pending') { {{ 'listings.details.relationship.rentalRequested' | translate }} }
-                      @case ('Approved') { {{ 'listings.details.relationship.approved' | translate }} }
-                      @case ('Active') { {{ 'listings.details.relationship.currentlyRenting' | translate }} }
-                      @case ('ReturnMarked') { {{ 'listings.details.relationship.awaitingCompletion' | translate }} }
-                      @case ('Cancelled') { {{ 'listings.details.relationship.cancelled' | translate }} }
+                <div
+                  class="detail-page__relationship"
+                  [class]="'detail-page__relationship--' + booking.status.toLowerCase()"
+                  role="status"
+                >
+                  <div class="detail-page__relationship-body">
+                    <span class="detail-page__relationship-label">
+                      @switch (booking.status) {
+                        @case ('PendingApproval') {
+                          {{ 'listings.details.relationship.rentalRequested' | translate }}
+                        }
+                        @case ('Pending') {
+                          {{ 'listings.details.relationship.rentalRequested' | translate }}
+                        }
+                        @case ('Approved') {
+                          {{ 'listings.details.relationship.approved' | translate }}
+                        }
+                        @case ('Active') {
+                          {{ 'listings.details.relationship.currentlyRenting' | translate }}
+                        }
+                        @case ('ReturnMarked') {
+                          {{ 'listings.details.relationship.awaitingCompletion' | translate }}
+                        }
+                        @case ('Cancelled') {
+                          {{ 'listings.details.relationship.cancelled' | translate }}
+                        }
+                      }
+                    </span>
+
+                    @if (
+                      (booking.status === 'Approved' || booking.status === 'Active') &&
+                      booking.endDate
+                    ) {
+                      <span class="detail-page__relationship-date">
+                        {{ 'listings.details.relationship.endsOn' | translate }}:
+                        {{ booking.endDate }}
+                      </span>
                     }
-                  </span>
+                    @if (
+                      (booking.status === 'PendingApproval' || booking.status === 'Pending') &&
+                      booking.startDate
+                    ) {
+                      <span class="detail-page__relationship-date">
+                        {{ 'listings.details.relationship.startsOn' | translate }}:
+                        {{ booking.startDate }}
+                      </span>
+                    }
+                  </div>
 
-                  @if ((booking.status === 'Approved' || booking.status === 'Active') && booking.endDate) {
-                    <span class="detail-page__relationship-date">
-                      {{ 'listings.details.relationship.endsOn' | translate }}: {{ booking.endDate }}
-                    </span>
-                  }
-                  @if ((booking.status === 'PendingApproval' || booking.status === 'Pending') && booking.startDate) {
-                    <span class="detail-page__relationship-date">
-                      {{ 'listings.details.relationship.startsOn' | translate }}: {{ booking.startDate }}
-                    </span>
-                  }
+                  <a class="detail-page__relationship-cta" [routerLink]="['/bookings', booking.id]">
+                    {{ 'listings.details.relationship.viewBooking' | translate }}
+                    <i class="pi pi-arrow-right" aria-hidden="true"></i>
+                  </a>
                 </div>
-
-                <a class="detail-page__relationship-cta" [routerLink]="['/bookings', booking.id]">
-                  {{ 'listings.details.relationship.viewBooking' | translate }}
-                  <i class="pi pi-arrow-right" aria-hidden="true"></i>
-                </a>
-              </div>
               }
             }
 
@@ -176,8 +202,24 @@
                     [class.pi-heart]="!listing.isFavorite"
                     aria-hidden="true"
                   ></i>
-                  <span>{{ (listing.isFavorite ? 'listings.details.savedLabel' : 'listings.details.saveLabel') | translate }}</span>
+                  <span>{{
+                    (listing.isFavorite
+                      ? 'listings.details.savedLabel'
+                      : 'listings.details.saveLabel'
+                    ) | translate
+                  }}</span>
                 </button>
+                @if (canReportListing()) {
+                  <button
+                    type="button"
+                    class="detail-page__pill-btn detail-page__pill-btn--report"
+                    (click)="openReportDialog()"
+                    [attr.aria-label]="'listings.details.reportLabel' | translate"
+                  >
+                    <i class="pi pi-flag" aria-hidden="true"></i>
+                    <span>{{ 'listings.details.reportLabel' | translate }}</span>
+                  </button>
+                }
               </div>
             </div>
 
@@ -192,7 +234,7 @@
                   <span class="detail-page__meta-sep" aria-hidden="true">•</span>
                   <span class="detail-page__rating">
                     <i class="pi pi-star-fill" aria-hidden="true"></i>
-                    <span>{{ summary.averageRating | number:'1.1-1' }}</span>
+                    <span>{{ summary.averageRating | number: '1.1-1' }}</span>
                     <span class="detail-page__rating-count">({{ summary.reviewCount }})</span>
                   </span>
                 }
@@ -202,7 +244,9 @@
             <!-- Price (mobile only — desktop sees it in the sidebar CTA card) -->
             <p class="detail-page__price-mobile">
               <span class="detail-page__price-amount">{{ listing.pricePerDay | dram }}</span>
-              <span class="detail-page__price-suffix">&thinsp;/ {{ 'listings.booking.priceSuffix' | translate }}</span>
+              <span class="detail-page__price-suffix"
+                >&thinsp;/ {{ 'listings.booking.priceSuffix' | translate }}</span
+              >
             </p>
 
             <!-- Highlights band — only real, data-backed tiles; 2–4 columns -->
@@ -228,7 +272,6 @@
             }
 
             <div class="detail-page__sections">
-
               <!-- 1. Specs quad: best age / condition / deposit / handover -->
               @if (specTiles().length > 0) {
                 <section class="detail-page__section" aria-labelledby="detail-specs-heading">
@@ -242,9 +285,13 @@
                           <i [class]="tile.icon" aria-hidden="true"></i>
                         </span>
                         <span class="detail-page__specquad-body">
-                          <span class="detail-page__specquad-label">{{ tile.titleKey | translate }}</span>
+                          <span class="detail-page__specquad-label">{{
+                            tile.titleKey | translate
+                          }}</span>
                           @if (tile.subKey) {
-                            <span class="detail-page__specquad-value">{{ tile.subKey | translate: tile.subParams }}</span>
+                            <span class="detail-page__specquad-value">{{
+                              tile.subKey | translate: tile.subParams
+                            }}</span>
                           }
                         </span>
                       </div>
@@ -253,7 +300,12 @@
                   @if (safetyNotes(); as notes) {
                     <p class="detail-page__safety-note">
                       <i class="pi pi-info-circle" aria-hidden="true"></i>
-                      <span><strong>{{ 'listings.details.toyDetails.safetyNotes' | translate }}:</strong> {{ notes }}</span>
+                      <span
+                        ><strong
+                          >{{ 'listings.details.toyDetails.safetyNotes' | translate }}:</strong
+                        >
+                        {{ notes }}</span
+                      >
                     </p>
                   }
                 </section>
@@ -262,7 +314,9 @@
 
               <!-- 2. Description -->
               <section class="detail-page__section" aria-labelledby="detail-description-heading">
-                <span class="detail-page__section-eyebrow">{{ 'listings.details.eyebrow.overview' | translate }}</span>
+                <span class="detail-page__section-eyebrow">{{
+                  'listings.details.eyebrow.overview' | translate
+                }}</span>
                 <h2 id="detail-description-heading" class="detail-page__section-title">
                   {{ 'listings.details.descriptionHeading' | translate }}
                 </h2>
@@ -275,30 +329,31 @@
 
               <!-- 3. Getting it / Pickup & delivery -->
               <section class="detail-page__section" aria-labelledby="detail-pickup-heading">
-                <span class="detail-page__section-eyebrow">{{ 'listings.details.eyebrow.gettingIt' | translate }}</span>
+                <span class="detail-page__section-eyebrow">{{
+                  'listings.details.eyebrow.gettingIt' | translate
+                }}</span>
                 <h2 id="detail-pickup-heading" class="detail-page__section-title">
                   {{ 'listings.details.pickupDelivery.heading' | translate }}
                 </h2>
-                <div class="detail-page__pickup-grid">
-                  <div class="detail-page__pickup-map">
-                    <app-listing-location
-                      [listingId]="listing.id"
-                      [city]="listing.city"
-                      [district]="listing.district ?? null"
-                      [latitude]="listing.latitude ?? null"
-                      [longitude]="listing.longitude ?? null"
-                      [title]="listing.title"
-                      [imageUrl]="listingHeroImageUrl()"
-                    />
-                  </div>
+                <app-listing-location
+                  [listingId]="listing.id"
+                  [city]="listing.city"
+                  [district]="listing.district ?? null"
+                  [latitude]="listing.latitude ?? null"
+                  [longitude]="listing.longitude ?? null"
+                  [title]="listing.title"
+                  [imageUrl]="listingHeroImageUrl()"
+                >
                   @if (pickupDeliveryRows().length > 0) {
-                    <div class="detail-page__pickup-rows">
+                    <div sidePanel class="detail-page__pickup-rows">
                       @for (row of pickupDeliveryRows(); track row.id) {
                         <div class="detail-page__pickup-row">
                           <span class="detail-page__pickup-row-icon">
                             <i [class]="row.icon" aria-hidden="true"></i>
                           </span>
-                          <span class="detail-page__pickup-row-label">{{ row.labelKey | translate }}</span>
+                          <span class="detail-page__pickup-row-label">{{
+                            row.labelKey | translate
+                          }}</span>
                           <span class="detail-page__pickup-row-value">
                             @if (row.valueText) {
                               {{ row.valueText }}
@@ -310,21 +365,29 @@
                       }
                     </div>
                   }
-                </div>
+                </app-listing-location>
               </section>
 
               <div class="detail-page__divider" aria-hidden="true"></div>
 
               <!-- 4. Owner / contact card -->
-              <section class="detail-page__section detail-page__section--owner" aria-labelledby="detail-owner-heading">
-                <span class="detail-page__section-eyebrow">{{ 'listings.details.eyebrow.host' | translate }}</span>
+              <section
+                class="detail-page__section detail-page__section--owner"
+                aria-labelledby="detail-owner-heading"
+              >
+                <span class="detail-page__section-eyebrow">{{
+                  'listings.details.eyebrow.host' | translate
+                }}</span>
                 <h2 id="detail-owner-heading" class="detail-page__section-title">
                   {{ 'listings.details.hostHeading' | translate }}
                 </h2>
 
                 <div class="detail-page__owner-card">
                   <div class="detail-page__owner-row">
-                    <a class="detail-page__owner-identity" [routerLink]="['/users', listing.owner.id]">
+                    <a
+                      class="detail-page__owner-identity"
+                      [routerLink]="['/users', listing.owner.id]"
+                    >
                       <span class="detail-page__owner-avatar-wrap" aria-hidden="true">
                         @if (ownerPublicProfile()?.avatarUrl; as avatarUrl) {
                           <img
@@ -334,7 +397,10 @@
                             loading="lazy"
                           />
                         } @else {
-                          <app-ui-avatar [name]="listing.owner.firstName + ' ' + listing.owner.lastName" size="lg" />
+                          <app-ui-avatar
+                            [name]="listing.owner.firstName + ' ' + listing.owner.lastName"
+                            size="lg"
+                          />
                         }
                       </span>
                       <span class="detail-page__owner-info">
@@ -343,7 +409,9 @@
                           @if (ownerIsVerified()) {
                             <span
                               class="detail-page__owner-verified-badge"
-                              [attr.aria-label]="'listings.details.badges.verifiedOwner' | translate"
+                              [attr.aria-label]="
+                                'listings.details.badges.verifiedOwner' | translate
+                              "
                             >
                               <i class="pi pi-check" aria-hidden="true"></i>
                             </span>
@@ -351,11 +419,17 @@
                         </span>
                         <span class="detail-page__owner-meta">
                           @if (ownerPublicProfile()?.activeListingsCount; as count) {
-                            <span>{{ count }}&nbsp;{{ 'listings.details.ownerToySuffix' | translate }}</span>
+                            <span
+                              >{{ count }}&nbsp;{{
+                                'listings.details.ownerToySuffix' | translate
+                              }}</span
+                            >
                           }
                           @if (ownerMemberYear(); as year) {
                             <span aria-hidden="true">&ensp;·&ensp;</span>
-                            <span>{{ 'listings.details.ownerMemberSince' | translate: { year } }}</span>
+                            <span>{{
+                              'listings.details.ownerMemberSince' | translate: { year }
+                            }}</span>
                           }
                         </span>
                       </span>
@@ -374,7 +448,9 @@
                       @for (stat of ownerStats(); track stat.id) {
                         <div class="detail-page__owner-stat">
                           <span class="detail-page__owner-stat-value">{{ stat.value }}</span>
-                          <span class="detail-page__owner-stat-label">{{ stat.labelKey | translate }}</span>
+                          <span class="detail-page__owner-stat-label">{{
+                            stat.labelKey | translate
+                          }}</span>
                         </div>
                       }
                     </div>
@@ -385,7 +461,8 @@
                     <div class="detail-page__phone-notice">
                       <i class="pi pi-lock" aria-hidden="true"></i>
                       <p>
-                        {{ 'listings.details.contactLabelPre' | translate }}<strong>{{ 'listings.details.contactLabelBold' | translate }}</strong>
+                        {{ 'listings.details.contactLabelPre' | translate
+                        }}<strong>{{ 'listings.details.contactLabelBold' | translate }}</strong>
                       </p>
                     </div>
                   </div>
@@ -401,7 +478,9 @@
                   @if (ratingSum && ratingSum.reviewCount === 1) {
                     {{ 'reviews.summary.oneReview' | translate }}
                   } @else if (ratingSum && ratingSum.reviewCount > 1) {
-                    {{ 'reviews.summary.countReviews' | translate: { count: ratingSum.reviewCount } }}
+                    {{
+                      'reviews.summary.countReviews' | translate: { count: ratingSum.reviewCount }
+                    }}
                   } @else {
                     {{ 'listings.details.eyebrow.reviews' | translate }}
                   }
@@ -441,7 +520,9 @@
                     @for (review of visibleReviews(); track review.id; let i = $index) {
                       <div
                         class="detail-page__review-item"
-                        [class.detail-page__review-item--desktop-only]="i === 2 && !reviewsExpanded()"
+                        [class.detail-page__review-item--desktop-only]="
+                          i === 2 && !reviewsExpanded()
+                        "
                       >
                         <app-review-card [review]="review" />
                       </div>
@@ -454,7 +535,9 @@
                       class="detail-page__reviews-seeall"
                       (click)="toggleReviewsExpanded()"
                     >
-                      {{ 'listings.details.reviews.seeAll' | translate: { count: reviews().length } }}
+                      {{
+                        'listings.details.reviews.seeAll' | translate: { count: reviews().length }
+                      }}
                     </button>
                   }
                 }
@@ -468,15 +551,21 @@
               <div class="detail-page__cta-card">
                 <div class="detail-page__cta-price-row">
                   <p class="detail-page__cta-price">
-                    <span class="detail-page__cta-price-amount">{{ listing.pricePerDay | dram }}</span>
-                    <span class="detail-page__cta-price-suffix">/ {{ 'listings.booking.priceSuffix' | translate }}</span>
+                    <span class="detail-page__cta-price-amount">{{
+                      listing.pricePerDay | dram
+                    }}</span>
+                    <span class="detail-page__cta-price-suffix"
+                      >/ {{ 'listings.booking.priceSuffix' | translate }}</span
+                    >
                   </p>
                   @if (ratingSummary(); as summary) {
                     @if (summary.reviewCount > 0) {
                       <span class="detail-page__cta-rating">
                         <i class="pi pi-star-fill" aria-hidden="true"></i>
-                        <strong>{{ summary.averageRating | number:'1.1-1' }}</strong>
-                        <span class="detail-page__cta-rating-count">({{ summary.reviewCount }})</span>
+                        <strong>{{ summary.averageRating | number: '1.1-1' }}</strong>
+                        <span class="detail-page__cta-rating-count"
+                          >({{ summary.reviewCount }})</span
+                        >
                       </span>
                     }
                   }
@@ -484,19 +573,27 @@
 
                 <div class="detail-page__cta-divider" aria-hidden="true"></div>
 
-                <p class="detail-page__cta-steps-label">{{ 'listings.details.howItWorks.label' | translate }}</p>
+                <p class="detail-page__cta-steps-label">
+                  {{ 'listings.details.howItWorks.label' | translate }}
+                </p>
                 <ol class="detail-page__cta-steps">
                   <li class="detail-page__cta-step">
                     <span class="detail-page__cta-step-num">1</span>
-                    <span class="detail-page__cta-step-text">{{ 'listings.details.howItWorks.step1' | translate }}</span>
+                    <span class="detail-page__cta-step-text">{{
+                      'listings.details.howItWorks.step1' | translate
+                    }}</span>
                   </li>
                   <li class="detail-page__cta-step">
                     <span class="detail-page__cta-step-num">2</span>
-                    <span class="detail-page__cta-step-text">{{ 'listings.details.howItWorks.step2' | translate }}</span>
+                    <span class="detail-page__cta-step-text">{{
+                      'listings.details.howItWorks.step2' | translate
+                    }}</span>
                   </li>
                   <li class="detail-page__cta-step">
                     <span class="detail-page__cta-step-num">3</span>
-                    <span class="detail-page__cta-step-text">{{ 'listings.details.howItWorks.step3' | translate }}</span>
+                    <span class="detail-page__cta-step-text">{{
+                      'listings.details.howItWorks.step3' | translate
+                    }}</span>
                   </li>
                 </ol>
 
@@ -525,7 +622,9 @@
                   }
                 } @else {
                   <div class="detail-page__cta-guest">
-                    <p class="detail-page__cta-guest-text">{{ 'listings.details.guestRentSubtext' | translate }}</p>
+                    <p class="detail-page__cta-guest-text">
+                      {{ 'listings.details.guestRentSubtext' | translate }}
+                    </p>
                     <p-button
                       type="button"
                       styleClass="detail-page__cta-btn"
@@ -584,13 +683,15 @@
           <div class="detail-page__mobile-bar-info">
             <span class="detail-page__mobile-bar-price">
               <span class="detail-page__mobile-bar-amount">{{ listing.pricePerDay | dram }}</span>
-              <span class="detail-page__mobile-bar-suffix">/ {{ 'listings.booking.priceSuffix' | translate }}</span>
+              <span class="detail-page__mobile-bar-suffix"
+                >/ {{ 'listings.booking.priceSuffix' | translate }}</span
+              >
             </span>
             @if (ratingSummary(); as summary) {
               @if (summary.reviewCount > 0) {
                 <span class="detail-page__mobile-bar-rating">
                   <i class="pi pi-star-fill" aria-hidden="true"></i>
-                  {{ summary.averageRating | number:'1.1-1' }} · {{ summary.reviewCount }}
+                  {{ summary.averageRating | number: '1.1-1' }} · {{ summary.reviewCount }}
                 </span>
               }
             }
@@ -618,5 +719,12 @@
     }
 
     <app-auth-dialog [visible]="showAuthDialog()" (closed)="showAuthDialog.set(false)" />
+
+    @if (showReportDialog() && canReportListing() && displayListing(); as reportedListing) {
+      <app-report-dialog
+        [target]="{ targetType: 'listing', targetId: reportedListing.id }"
+        (closed)="closeReportDialog()"
+      />
+    }
   </div>
 </div>
