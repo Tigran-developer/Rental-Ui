@@ -2,24 +2,12 @@
 <button type="button" class="category-tile" [attr.aria-label]="data.label" (click)="onClick()">
   <div
     class="category-tile__media"
-    [style.background]="
-      data.imageUrl ? null : 'linear-gradient(135deg, ' + data.tintA + ', ' + data.tintB + ')'
-    "
+    [style.background]="backgroundColor()"
     aria-hidden="true"
   >
-    @if (data.imageUrl) {
-      <img
-        class="category-tile__image"
-        [src]="data.imageUrl"
-        alt=""
-        loading="lazy"
-        decoding="async"
-      />
-    } @else {
-      <span class="category-tile__icon-chip">
-        <i class="category-tile__icon" [class]="iconClass()"></i>
-      </span>
-    }
+    <span class="category-tile__icon-chip">
+      <app-icon class="category-tile__icon" [name]="data.iconName" [size]="26" />
+    </span>
     <!-- Purely decorative: the button's own aria-label carries the category
          name, so this overlay stays out of the a11y tree and screen readers
          announce the name exactly once — on desktop, where this is the only
