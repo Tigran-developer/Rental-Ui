@@ -1,0 +1,236 @@
+<app-admin-page-header
+  [title]="'admin.reports.page.title' | translate"
+  [subtitle]="'admin.reports.page.subtitle' | translate"
+>
+  @if (isDesktop()) {
+    <div class="reports-page__search" role="search">
+      <app-icon name="search" [size]="15" />
+      <input
+        type="search"
+        class="reports-page__search-input"
+        [value]="searchInput()"
+        [placeholder]="'admin.reports.page.searchPlaceholder' | translate"
+        [attr.aria-label]="'admin.reports.page.searchPlaceholder' | translate"
+        (input)="onSearchInput($event)"
+      />
+    </div>
+  }
+</app-admin-page-header>
+
+@if (!isDesktop()) {
+  <div class="reports-page__mobile-controls">
+    <div class="reports-page__search reports-page__search--mobile" role="search">
+      <app-icon name="search" [size]="15" />
+      <input
+        type="search"
+        class="reports-page__search-input"
+        [value]="searchInput()"
+        [placeholder]="'admin.reports.page.searchPlaceholderShort' | translate"
+        [attr.aria-label]="'admin.reports.page.searchPlaceholderShort' | translate"
+        (input)="onSearchInput($event)"
+      />
+    </div>
+  </div>
+}
+
+@if (targetFilter()) {
+  <div class="reports-page__filter-banner" role="status">
+    <app-icon name="flag" [size]="15" />
+    <span class="reports-page__filter-banner-text">
+      {{ 'admin.reports.filterBanner.text' | translate: { count: counts().all } }}
+    </span>
+    <button type="button" class="reports-page__filter-banner-clear" (click)="clearTargetFilter()">
+      {{ 'admin.reports.filterBanner.clear' | translate }}
+    </button>
+  </div>
+}
+
+@if (isDesktop()) {
+  <div class="reports-page__stats">
+    <app-admin-stat-card
+      [value]="statsReady() ? counts().open : null"
+      [label]="'admin.reports.stats.open' | translate"
+    />
+    <app-admin-stat-card
+      [value]="statsReady() ? counts().resolved : null"
+      [label]="'admin.reports.stats.resolved' | translate"
+    />
+    <app-admin-stat-card
+      [value]="statsReady() ? counts().dismissed : null"
+      [label]="'admin.reports.stats.dismissed' | translate"
+    />
+    <app-admin-stat-card
+      [value]="statsReady() ? counts().all : null"
+      [label]="'admin.reports.stats.all' | translate"
+    />
+  </div>
+}
+
+<app-admin-tabs
+  [tabs]="tabs()"
+  [value]="statusFilter()"
+  [ariaLabel]="'admin.reports.page.tabsAria' | translate"
+  (valueChange)="selectTab($event)"
+/>
+
+@if (error() !== null) {
+  <div class="reports-page__error" role="alert">
+    <p-message severity="error" styleClass="reports-page__error-message">
+      <div class="reports-page__error-content">
+        <strong>{{ 'admin.reports.page.errorTitle' | translate }}</strong>
+        <span>{{ error() }}</span>
+      </div>
+    </p-message>
+    <button type="button" class="reports-page__retry-btn" (click)="retry()">
+      {{ 'listings.common.retry' | translate }}
+    </button>
+  </div>
+}
+
+@if (showInitialSkeleton()) {
+  <div class="reports-page__cards" aria-busy="true">
+    @for (i of [0, 1, 2, 3]; track i) {
+      <div class="reports-page__skeleton-card">
+        <p-skeleton width="52px" height="52px" borderRadius="12px" />
+        <div class="reports-page__skeleton-card-body">
+          <p-skeleton width="50%" height="1rem" />
+          <p-skeleton width="70%" height="0.85rem" />
+          <p-skeleton width="90%" height="0.85rem" />
+        </div>
+      </div>
+    }
+  </div>
+}
+
+@if (showEmpty()) {
+  <div class="reports-page__empty-wrap">
+    <app-ui-empty-state
+      tone="neutral"
+      icon="pi pi-flag"
+      [title]="'admin.reports.empty.title' | translate"
+      [description]="'admin.reports.empty.description' | translate"
+    />
+  </div>
+}
+
+@if (!showInitialSkeleton() && items().length > 0) {
+  <div class="reports-page__cards">
+    @for (row of items(); track row.id) {
+      <div class="reports-page__card">
+        <div class="reports-page__thumb-wrap">
+          @if (row.targetImageUrl; as imageUrl) {
+            <img
+              class="reports-page__thumb"
+              [class.reports-page__thumb--round]="row.targetType === 'User'"
+              [src]="imageUrl"
+              [alt]="row.targetLabel"
+            />
+          } @else if (row.targetType === 'User') {
+            <app-ui-avatar [name]="row.targetLabel" size="md" />
+          } @else {
+            <span class="reports-page__thumb-fallback" aria-hidden="true">
+              <app-icon [name]="typeIcon[row.targetType]" [size]="18" />
+            </span>
+          }
+          <span class="reports-page__type-badge" aria-hidden="true">
+            <app-icon [name]="typeIcon[row.targetType]" [size]="10" />
+          </span>
+        </div>
+
+        <div class="reports-page__card-body">
+          <div class="reports-page__card-head">
+            <span class="reports-page__target">{{ row.targetLabel }}</span>
+            <app-admin-report-severity-pill [severity]="row.severity" size="sm" />
+            <app-admin-report-status-pill [status]="row.status" size="sm" />
+          </div>
+          <div class="reports-page__card-meta">{{ cardMeta(row) }}</div>
+          <div class="reports-page__reason">
+            @if (reportReasonLabelKey(row.reasonCode); as key) {
+              {{ key | translate }}
+            } @else {
+              {{ row.reasonCode }}
+            }
+          </div>
+          @if (row.detail) {
+            <p class="reports-page__detail">{{ row.detail }}</p>
+          }
+
+          <div class="reports-page__actions">
+            @if (row.status === 'Open') {
+              <button
+                type="button"
+                class="reports-page__action-btn reports-page__action-btn--resolve"
+                [disabled]="isBusy(row.id)"
+                (click)="quickResolve(row.id)"
+              >
+                <app-icon name="check" [size]="13" />
+                {{ 'admin.reports.actions.resolve' | translate }}
+              </button>
+              <button
+                type="button"
+                class="reports-page__action-btn reports-page__action-btn--dismiss"
+                [disabled]="isBusy(row.id)"
+                (click)="quickDismiss(row.id)"
+              >
+                {{ 'admin.reports.actions.dismiss' | translate }}
+              </button>
+            } @else {
+              <button
+                type="button"
+                class="reports-page__action-btn reports-page__action-btn--reopen"
+                [disabled]="isBusy(row.id)"
+                (click)="quickReopen(row.id)"
+              >
+                {{ 'admin.reports.actions.reopen' | translate }}
+              </button>
+            }
+            <button
+              type="button"
+              class="reports-page__action-btn reports-page__action-btn--open"
+              (click)="openDetail(row)"
+            >
+              {{ 'admin.reports.actions.openReport' | translate }}
+              <app-icon name="arrow" [size]="13" />
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (totalPages() > 1) {
+    <nav class="reports-page__pager" [attr.aria-label]="'admin.reports.page.pagerAria' | translate">
+      <button
+        type="button"
+        class="reports-page__pager-btn"
+        [disabled]="page() <= 1"
+        (click)="goToPage(page() - 1)"
+      >
+        {{ 'admin.reports.page.pagerPrev' | translate }}
+      </button>
+      <span class="reports-page__pager-status">
+        {{ 'admin.reports.page.pagerStatus' | translate: { page: page(), total: totalPages() } }}
+      </span>
+      <button
+        type="button"
+        class="reports-page__pager-btn"
+        [disabled]="page() >= totalPages()"
+        (click)="goToPage(page() + 1)"
+      >
+        {{ 'admin.reports.page.pagerNext' | translate }}
+      </button>
+    </nav>
+  }
+}
+
+@if (selectedReport(); as report) {
+  <app-admin-report-detail-dialog
+    [report]="report"
+    [isDesktop]="isDesktop()"
+    [busy]="isBusy(report.id)"
+    (close)="closeDetail()"
+    (resolve)="onDialogResolve(report.id, $event)"
+    (dismiss)="onDialogDismiss(report.id, $event)"
+    (reopen)="onDialogReopen(report.id)"
+  />
+}

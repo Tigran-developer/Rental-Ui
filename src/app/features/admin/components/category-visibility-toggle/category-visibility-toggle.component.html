@@ -1,0 +1,37 @@
+<button
+  type="button"
+  class="category-visibility-toggle"
+  role="switch"
+  [attr.aria-checked]="checked()"
+  [attr.aria-label]="
+    (checked()
+      ? 'admin.categories.visibility.toggleAriaHide'
+      : 'admin.categories.visibility.toggleAriaShow'
+    ) | translate
+  "
+  [title]="
+    (checked()
+      ? 'admin.categories.visibility.tooltipHide'
+      : 'admin.categories.visibility.tooltipShow'
+    ) | translate
+  "
+  [disabled]="disabled()"
+  (click)="onClick()"
+>
+  <span
+    class="category-visibility-toggle__track"
+    [class.category-visibility-toggle__track--on]="checked()"
+    aria-hidden="true"
+  >
+    <span class="category-visibility-toggle__thumb"></span>
+  </span>
+  <span
+    class="category-visibility-toggle__label"
+    [class.category-visibility-toggle__label--on]="checked()"
+  >
+    {{
+      (checked() ? 'admin.categories.visibility.visible' : 'admin.categories.visibility.hidden')
+        | translate
+    }}
+  </span>
+</button>

@@ -1,0 +1,200 @@
+<article
+  class="review-card"
+  [class.review-card--desktop]="isDesktop()"
+  [class.review-card--rejecting]="isDesktop() && isRejectOpen()"
+>
+  <div class="review-card__row">
+    <a class="review-card__photo" [routerLink]="detailPath()">
+      @if (item().primaryImageUrl) {
+        <img [src]="item().primaryImageUrl" [alt]="item().title" />
+      } @else {
+        <span class="review-card__photo-placeholder" aria-hidden="true">
+          <app-icon name="image" [size]="20" />
+        </span>
+      }
+      <span class="review-card__photo-count">
+        <app-icon name="image" [size]="10" />
+        {{ item().photoCount }}
+      </span>
+    </a>
+
+    <div class="review-card__main">
+      <div class="review-card__title-row">
+        <a class="review-card__title" [routerLink]="detailPath()">{{ item().title }}</a>
+        <app-admin-status-badge
+          [variant]="
+            isFlagged()
+              ? 'flag'
+              : tab() === 'Pending'
+                ? 'pending'
+                : tab() === 'Approved'
+                  ? 'approved'
+                  : 'rejected'
+          "
+          size="sm"
+        />
+      </div>
+
+      <div class="review-card__owner">
+        <span class="review-card__owner-identity">
+          @if (item().ownerAvatarUrl) {
+            <img
+              class="review-card__owner-avatar"
+              [src]="item().ownerAvatarUrl"
+              [alt]="ownerName()"
+            />
+          } @else {
+            <app-ui-avatar [name]="ownerName()" size="sm" />
+          }
+          <strong>{{ ownerName() }}</strong>
+          @if (item().ownerIsIdConfirmed) {
+            <app-icon name="verified" [size]="13" class="review-card__verified-icon" />
+          } @else {
+            <span class="review-card__unverified">{{
+              'admin.review.card.unverified' | translate
+            }}</span>
+          }
+        </span>
+        <span class="review-card__dot" aria-hidden="true">·</span>
+        <span class="review-card__rating">
+          <app-icon name="star" [size]="11" class="review-card__rating-icon" />
+          {{ item().ownerRating !== null ? item().ownerRating : '—' }}
+        </span>
+        <span class="review-card__dot" aria-hidden="true">·</span>
+        <span>{{ listingCountKey() | translate: { count: item().ownerListingCount } }}</span>
+        <span class="review-card__dot" aria-hidden="true">·</span>
+        <span class="review-card__city">
+          <app-icon name="pin" [size]="11" />
+          {{ item().city }}
+        </span>
+      </div>
+
+      <div class="review-card__meta">
+        <span class="review-card__price">
+          {{ item().pricePerDay | dram }}
+          <span class="review-card__price-suffix">{{
+            'admin.review.card.perDay' | translate
+          }}</span>
+        </span>
+        <span class="review-card__age">
+          @if (item().ageFromMonths !== null && item().ageToMonths !== null) {
+            {{
+              'admin.pendingListings.card.ageFromTo'
+                | translate: { from: item().ageFromMonths, to: item().ageToMonths }
+            }}
+          } @else if (item().ageFromMonths !== null) {
+            {{ 'admin.pendingListings.card.ageFrom' | translate: { months: item().ageFromMonths } }}
+          } @else if (item().ageToMonths !== null) {
+            {{ 'admin.pendingListings.card.ageTo' | translate: { months: item().ageToMonths } }}
+          } @else {
+            {{ 'admin.pendingListings.common.notAvailable' | translate }}
+          }
+        </span>
+        <div class="review-card__category">
+          <span class="review-card__category-label">{{
+            'admin.review.category.label' | translate
+          }}</span>
+          @if (isDecided()) {
+            <span class="review-card__category-static">
+              <span class="review-card__category-tile" aria-hidden="true">
+                <app-icon name="tag" [size]="12" />
+              </span>
+              {{ item().categoryName }}
+            </span>
+          } @else {
+            <app-admin-cat-select
+              [categories]="categories()"
+              [value]="item().categoryId"
+              [disabled]="isBusy()"
+              [flagged]="isFlagged()"
+              (valueChange)="onCategoryChange($event)"
+            />
+          }
+        </div>
+      </div>
+
+      @if (isFlagged()) {
+        <p class="review-card__suggestion">
+          <app-icon name="sparkle" [size]="12" />
+          {{
+            'admin.review.category.suggestion'
+              | translate
+                : {
+                    owner: item().categoryName,
+                    suggested: item().suggestedCategoryName,
+                  }
+          }}
+        </p>
+      }
+
+      @if (tab() === 'Rejected' && item().rejectionReasonCode) {
+        <p class="review-card__rejection-reason">
+          {{ 'admin.review.card.rejectedFor' | translate }}
+          {{
+            'admin.pendingListings.rejectSheet.reasons.' + item().rejectionReasonCode + '.title'
+              | translate
+          }}
+        </p>
+      }
+
+      <p class="review-card__description">{{ item().description }}</p>
+
+      <div class="review-card__checklist">
+        <app-check-pill
+          [ok]="compliance().photos"
+          [label]="'admin.review.checklist.photos' | translate"
+        />
+        <app-check-pill
+          [ok]="compliance().safety"
+          [label]="'admin.review.checklist.safety' | translate"
+        />
+        <app-check-pill
+          [ok]="compliance().hygiene"
+          [label]="'admin.review.checklist.hygiene' | translate"
+        />
+      </div>
+    </div>
+
+    @if (tab() === 'Pending') {
+      <div class="review-card__actions">
+        <button
+          type="button"
+          class="review-card__btn review-card__btn--approve"
+          [disabled]="isBusy()"
+          (click)="approve.emit()"
+        >
+          <app-icon name="check" [size]="15" />
+          {{ 'admin.review.actions.approve' | translate }}
+        </button>
+        <button
+          type="button"
+          class="review-card__btn review-card__btn--reject"
+          [class.review-card__btn--reject-active]="isDesktop() && isRejectOpen()"
+          [disabled]="isBusy()"
+          (click)="openReject.emit()"
+        >
+          {{ 'admin.review.actions.reject' | translate }}
+        </button>
+        @if (isDesktop()) {
+          <a class="review-card__btn review-card__btn--inspect" [routerLink]="detailPath()">
+            {{ 'admin.review.actions.inspect' | translate }}
+            <app-icon name="arrow" [size]="13" />
+          </a>
+        }
+      </div>
+    }
+  </div>
+
+  @if (isDesktop() && isRejectOpen()) {
+    <app-reject-panel
+      [reasonSel]="reasonSel()"
+      [note]="note()"
+      [busy]="isBusy()"
+      [columns]="2"
+      (reasonSelect)="reasonSelect.emit($event)"
+      (noteChange)="noteChange.emit($event)"
+      (cancel)="cancelReject.emit()"
+      (confirm)="confirmReject.emit()"
+    />
+  }
+</article>

@@ -1,0 +1,128 @@
+<div
+  class="admin-user-actions-panel__backdrop"
+  (click)="onBackdropClick()"
+  aria-hidden="true"
+></div>
+
+@if (isDesktop()) {
+  <div
+    class="admin-user-actions-panel admin-user-actions-panel--menu"
+    role="menu"
+    [attr.aria-label]="'admin.users.actions.menuAria' | translate: { name: displayName() }"
+  >
+    @if (canVerify()) {
+      <button
+        type="button"
+        role="menuitem"
+        class="admin-user-actions-panel__item admin-user-actions-panel__item--primary"
+        [disabled]="busy()"
+        (click)="verify.emit()"
+      >
+        <app-icon name="verified" [size]="15" />
+        {{ 'admin.users.actions.verify' | translate }}
+      </button>
+    }
+    @if (isSuspended()) {
+      <button
+        type="button"
+        role="menuitem"
+        class="admin-user-actions-panel__item admin-user-actions-panel__item--success"
+        [disabled]="busy()"
+        (click)="reactivate.emit()"
+      >
+        <app-icon name="check" [size]="15" />
+        {{ 'admin.users.actions.reactivate' | translate }}
+      </button>
+    } @else {
+      <button
+        type="button"
+        role="menuitem"
+        class="admin-user-actions-panel__item admin-user-actions-panel__item--danger"
+        [disabled]="busy()"
+        [attr.aria-disabled]="!canSuspend() ? 'true' : null"
+        [title]="suspendDisabledReasonKey() ? (suspendDisabledReasonKey() | translate) : null"
+        [attr.aria-describedby]="
+          suspendDisabledReasonKey() ? 'admin-user-actions-panel-suspend-reason-menu' : null
+        "
+        (click)="onSuspendClick()"
+      >
+        <app-icon name="shield" [size]="15" />
+        {{ 'admin.users.actions.suspend' | translate }}
+      </button>
+      @if (suspendDisabledReasonKey(); as reasonKey) {
+        <span
+          id="admin-user-actions-panel-suspend-reason-menu"
+          class="admin-user-actions-panel__sr-reason"
+        >
+          {{ reasonKey | translate }}
+        </span>
+      }
+    }
+  </div>
+} @else {
+  <div
+    class="admin-user-actions-panel admin-user-actions-panel--sheet"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="'admin.users.actions.menuAria' | translate: { name: displayName() }"
+  >
+    <div class="admin-user-actions-panel__handle" aria-hidden="true"></div>
+    <div class="admin-user-actions-panel__header">
+      <app-ui-avatar [name]="displayName()" size="md" />
+      <div class="admin-user-actions-panel__header-text">
+        <div class="admin-user-actions-panel__header-name">{{ displayName() }}</div>
+        <div class="admin-user-actions-panel__header-email">{{ user().email }}</div>
+      </div>
+    </div>
+    <div class="admin-user-actions-panel__sheet-body">
+      @if (canVerify()) {
+        <button
+          type="button"
+          class="admin-user-actions-panel__sheet-btn admin-user-actions-panel__sheet-btn--primary"
+          [disabled]="busy()"
+          (click)="verify.emit()"
+        >
+          <app-icon name="verified" [size]="17" />
+          {{ 'admin.users.actions.verify' | translate }}
+        </button>
+      }
+      @if (isSuspended()) {
+        <button
+          type="button"
+          class="admin-user-actions-panel__sheet-btn admin-user-actions-panel__sheet-btn--success"
+          [disabled]="busy()"
+          (click)="reactivate.emit()"
+        >
+          <app-icon name="check" [size]="17" />
+          {{ 'admin.users.actions.reactivate' | translate }}
+        </button>
+      } @else {
+        <button
+          type="button"
+          class="admin-user-actions-panel__sheet-btn admin-user-actions-panel__sheet-btn--danger"
+          [disabled]="busy()"
+          [attr.aria-disabled]="!canSuspend() ? 'true' : null"
+          [attr.aria-describedby]="
+            suspendDisabledReasonKey() ? 'admin-user-actions-panel-suspend-reason' : null
+          "
+          (click)="onSuspendClick()"
+        >
+          <app-icon name="shield" [size]="17" />
+          {{ 'admin.users.actions.suspend' | translate }}
+        </button>
+        @if (suspendDisabledReasonKey(); as reasonKey) {
+          <p id="admin-user-actions-panel-suspend-reason" class="admin-user-actions-panel__reason">
+            {{ reasonKey | translate }}
+          </p>
+        }
+      }
+      <button
+        type="button"
+        class="admin-user-actions-panel__sheet-btn admin-user-actions-panel__sheet-btn--cancel"
+        (click)="cancel.emit()"
+      >
+        {{ 'admin.users.actions.cancel' | translate }}
+      </button>
+    </div>
+  </div>
+}

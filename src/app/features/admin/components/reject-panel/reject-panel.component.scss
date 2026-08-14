@@ -1,0 +1,191 @@
+// Values with no matching design token (11px radii, the #FFFBFA panel tint,
+// the 17px radio dot) are hardcoded straight from admin-desktop.jsx's inline
+// reject panel — flagged in the implementation report.
+:host {
+  display: block;
+}
+
+.reject-panel {
+  padding: var(--ui-space-16);
+  background: #fffbfa;
+  border-top: 1px solid var(--ui-color-border);
+}
+
+.reject-panel__title {
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: var(--ui-color-text-primary);
+  margin-bottom: 4px;
+}
+
+.reject-panel__hint {
+  margin: 0 0 var(--ui-space-12);
+  font-size: 0.71875rem;
+  color: var(--ui-color-text-secondary);
+}
+
+.reject-panel__reasons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--ui-space-8);
+}
+
+.reject-panel__reasons--1col {
+  grid-template-columns: 1fr;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.reject-panel__reason {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  border: 1.5px solid var(--ui-color-border);
+  background: var(--ui-color-surface);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.reject-panel__reason:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.reject-panel__reason--selected {
+  border-color: var(--ui-color-danger);
+  background: var(--ui-color-danger-surface);
+}
+
+.reject-panel__reason-dot {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  border: 2px solid var(--ui-color-border);
+  background: var(--ui-color-surface);
+  flex-shrink: 0;
+  margin-top: 1px;
+  position: relative;
+}
+
+.reject-panel__reason--selected .reject-panel__reason-dot {
+  border-color: var(--ui-color-danger);
+  background: var(--ui-color-danger);
+}
+
+.reject-panel__reason--selected .reject-panel__reason-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.reject-panel__reason-text {
+  min-width: 0;
+}
+
+.reject-panel__reason-title {
+  display: block;
+  font-size: 0.78125rem;
+  font-weight: 700;
+  color: var(--ui-color-text-primary);
+}
+
+.reject-panel__reason-desc {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.6875rem;
+  color: var(--ui-color-text-secondary);
+}
+
+.reject-panel__note-label {
+  display: block;
+  margin-top: var(--ui-space-12);
+  margin-bottom: var(--ui-space-6);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ui-color-text-secondary);
+}
+
+.reject-panel__note {
+  width: 100%;
+  min-height: 64px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  border: 1.5px solid var(--ui-color-border);
+  font: inherit;
+  font-size: 0.78125rem;
+  color: var(--ui-color-text-primary);
+  background: var(--ui-color-surface);
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.reject-panel__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--ui-space-8);
+  margin-top: var(--ui-space-12);
+}
+
+.reject-panel__btn {
+  height: 40px;
+  border-radius: 11px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.reject-panel__btn:disabled {
+  cursor: not-allowed;
+}
+
+.reject-panel__btn--cancel {
+  padding: 0 18px;
+  border: 1px solid var(--ui-color-border);
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text-primary);
+}
+
+.reject-panel__btn--confirm {
+  padding: 0 22px;
+  border: 0;
+  background: var(--ui-color-danger);
+  color: #fff;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-8);
+}
+
+.reject-panel__btn--confirm:disabled {
+  background: #e7c9c6;
+}
+
+.reject-panel__spinner {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-top-color: #fff;
+  animation: reject-panel-spin 700ms linear infinite;
+}
+
+@keyframes reject-panel-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.reject-panel__reason:focus-visible,
+.reject-panel__btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-ring);
+}

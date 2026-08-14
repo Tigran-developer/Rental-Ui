@@ -82,10 +82,22 @@
 }
 
 /* 5+ total images: explicit 3-column × 2-row grid cells. */
-.listing-gallery__mtile--grid-a { grid-column: 2; grid-row: 1; }
-.listing-gallery__mtile--grid-b { grid-column: 2; grid-row: 2; }
-.listing-gallery__mtile--grid-c { grid-column: 3; grid-row: 1; }
-.listing-gallery__mtile--grid-d { grid-column: 3; grid-row: 2; }
+.listing-gallery__mtile--grid-a {
+  grid-column: 2;
+  grid-row: 1;
+}
+.listing-gallery__mtile--grid-b {
+  grid-column: 2;
+  grid-row: 2;
+}
+.listing-gallery__mtile--grid-c {
+  grid-column: 3;
+  grid-row: 1;
+}
+.listing-gallery__mtile--grid-d {
+  grid-column: 3;
+  grid-row: 2;
+}
 
 .listing-gallery__mtile--corner-top {
   border-radius: 0 20px 0 0;
@@ -282,7 +294,10 @@
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
-  transition: background-color 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+  transition:
+    background-color 140ms ease,
+    transform 140ms ease,
+    box-shadow 140ms ease;
   z-index: 3;
 }
 
@@ -350,7 +365,9 @@
   background: rgba(255, 255, 255, 0.55);
   padding: 0;
   cursor: pointer;
-  transition: background-color 160ms ease, width 160ms ease;
+  transition:
+    background-color 160ms ease,
+    width 160ms ease;
 }
 
 .listing-gallery__dot:hover {
@@ -385,7 +402,9 @@
   overflow: hidden;
   background: transparent;
   cursor: pointer;
-  transition: border-color 140ms ease, transform 140ms ease;
+  transition:
+    border-color 140ms ease,
+    transform 140ms ease;
 }
 
 .listing-gallery__thumb:hover {
@@ -428,34 +447,60 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   Lightbox
+   Lightbox — fullscreen viewer, not a floating dialog. The `.p-dialog` root
+   is pinned to the viewport with `position: fixed; inset: 0` rather than
+   sized with `vw`/`vh` units. That's the fix for the horizontal scrollbar
+   the old `92vw`/`96vw` box used to produce: `vw` resolves against the full
+   window width INCLUDING the vertical scrollbar's track, which is wider
+   than the actual visible content area (`document.documentElement
+   .clientWidth`) whenever the underlying page has a scrollbar at all — so a
+   `92vw`-wide box always overhung the visible viewport by the scrollbar's
+   width and forced a page-level horizontal scrollbar for as long as the
+   lightbox was open. `inset: 0` sidesteps the unit entirely: the box is
+   defined as "flush with all four viewport edges," so it can never be wider
+   than the viewport regardless of scrollbar bookkeeping.
    ══════════════════════════════════════════════════════════════════════ */
 /* `styleClass` lands on the `.p-dialog` root itself (not a wrapper), so this
    must be a compound selector, not a descendant one. `maskStyleClass`
    (see the template) similarly lands on the mask element itself. */
 ::ng-deep .p-dialog.listing-gallery__lightbox-dialog {
+  position: fixed;
+  inset: 0;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  margin: 0;
   background: transparent;
   box-shadow: none;
-  max-width: 96vw;
-  max-height: 96vh;
+  border-radius: 0;
 }
 
 ::ng-deep .p-dialog.listing-gallery__lightbox-dialog .p-dialog-content {
   background: transparent;
   padding: 0;
   border-radius: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 /* The header only exists to give PrimeNG a real element to point
-   `aria-labelledby` at (see the HTML comment) — visually it's just the
-   counter text, top-left, blended into the dark chrome. */
+   `aria-labelledby` at (see the HTML comment) — its text duplicates our own
+   visible topbar counter below, so the header itself is visually hidden
+   (standard sr-only clip pattern: still rendered and readable by assistive
+   tech, occupies no layout space, never paints). */
 ::ng-deep .p-dialog.listing-gallery__lightbox-dialog .p-dialog-header {
-  background: transparent;
+  position: absolute;
+  width: 1px;
+  height: 1px;
   padding: 0;
-  margin: 0 0 10px;
-  color: #fff;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  background: transparent;
+  color: transparent;
 }
 
 ::ng-deep .p-dialog-mask.listing-gallery__lightbox-mask {
@@ -465,24 +510,30 @@
 .listing-gallery__lightbox {
   position: relative;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 92vw;
-  max-width: 1100px;
-  height: 86vh;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
 }
 
-.listing-gallery__lightbox-img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  border-radius: 8px;
+/* ── Topbar: counter (left) + close (right), inset from the viewport ──── */
+.listing-gallery__lightbox-topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+}
+
+.listing-gallery__lightbox-counter {
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .listing-gallery__lightbox-close {
-  position: absolute;
-  top: -6px;
-  right: -6px;
+  flex: 0 0 auto;
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -493,8 +544,15 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 2;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  transition:
+    background-color 140ms ease,
+    transform 140ms ease;
+}
+
+.listing-gallery__lightbox-close:hover {
+  background: #fff;
+  transform: scale(1.05);
 }
 
 .listing-gallery__lightbox-close:focus-visible {
@@ -502,6 +560,29 @@
   outline-offset: 2px;
 }
 
+/* ── Stage: the photo, centred, contained, never clipped/upscaled ─────── */
+.listing-gallery__lightbox-stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 84px 12px;
+}
+
+.listing-gallery__lightbox-img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+/* Arrows: vertically centred on the stage, anchored a fixed inset from the
+   viewport's left/right edges (the stage spans the full viewport width, so
+   `left`/`right` here ARE viewport-relative) — never pinned to the photo. */
 .listing-gallery__lightbox-nav {
   position: absolute;
   top: 50%;
@@ -517,6 +598,15 @@
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  transition:
+    background-color 140ms ease,
+    transform 140ms ease;
+  z-index: 3;
+}
+
+.listing-gallery__lightbox-nav:hover {
+  background: #fff;
+  transform: translateY(-50%) scale(1.05);
 }
 
 .listing-gallery__lightbox-nav:focus-visible {
@@ -525,24 +615,95 @@
 }
 
 .listing-gallery__lightbox-nav--prev {
-  left: -10px;
+  left: 20px;
 }
 
 .listing-gallery__lightbox-nav--next {
-  right: -10px;
+  right: 20px;
+}
+
+/* ── Filmstrip: horizontally scrollable thumbnail row ──────────────────
+   Visual language reused from `.listing-gallery__thumb` above (same border/
+   radius/active treatment), sized down for a filmstrip context. */
+.listing-gallery__lightbox-thumbs {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px 20px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.listing-gallery__lightbox-thumb {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  overflow: hidden;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.6;
+  transition:
+    border-color 140ms ease,
+    opacity 140ms ease;
+}
+
+.listing-gallery__lightbox-thumb:hover {
+  opacity: 0.85;
+}
+
+.listing-gallery__lightbox-thumb--active {
+  border-color: var(--ui-color-primary);
+  opacity: 1;
+}
+
+.listing-gallery__lightbox-thumb:focus-visible {
+  outline: 2px solid var(--ui-color-primary);
+  outline-offset: 2px;
+}
+
+.listing-gallery__lightbox-thumb-img {
+  display: block;
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
 }
 
 @media (max-width: 700px) {
+  .listing-gallery__lightbox-topbar {
+    padding: 12px;
+  }
+
   .listing-gallery__lightbox-close {
-    top: 8px;
-    right: 8px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .listing-gallery__lightbox-stage {
+    padding: 0 52px 8px;
+  }
+
+  .listing-gallery__lightbox-nav {
+    width: 36px;
+    height: 36px;
   }
 
   .listing-gallery__lightbox-nav--prev {
-    left: 4px;
+    left: 8px;
   }
 
   .listing-gallery__lightbox-nav--next {
-    right: 4px;
+    right: 8px;
+  }
+
+  .listing-gallery__lightbox-thumbs {
+    gap: 6px;
+    padding: 8px 12px 14px;
+  }
+
+  .listing-gallery__lightbox-thumb-img {
+    width: 48px;
+    height: 48px;
   }
 }

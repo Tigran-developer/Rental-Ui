@@ -1,0 +1,129 @@
+// Pixel values with no matching design token (10px/8px/7px radii, 22px/24px
+// tiles, 230/260 panel size) are hardcoded straight from admin-desktop.jsx's
+// `AdminCatSelect` — flagged in the implementation report rather than
+// rounded to a token that doesn't actually match.
+:host {
+  display: inline-block;
+  position: relative;
+}
+
+.admin-cat-select {
+  position: relative;
+}
+
+.admin-cat-select__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-8);
+  height: 34px;
+  padding: 0 10px 0 8px;
+  border-radius: 10px;
+  border: 1.5px solid var(--ui-color-border);
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text-primary);
+  cursor: pointer;
+  font: inherit;
+}
+
+.admin-cat-select__trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Phase 6 "Needs category fix" flagged state — border/background tint matches the design's
+ * `AdminCatSelect({ flagged: true })`. */
+.admin-cat-select__trigger--flagged {
+  border-color: var(--dash-blue);
+  background: var(--dash-blue-surface);
+}
+
+.admin-cat-select__trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-ring);
+}
+
+.admin-cat-select__tile,
+.admin-cat-select__option-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 7px;
+  background: var(--ui-color-surface-muted);
+  color: var(--ui-color-text-secondary);
+}
+
+.admin-cat-select__tile {
+  width: 22px;
+  height: 22px;
+}
+
+.admin-cat-select__option-tile {
+  width: 24px;
+  height: 24px;
+}
+
+.admin-cat-select__name {
+  font-size: 0.78125rem;
+  font-weight: 700;
+  color: var(--ui-color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 12rem;
+}
+
+.admin-cat-select__panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: var(--ui-z-dropdown, 60);
+  width: 230px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 6px;
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-12);
+  box-shadow: var(--ui-shadow-popover, 0 16px 40px -10px rgba(20, 15, 5, 0.22));
+}
+
+.admin-cat-select__option {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-8);
+  width: 100%;
+  padding: 8px 9px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ui-color-text-primary);
+  font: inherit;
+  font-size: 0.78125rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-cat-select__option:hover {
+  background: var(--ui-color-surface-muted);
+}
+
+.admin-cat-select__option--selected {
+  background: var(--ui-color-primary-soft);
+  color: var(--ui-color-primary);
+  font-weight: 800;
+}
+
+.admin-cat-select__option-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-cat-select__option:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-ring);
+}

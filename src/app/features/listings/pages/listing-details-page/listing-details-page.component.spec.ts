@@ -5,6 +5,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { MessageService } from 'primeng/api';
 import { of } from 'rxjs';
 
+import { makeListingDetails, makeUser } from '../../../../../testing/fixtures';
 import {
   ListingDetailsPageComponent,
   hasAnyToyDetail,
@@ -157,5 +158,91 @@ describe('ListingDetailsPageComponent (DI construction)', () => {
       const fixture = createFixture();
       fixture.detectChanges();
     }).not.toThrow();
+  });
+});
+
+/**
+ * The "Report this listing" affordance is a safety control — it must never appear for a guest
+ * (report submission requires authentication) or on your own listing (the server also rejects
+ * this via `report.cannot_report_own`, but there's no reason to ever offer it here). See
+ * `canReportListing` in `listing-details-page.component.ts`.
+ */
+describe('ListingDetailsPageComponent — report affordance', () => {
+  function setup(options: {
+    authenticated: boolean;
+    userId?: string;
+    ownerId?: string;
+  }): ReturnType<typeof TestBed.createComponent<ListingDetailsPageComponent>> {
+    const listing = makeListingDetails({
+      id: 'listing-1',
+      owner: {
+        id: options.ownerId ?? 'owner-1',
+        firstName: 'Owen',
+        lastName: 'Owner',
+        phoneNumber: null,
+      },
+    });
+    TestBed.configureTestingModule({
+      imports: [ListingDetailsPageComponent, TranslateModule.forRoot()],
+      providers: [
+        // The "own listing" case below triggers the constructor's owner-redirect `effect`
+        // (`router.navigate(['/my-listings', id])`) — a route must exist for it to resolve
+        // rather than reject with NG04002 (an unhandled promise rejection Vitest would flag).
+        provideRouter([{ path: 'my-listings/:id', children: [] }]),
+        MessageService,
+        provideMockStore({
+          initialState: {
+            [listingsFeatureKey]: {
+              ...initialListingsState,
+              selectedListing: listing,
+              isDetailsLoading: false,
+            },
+            [bookingsFeatureKey]: initialBookingsState,
+            [reviewsFeatureKey]: initialReviewsState,
+            [publicProfilesFeatureKey]: initialPublicProfilesState,
+            [favoritesFeatureKey]: initialFavoritesState,
+            [authFeatureKey]: {
+              ...initialAuthState,
+              isAuthenticated: options.authenticated,
+              user: options.authenticated ? makeUser({ id: options.userId ?? 'renter-1' }) : null,
+            },
+          },
+        }),
+        {
+          provide: ActivatedRoute,
+          useValue: { paramMap: of(convertToParamMap({ id: listing.id })) },
+        },
+      ],
+    });
+    return TestBed.createComponent(ListingDetailsPageComponent);
+  }
+
+  it('hides the report affordance for a guest', () => {
+    const fixture = setup({ authenticated: false });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.detail-page__pill-btn--report')).toBeNull();
+  });
+
+  it('hides the report affordance on your own listing', () => {
+    const fixture = setup({ authenticated: true, userId: 'owner-1', ownerId: 'owner-1' });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.detail-page__pill-btn--report')).toBeNull();
+  });
+
+  it('shows the report affordance for an authenticated non-owner', () => {
+    const fixture = setup({ authenticated: true, userId: 'renter-1', ownerId: 'owner-1' });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.detail-page__pill-btn--report')).not.toBeNull();
+  });
+
+  it('opens the report dialog with the lowercase "listing" target type', () => {
+    const fixture = setup({ authenticated: true, userId: 'renter-1', ownerId: 'owner-1' });
+    fixture.detectChanges();
+    const button: HTMLButtonElement = fixture.nativeElement.querySelector(
+      '.detail-page__pill-btn--report',
+    );
+    button.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-report-dialog')).not.toBeNull();
   });
 });

@@ -1,0 +1,72 @@
+<div
+  class="reject-panel"
+  role="region"
+  [attr.aria-label]="'admin.pendingListings.rejectSheet.title' | translate"
+>
+  <div class="reject-panel__title">{{ 'admin.review.rejectPanel.question' | translate }}</div>
+  <p class="reject-panel__hint">{{ 'admin.pendingListings.rejectSheet.subtitle' | translate }}</p>
+
+  <div
+    class="reject-panel__reasons"
+    [class.reject-panel__reasons--1col]="columns() === 1"
+    role="radiogroup"
+    [attr.aria-label]="'admin.review.rejectPanel.question' | translate"
+  >
+    @for (reason of reasons; track reason.key) {
+      <button
+        type="button"
+        class="reject-panel__reason"
+        [class.reject-panel__reason--selected]="reasonSel() === reason.key"
+        [disabled]="busy()"
+        role="radio"
+        [attr.aria-checked]="reasonSel() === reason.key"
+        (click)="reasonSelect.emit(reason.key)"
+      >
+        <span class="reject-panel__reason-dot" aria-hidden="true"></span>
+        <span class="reject-panel__reason-text">
+          <span class="reject-panel__reason-title">{{
+            'admin.pendingListings.rejectSheet.reasons.' + reason.key + '.title' | translate
+          }}</span>
+          <span class="reject-panel__reason-desc">{{
+            'admin.pendingListings.rejectSheet.reasons.' + reason.key + '.description' | translate
+          }}</span>
+        </span>
+      </button>
+    }
+  </div>
+
+  <label class="reject-panel__note-label" for="reject-panel-note">
+    {{ 'admin.pendingListings.rejectSheet.noteLabel' | translate }}
+  </label>
+  <textarea
+    id="reject-panel-note"
+    class="reject-panel__note"
+    rows="2"
+    [disabled]="busy()"
+    [value]="note()"
+    [placeholder]="'admin.pendingListings.rejectSheet.notePlaceholder' | translate"
+    (input)="onNoteInput($event)"
+  ></textarea>
+
+  <div class="reject-panel__footer">
+    <button
+      type="button"
+      class="reject-panel__btn reject-panel__btn--cancel"
+      [disabled]="busy()"
+      (click)="cancel.emit()"
+    >
+      {{ 'admin.pendingListings.rejectSheet.cancel' | translate }}
+    </button>
+    <button
+      type="button"
+      class="reject-panel__btn reject-panel__btn--confirm"
+      [disabled]="!reasonSel() || busy()"
+      (click)="confirm.emit()"
+    >
+      @if (busy()) {
+        <span class="reject-panel__spinner" aria-hidden="true"></span>
+      }
+      {{ 'admin.review.rejectPanel.confirm' | translate }}
+    </button>
+  </div>
+</div>

@@ -1,0 +1,20 @@
+.check-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--ui-radius-pill);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.check-pill--ok {
+  background: var(--ui-color-success-surface);
+  color: var(--ui-color-success);
+}
+
+.check-pill--bad {
+  background: var(--ui-color-danger-surface);
+  color: var(--ui-color-danger);
+}

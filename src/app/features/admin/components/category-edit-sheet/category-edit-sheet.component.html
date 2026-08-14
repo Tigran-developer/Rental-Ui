@@ -1,0 +1,47 @@
+<div class="category-edit-sheet__backdrop" (click)="onBackdropClick()" aria-hidden="true"></div>
+<div
+  class="category-edit-sheet"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-label]="'admin.categories.editSheet.title' | translate"
+>
+  <div class="category-edit-sheet__handle" aria-hidden="true"></div>
+  <h2 class="category-edit-sheet__title">{{ 'admin.categories.editSheet.title' | translate }}</h2>
+
+  <div class="category-edit-sheet__body">
+    <app-category-form-panel
+      [name]="name()"
+      [iconName]="iconName()"
+      [colorHex]="colorHex()"
+      [busy]="busy()"
+      [nameErrorMessage]="nameErrorMessage()"
+      [namePlaceholder]="'admin.categories.form.namePlaceholder' | translate"
+      (nameChange)="nameChange.emit($event)"
+      (iconChange)="iconChange.emit($event)"
+      (colorChange)="colorChange.emit($event)"
+      (submitName)="confirm.emit()"
+    />
+  </div>
+
+  <div class="category-edit-sheet__footer">
+    <button
+      type="button"
+      class="category-edit-sheet__btn category-edit-sheet__btn--cancel"
+      [disabled]="busy()"
+      (click)="cancel.emit()"
+    >
+      {{ 'admin.categories.form.cancel' | translate }}
+    </button>
+    <button
+      type="button"
+      class="category-edit-sheet__btn category-edit-sheet__btn--confirm"
+      [disabled]="busy() || name().trim().length === 0"
+      (click)="confirm.emit()"
+    >
+      @if (busy()) {
+        <span class="category-edit-sheet__spinner" aria-hidden="true"></span>
+      }
+      {{ 'admin.categories.form.saveChanges' | translate }}
+    </button>
+  </div>
+</div>

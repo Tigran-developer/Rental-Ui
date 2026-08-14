@@ -1,0 +1,79 @@
+<div class="owner-trust-panel" [class.owner-trust-panel--desktop]="isDesktop()">
+  <div class="owner-trust-panel__label">{{ 'admin.inspect.owner.label' | translate }}</div>
+
+  <div class="owner-trust-panel__identity">
+    @if (listing().ownerAvatarUrl) {
+      <img class="owner-trust-panel__avatar" [src]="listing().ownerAvatarUrl" [alt]="ownerName()" />
+    } @else {
+      <app-ui-avatar [name]="ownerName()" size="lg" />
+    }
+    <div class="owner-trust-panel__identity-text">
+      <div class="owner-trust-panel__name">
+        {{ ownerName() }}
+        @if (listing().ownerIsIdConfirmed) {
+          <app-icon name="verified" [size]="14" class="owner-trust-panel__verified-icon" />
+        }
+      </div>
+      <div class="owner-trust-panel__email">{{ listing().ownerEmail }}</div>
+    </div>
+  </div>
+
+  <div class="owner-trust-panel__stats">
+    <div class="owner-trust-panel__stat">
+      <div class="owner-trust-panel__stat-value">
+        @if (listing().ownerRating !== null) {
+          <app-icon name="star" [size]="12" class="owner-trust-panel__rating-icon" />
+          {{ listing().ownerRating }}
+        } @else {
+          —
+        }
+      </div>
+      <div class="owner-trust-panel__stat-label">
+        {{ 'admin.inspect.owner.rating' | translate }}
+      </div>
+    </div>
+    <div class="owner-trust-panel__stat">
+      <div class="owner-trust-panel__stat-value">{{ listing().ownerListingCount }}</div>
+      <div class="owner-trust-panel__stat-label">
+        {{ 'admin.inspect.owner.listings' | translate }}
+      </div>
+    </div>
+    <div class="owner-trust-panel__stat">
+      <div class="owner-trust-panel__stat-value">{{ listing().ownerCompletedRentals }}</div>
+      <div class="owner-trust-panel__stat-label">
+        {{ 'admin.inspect.owner.rentals' | translate }}
+      </div>
+    </div>
+  </div>
+
+  <div class="owner-trust-panel__rows">
+    <div class="owner-trust-panel__row">
+      <span>{{ 'admin.inspect.owner.memberSince' | translate }}</span>
+      <span>{{ listing().ownerJoinedAt | date: 'mediumDate' }}</span>
+    </div>
+    <div class="owner-trust-panel__row">
+      <span>{{ 'admin.inspect.owner.identity' | translate }}</span>
+      <span [class.owner-trust-panel__row-value--positive]="listing().ownerIsIdConfirmed">
+        {{
+          (listing().ownerIsIdConfirmed
+            ? 'admin.inspect.owner.identityVerified'
+            : 'admin.inspect.owner.identityUnverified'
+          ) | translate
+        }}
+      </span>
+    </div>
+    <div class="owner-trust-panel__row">
+      <span>{{ 'admin.inspect.owner.flags' | translate }}</span>
+      <span [class.owner-trust-panel__row-value--negative]="listing().ownerOpenReportCount > 0">
+        {{
+          'admin.inspect.owner.flagsCount' | translate: { count: listing().ownerOpenReportCount }
+        }}
+      </span>
+    </div>
+  </div>
+
+  <a class="owner-trust-panel__profile-link" [routerLink]="ownerProfilePath()">
+    <app-icon name="user" [size]="15" />
+    {{ 'admin.inspect.owner.viewProfile' | translate }}
+  </a>
+</div>

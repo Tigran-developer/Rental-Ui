@@ -112,12 +112,26 @@
 }
 
 /* ── Loading / error / empty status banners ────────────────── */
+/* This is a SIBLING of `<app-map>` in the template above (not projected
+   inside it), so it sits outside `.app-map`'s own isolated stacking context
+   (`isolation: isolate`, map.component.scss). That means 901 no longer
+   compares number-for-number against anything Leaflet-owned or against this
+   component's own `.app-map__overlay` (900) / zoom stack (1002) / scroll-gate
+   overlays (1004-1005) — all of those are now sealed INSIDE `.app-map`'s
+   context and paint as one atomic unit at `.app-map`'s own (implicit, ~0)
+   level. Any positive z-index here — 901 is over-specified, 1 would do —
+   simply paints this banner above the WHOLE map, including its gate/
+   scroll-hint scrims when they happen to be showing at the same time
+   (previously this banner painted dimmed UNDER those scrims; now it paints
+   above them). Left at 901 rather than trimmed down: no functional bug
+   either way, and touching the value isn't in scope for the header-leak fix
+   that added the isolation. */
 .listings-map__status-stack {
   position: absolute;
   top: var(--ui-space-12);
   left: 50%;
   transform: translateX(-50%);
-  z-index: 901; /* above `.app-map__overlay` (900), below the zoom stack (1002) */
+  z-index: 901;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -158,6 +172,9 @@
 }
 
 /* ── Truncated-results banner ───────────────────────────────── */
+/* Also a sibling of `<app-map>` — see `.listings-map__status-stack` above for
+   why 901 is no longer a literal comparison against anything inside
+   `.app-map`'s now-isolated stacking context. */
 .listings-map__banner {
   position: absolute;
   bottom: var(--ui-space-12);

@@ -1,0 +1,179 @@
+<div
+  class="admin-shell"
+  [class.admin-shell--desktop]="isDesktop()"
+  [class.admin-shell--mobile]="!isDesktop()"
+>
+  @if (isDesktop()) {
+    <!-- ══════════════════════ Desktop (≥961px) ══════════════════════ -->
+    <header class="admin-topbar" role="banner">
+      <a
+        routerLink="/"
+        class="admin-topbar__brand"
+        [attr.aria-label]="'admin.console.chrome.brandAria' | translate"
+      >
+        <app-icon name="shield" [size]="20" />
+        <span class="admin-topbar__brand-text">DoRent</span>
+        <span class="admin-topbar__admin-pill">{{
+          'admin.console.chrome.adminPill' | translate
+        }}</span>
+      </a>
+
+      <div class="admin-topbar__search" role="search">
+        <app-icon name="search" [size]="16" />
+        <input
+          type="search"
+          class="admin-topbar__search-input"
+          [placeholder]="'admin.console.chrome.searchPlaceholder' | translate"
+          [attr.aria-label]="'admin.console.chrome.searchPlaceholder' | translate"
+        />
+      </div>
+
+      <div class="admin-topbar__actions">
+        <button
+          type="button"
+          class="admin-topbar__bell"
+          [attr.aria-label]="'admin.console.chrome.notificationsAria' | translate"
+        >
+          <app-icon name="bell" [size]="18" />
+          <span class="admin-topbar__bell-dot" aria-hidden="true"></span>
+        </button>
+
+        <div class="admin-topbar__user">
+          <app-ui-avatar [name]="userDisplayName()" size="md" />
+          <div class="admin-topbar__user-meta">
+            <span class="admin-topbar__user-name">{{ userDisplayName() }}</span>
+            <span class="admin-topbar__user-role">{{
+              'admin.console.chrome.moderatorRole' | translate
+            }}</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="admin-shell__body">
+      <aside class="admin-rail">
+        <nav
+          class="admin-rail__card"
+          [attr.aria-label]="'admin.console.chrome.navAria' | translate"
+        >
+          <h2 class="admin-rail__title">{{ 'admin.console.chrome.moderation' | translate }}</h2>
+          <ul class="admin-rail__list">
+            @for (item of navItems; track item.id) {
+              <li>
+                <a
+                  [routerLink]="item.path"
+                  routerLinkActive="admin-rail__link--active"
+                  #rla="routerLinkActive"
+                  [attr.aria-current]="rla.isActive ? 'page' : null"
+                  class="admin-rail__link"
+                >
+                  <span class="admin-rail__icon-tile">
+                    <app-icon [name]="item.icon" [size]="15" />
+                  </span>
+                  <span class="admin-rail__label">{{ item.labelKey | translate }}</span>
+                  @if (item.hasMeta) {
+                    <span class="admin-rail__meta" [class.admin-rail__meta--badge]="item.badge">
+                      @if (navCounts()[item.id] !== null) {
+                        {{ navCounts()[item.id] }}
+                      } @else {
+                        <span class="admin-rail__meta-skeleton" aria-hidden="true"></span>
+                      }
+                    </span>
+                  }
+                </a>
+              </li>
+            }
+          </ul>
+        </nav>
+
+        <div class="admin-rail__queue-health">
+          <h3 class="admin-rail__queue-health-title">
+            {{ 'admin.console.chrome.queueHealth.title' | translate }}
+          </h3>
+          <dl class="admin-rail__queue-health-list">
+            <div class="admin-rail__queue-health-row">
+              <dt>{{ 'admin.console.chrome.queueHealth.pending' | translate }}</dt>
+              <dd>
+                @if (queueHealth().pendingCount !== null) {
+                  {{ queueHealth().pendingCount }}
+                } @else {
+                  <span class="admin-rail__queue-health-skeleton" aria-hidden="true"></span>
+                }
+              </dd>
+            </div>
+            <div class="admin-rail__queue-health-row">
+              <dt>{{ 'admin.console.chrome.queueHealth.avgReview' | translate }}</dt>
+              <dd>
+                @if (!queueHealth().hasAvgReviewData && queueHealth().pendingCount === null) {
+                  <span class="admin-rail__queue-health-skeleton" aria-hidden="true"></span>
+                } @else if (queueHealth().avgReviewHours !== null) {
+                  {{
+                    'admin.console.chrome.queueHealth.hoursValue'
+                      | translate: { hours: queueHealth().avgReviewHours }
+                  }}
+                } @else {
+                  <!-- Loaded, but nothing was moderated in the trailing 30 days — a dash, not a
+                       perpetually-pulsing skeleton (see `queueHealth`'s doc comment). -->
+                  <span>—</span>
+                }
+              </dd>
+            </div>
+            <div class="admin-rail__queue-health-row">
+              <dt>{{ 'admin.console.chrome.queueHealth.flagged' | translate }}</dt>
+              <dd>
+                @if (queueHealth().flaggedCount !== null) {
+                  {{ queueHealth().flaggedCount }}
+                } @else {
+                  <span class="admin-rail__queue-health-skeleton" aria-hidden="true"></span>
+                }
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </aside>
+
+      <main class="admin-shell__main">
+        <router-outlet />
+      </main>
+    </div>
+  } @else {
+    <!-- ══════════════════════ Mobile (<961px) ══════════════════════ -->
+    <header class="admin-mobile-header">
+      <div class="admin-mobile-header__text">
+        <span class="admin-mobile-header__title">
+          {{ activeNavItem()?.labelKey ?? 'admin.console.chrome.moderation' | translate }}
+        </span>
+        <span class="admin-mobile-header__subtitle">{{
+          'admin.console.chrome.mobileSubtitle' | translate
+        }}</span>
+      </div>
+      <div class="admin-mobile-header__action">
+        <ng-content select="[admin-mobile-action]" />
+      </div>
+    </header>
+
+    <main class="admin-shell__main admin-shell__main--mobile">
+      <router-outlet />
+    </main>
+
+    <nav class="admin-mobile-nav" [attr.aria-label]="'admin.console.chrome.navAria' | translate">
+      @for (item of navItems; track item.id) {
+        <a
+          [routerLink]="item.path"
+          routerLinkActive="admin-mobile-nav__item--active"
+          #mrla="routerLinkActive"
+          [attr.aria-current]="mrla.isActive ? 'page' : null"
+          class="admin-mobile-nav__item"
+        >
+          <span class="admin-mobile-nav__icon-wrap">
+            <app-icon [name]="item.mobileIcon ?? item.icon" [size]="20" />
+            @if (item.badge && navCounts()[item.id] !== null && navCounts()[item.id]! > 0) {
+              <span class="admin-mobile-nav__badge">{{ navCounts()[item.id] }}</span>
+            }
+          </span>
+          <span class="admin-mobile-nav__label">{{ item.labelKey | translate }}</span>
+        </a>
+      }
+    </nav>
+  }
+</div>

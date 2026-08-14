@@ -239,3 +239,132 @@ export function e2ePendingListing(overrides: Record<string, unknown> = {}) {
     ...overrides,
   };
 }
+
+/**
+ * One row of the Phase-1 admin console moderation queue — `GET
+ * /api/admin/listings` (`AdminListingSummaryResponse` wire shape, mirrored by
+ * `AdminListingSummary` in `features/admin/models/admin-listing-queue.model.ts`).
+ * `GET /api/admin/listings/{id}` returns the same shape plus
+ * `ownerOpenReportCount` (`AdminListingDetail`).
+ *
+ * Carries an extra `status` field (`ListingModerationStatus`, e.g.
+ * `'PendingApproval'`) that isn't part of the summary DTO but IS part of the
+ * detail DTO — kept on every fixture instance (rather than only detail ones)
+ * so `api-mock.ts`'s in-memory queue can filter/mutate items by moderation
+ * status without a second fixture shape; the summary normalizer ignores
+ * unknown keys, so its presence on queue rows is harmless.
+ */
+export function e2eAdminListing(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'admin-listing-e2e-1',
+    title: 'E2E Toy Kitchen',
+    description: 'A wooden play kitchen, gently used and freshly cleaned.',
+    pricePerDay: 4,
+    currency: 'AMD',
+    country: 'Armenia',
+    city: 'Yerevan',
+    addressLine: null,
+    categoryId: 'cat-e2e-1',
+    categoryName: 'Toys',
+    photoCount: 3,
+    primaryImageUrl: null,
+    images: [],
+    ageFromMonths: 24,
+    ageToMonths: 60,
+    condition: 'Good',
+    hygieneNotes: 'Washed with baby-safe detergent before every rental.',
+    safetyNotes: 'No small detachable parts.',
+    depositAmount: null,
+    createdAt: '2026-06-20T10:00:00.000Z',
+    rejectionReasonCode: null,
+    rejectionNote: null,
+    moderatedAt: null,
+    ownerId: 'owner-e2e-1',
+    ownerEmail: 'owner@rental.local',
+    ownerFirstName: 'Olive',
+    ownerLastName: 'Owner',
+    ownerAvatarUrl: null,
+    ownerIsIdConfirmed: true,
+    ownerRating: 4.8,
+    ownerReviewCount: 12,
+    ownerListingCount: 5,
+    ownerCompletedRentals: 20,
+    ownerJoinedAt: '2026-01-15T10:00:00.000Z',
+    ownerOpenReportCount: 0,
+    status: 'PendingApproval',
+    ...overrides,
+  };
+}
+
+/**
+ * One row of the admin console Categories screen (Phase 2) — `GET
+ * /api/admin/categories` (`AdminCategoryResponse` wire shape, mirrored by `AdminCategory` in
+ * `features/admin/models/admin-category.model.ts`).
+ */
+export function e2eAdminCategory(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'admin-category-e2e-1',
+    name: 'Wooden Toys',
+    slug: 'wooden-toys',
+    iconName: 'tag',
+    colorHex: '#FFE6CC',
+    displayOrder: 0,
+    isVisible: true,
+    listingCount: 0,
+    ...overrides,
+  };
+}
+
+/**
+ * One row of the admin console Users screen (Phase 3) — `GET /api/admin/users`
+ * (`AdminUserSummaryResponse` wire shape, mirrored by `AdminUser` in
+ * `features/admin/models/admin-user.model.ts`). All enums are PascalCase strings on the wire
+ * (`role`/`status`/`marketplaceRole`).
+ */
+export function e2eAdminUser(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'admin-user-e2e-1',
+    email: 'renter.e2e@rental.local',
+    firstName: 'Renata',
+    lastName: 'Renter',
+    avatarUrl: null,
+    role: 'User',
+    status: 'Active',
+    isIdConfirmed: false,
+    marketplaceRole: 'Renter',
+    listingCount: 0,
+    rentalCount: 2,
+    flagCount: 0,
+    createdAt: '2026-01-15T10:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/**
+ * One row of the admin console Reports & flags screen (Phase 4) — `GET
+ * /api/admin/reports` (`AdminReportRowResponse` wire shape, mirrored by `AdminReportRow` in
+ * `features/admin/models/admin-report.model.ts`). All enums are PascalCase strings on the wire
+ * (`targetType`/`severity`/`status`).
+ */
+export function e2eAdminReport(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'admin-report-e2e-1',
+    targetType: 'Listing',
+    targetId: 'listing-e2e-1',
+    targetLabel: 'E2E Wooden Train Set',
+    targetImageUrl: null,
+    reasonCode: 'misleadingPhotos',
+    detail: 'Photos do not match the actual condition of the toy.',
+    severity: 'Medium',
+    status: 'Open',
+    createdAt: '2026-07-20T10:00:00.000Z',
+    reporterId: 'renter-e2e-1',
+    reporterFirstName: 'Renata',
+    reporterLastName: 'Renter',
+    reporterEmail: 'renter@rental.local',
+    reporterAvatarUrl: null,
+    resolvedAt: null,
+    resolutionNote: null,
+    ...overrides,
+  };
+}

@@ -598,6 +598,16 @@
   padding-block: var(--ui-space-16);
 }
 
+/* ── Infinite-scroll sentinel ───────────────────────────────── */
+/* Invisible, unfocusable trigger observed by IntersectionObserver — needs
+   nonzero block size so it actually enters the viewport/rootMargin to
+   intersect, but must not read as a visual gap between the grid and
+   whatever follows (footer etc.). */
+.listings-page__scroll-sentinel {
+  width: 100%;
+  height: 1px;
+}
+
 /* ── Empty-search state ─────────────────────────────────────── */
 .lp-empty-search {
   display: flex;

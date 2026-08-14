@@ -1,0 +1,140 @@
+<div
+  class="admin-user-profile-dialog__backdrop"
+  (click)="onBackdropClick()"
+  aria-hidden="true"
+></div>
+<div
+  class="admin-user-profile-dialog"
+  [class.admin-user-profile-dialog--sheet]="!isDesktop()"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-label]="'admin.users.profile.dialogAria' | translate: { name: displayName() }"
+>
+  <div class="admin-user-profile-dialog__header">
+    <app-ui-avatar [name]="displayName()" size="lg" />
+    <div class="admin-user-profile-dialog__header-text">
+      <div class="admin-user-profile-dialog__name">
+        {{ displayName() }}
+        @if (user().isIdConfirmed) {
+          <app-icon
+            name="verified"
+            [size]="17"
+            [attr.aria-label]="'admin.users.profile.verifiedAria' | translate"
+          />
+        }
+      </div>
+      <div class="admin-user-profile-dialog__email">{{ user().email }}</div>
+      <div class="admin-user-profile-dialog__status">
+        <app-admin-user-status-pill [status]="user().status" />
+      </div>
+    </div>
+    <button
+      type="button"
+      class="admin-user-profile-dialog__close"
+      [attr.aria-label]="'admin.users.profile.closeAria' | translate"
+      (click)="close.emit()"
+    >
+      <app-icon name="x" [size]="16" />
+    </button>
+  </div>
+
+  <div class="admin-user-profile-dialog__body">
+    <div class="admin-user-profile-dialog__stats">
+      <div class="admin-user-profile-dialog__stat">
+        <div class="admin-user-profile-dialog__stat-value">{{ user().listingCount }}</div>
+        <div class="admin-user-profile-dialog__stat-label">
+          {{ 'admin.users.profile.listings' | translate }}
+        </div>
+      </div>
+      <div class="admin-user-profile-dialog__stat">
+        <div class="admin-user-profile-dialog__stat-value">{{ user().rentalCount }}</div>
+        <div class="admin-user-profile-dialog__stat-label">
+          {{ 'admin.users.profile.rentals' | translate }}
+        </div>
+      </div>
+      <div class="admin-user-profile-dialog__stat">
+        <div
+          class="admin-user-profile-dialog__stat-value"
+          [class.admin-user-profile-dialog__stat-value--danger]="user().flagCount > 0"
+        >
+          {{ user().flagCount }}
+        </div>
+        <div class="admin-user-profile-dialog__stat-label">
+          {{ 'admin.users.profile.flags' | translate }}
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-user-profile-dialog__info">
+      <div class="admin-user-profile-dialog__info-row">
+        <span>{{ 'admin.users.profile.role' | translate }}</span>
+        <span>{{ 'admin.users.role.' + user().marketplaceRole.toLowerCase() | translate }}</span>
+      </div>
+      <div class="admin-user-profile-dialog__info-row">
+        <span>{{ 'admin.users.profile.memberSince' | translate }}</span>
+        <span>{{ user().createdAt | date: 'MMM y' }}</span>
+      </div>
+      <div class="admin-user-profile-dialog__info-row">
+        <span>{{ 'admin.users.profile.identity' | translate }}</span>
+        <span>{{
+          (user().isIdConfirmed
+            ? 'admin.users.profile.identityVerified'
+            : 'admin.users.profile.identityUnverified'
+          ) | translate
+        }}</span>
+      </div>
+    </div>
+
+    @if (user().flagCount > 0) {
+      <button
+        type="button"
+        class="admin-user-profile-dialog__reports-btn"
+        (click)="viewReports.emit()"
+      >
+        <app-icon name="flag" [size]="14" />
+        {{ 'admin.users.profile.viewReports' | translate: { count: user().flagCount } }}
+      </button>
+    }
+
+    <div class="admin-user-profile-dialog__actions">
+      @if (canVerify()) {
+        <button
+          type="button"
+          class="admin-user-profile-dialog__action admin-user-profile-dialog__action--primary"
+          [disabled]="busy()"
+          (click)="verify.emit()"
+        >
+          {{ 'admin.users.actions.verify' | translate }}
+        </button>
+      }
+      @if (isSuspended()) {
+        <button
+          type="button"
+          class="admin-user-profile-dialog__action admin-user-profile-dialog__action--success"
+          [disabled]="busy()"
+          (click)="reactivate.emit()"
+        >
+          {{ 'admin.users.actions.reactivate' | translate }}
+        </button>
+      } @else {
+        <button
+          type="button"
+          class="admin-user-profile-dialog__action admin-user-profile-dialog__action--danger"
+          [disabled]="busy()"
+          [attr.aria-disabled]="!canSuspend() ? 'true' : null"
+          [attr.aria-describedby]="
+            suspendDisabledReasonKey() ? 'admin-user-profile-dialog-suspend-reason' : null
+          "
+          (click)="onSuspendClick()"
+        >
+          {{ 'admin.users.actions.suspend' | translate }}
+        </button>
+      }
+    </div>
+    @if (!isSuspended() && suspendDisabledReasonKey(); as reasonKey) {
+      <p id="admin-user-profile-dialog-suspend-reason" class="admin-user-profile-dialog__reason">
+        {{ reasonKey | translate }}
+      </p>
+    }
+  </div>
+</div>

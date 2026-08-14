@@ -64,12 +64,24 @@
 // area still would've intercepted `mousedown`), so this element now stays a
 // hollow, `pointer-events: none` positioning box — the actual visible/
 // clickable card lives in `.location-picker__hint-card` below.
+// This is a SIBLING of `<app-map>` (see the template's own comment), outside
+// `.app-map`'s own isolated stacking context (`isolation: isolate`,
+// map.component.scss). Leaflet's panes/attribution and this component's zoom
+// stack (1002) / scroll-gate overlays (1004-1005) are sealed INSIDE that
+// context now, so this z-index no longer compares number-for-number against
+// them — it only needs to clear `.app-map`'s own implicit (~0) paint level,
+// making 1003 over-specified (kept as-is; not touched by the header-leak
+// fix). The "below its scroll-gate overlays" half of the old comment is also
+// moot in practice here regardless: this component's `<app-map>` never
+// passes `[scrollGate]` (defaults `false`), so `.app-map__gate`/
+// `.app-map__scroll-hint` never render for THIS map at all — see
+// map.component.ts's `showTouchGate`/`showScrollHint`.
 .location-picker__hint {
   position: absolute;
   top: var(--ui-space-14);
   left: var(--ui-space-14);
   right: var(--ui-space-14);
-  z-index: 1003; // above app-map's own zoom stack (1002), below its scroll-gate overlays.
+  z-index: 1003;
   display: flex;
   pointer-events: none;
 }

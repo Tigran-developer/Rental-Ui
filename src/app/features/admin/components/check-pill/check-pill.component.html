@@ -1,0 +1,4 @@
+<span class="check-pill" [class.check-pill--ok]="ok()" [class.check-pill--bad]="!ok()">
+  <app-icon [name]="ok() ? 'check' : 'x'" [size]="13" />
+  {{ label() }}
+</span>

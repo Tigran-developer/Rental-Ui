@@ -7,7 +7,6 @@
       </p>
     </div>
   } @else {
-
     <!-- ══════════════════ Desktop mosaic (≥1100px) ══════════════════ -->
     <div class="listing-gallery__mosaic">
       @let satellites = mosaicSatellites();
@@ -100,7 +99,13 @@
           (click)="openLightbox(1)"
           [attr.aria-label]="'listings.gallery.photoAlt' | translate: { index: 2, total }"
         >
-          <img class="listing-gallery__mtile-img" [src]="satellites[0].url" alt="" loading="lazy" decoding="async" />
+          <img
+            class="listing-gallery__mtile-img"
+            [src]="satellites[0].url"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
         </button>
         <button
           type="button"
@@ -108,7 +113,13 @@
           (click)="openLightbox(2)"
           [attr.aria-label]="'listings.gallery.photoAlt' | translate: { index: 3, total }"
         >
-          <img class="listing-gallery__mtile-img" [src]="satellites[1].url" alt="" loading="lazy" decoding="async" />
+          <img
+            class="listing-gallery__mtile-img"
+            [src]="satellites[1].url"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
         </button>
         <button
           type="button"
@@ -116,7 +127,13 @@
           (click)="openLightbox(3)"
           [attr.aria-label]="'listings.gallery.photoAlt' | translate: { index: 4, total }"
         >
-          <img class="listing-gallery__mtile-img" [src]="satellites[2].url" alt="" loading="lazy" decoding="async" />
+          <img
+            class="listing-gallery__mtile-img"
+            [src]="satellites[2].url"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
         </button>
         <button
           type="button"
@@ -124,7 +141,13 @@
           (click)="openLightbox(4)"
           [attr.aria-label]="'listings.gallery.photoAlt' | translate: { index: 5, total }"
         >
-          <img class="listing-gallery__mtile-img" [src]="satellites[3].url" alt="" loading="lazy" decoding="async" />
+          <img
+            class="listing-gallery__mtile-img"
+            [src]="satellites[3].url"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
           <span class="listing-gallery__mtile-scrim">
             <span class="listing-gallery__mtile-allphotos">
               <i class="pi pi-images" aria-hidden="true"></i>
@@ -138,7 +161,10 @@
       @if (badges().length > 0) {
         <span class="listing-gallery__badges" aria-hidden="false">
           @for (badge of badges(); track badge.label) {
-            <span class="listing-gallery__badge" [class]="'listing-gallery__badge listing-gallery__badge--' + badge.tone">
+            <span
+              class="listing-gallery__badge"
+              [class]="'listing-gallery__badge listing-gallery__badge--' + badge.tone"
+            >
               <i [class]="badge.icon" aria-hidden="true"></i>
               {{ badge.label }}
             </span>
@@ -175,7 +201,10 @@
             type="button"
             class="listing-gallery__hero-tap"
             (click)="openLightbox(activeIndex())"
-            [attr.aria-label]="'listings.gallery.photoAlt' | translate: { index: activeIndex() + 1, total: totalCount() }"
+            [attr.aria-label]="
+              'listings.gallery.photoAlt'
+                | translate: { index: activeIndex() + 1, total: totalCount() }
+            "
           >
             <img
               class="listing-gallery__hero-img"
@@ -206,7 +235,10 @@
             </button>
 
             <span class="listing-gallery__counter" aria-hidden="true">
-              {{ 'listings.gallery.counter' | translate: { current: activeIndex() + 1, total: totalCount() } }}
+              {{
+                'listings.gallery.counter'
+                  | translate: { current: activeIndex() + 1, total: totalCount() }
+              }}
             </span>
 
             <div
@@ -214,11 +246,7 @@
               role="tablist"
               [attr.aria-label]="'listings.gallery.dotNavLabel' | translate"
             >
-              @for (
-                image of sortedImages();
-                track trackByImageId($index, image);
-                let i = $index
-              ) {
+              @for (image of sortedImages(); track trackByImageId($index, image); let i = $index) {
                 <button
                   type="button"
                   role="tab"
@@ -239,11 +267,7 @@
             role="list"
             [attr.aria-label]="'listings.gallery.thumbnailsLabel' | translate"
           >
-            @for (
-              image of sortedImages();
-              track trackByImageId($index, image);
-              let i = $index
-            ) {
+            @for (image of sortedImages(); track trackByImageId($index, image); let i = $index) {
               <button
                 type="button"
                 role="listitem"
@@ -273,7 +297,11 @@
      round close button) purely so PrimeNG wires its own `aria-labelledby` to
      a real, rendered header element — with `showHeader: false` that id would
      point at nothing, which is worse for screen readers than a small header
-     bar. The header is styled to disappear visually into the dark chrome.
+     bar. The header text is the same "N / M" counter as our own visible
+     topbar below, but the header ITSELF is visually hidden (sr-only, see the
+     CSS) rather than "blended into the dark chrome": now that the lightbox
+     is a fullscreen viewer with its own always-visible counter in the
+     topbar, showing the PrimeNG header too would just be a duplicate.
 
      `closable="false"` also silently disables PrimeNG's own `closeOnEscape`
      AND `dismissableMask` handling (see `ListingGalleryComponent`'s
@@ -289,46 +317,99 @@
   [dismissableMask]="true"
   [closeOnEscape]="true"
   [closable]="false"
-  [header]="'listings.gallery.counter' | translate: { current: lightboxIndex() + 1, total: totalCount() }"
+  [header]="
+    'listings.gallery.counter' | translate: { current: lightboxIndex() + 1, total: totalCount() }
+  "
   styleClass="listing-gallery__lightbox-dialog"
   [maskStyleClass]="lightboxMaskClass"
 >
   @if (lightboxOpen()) {
-    <div class="listing-gallery__lightbox">
-      <button
-        type="button"
-        class="listing-gallery__lightbox-close"
-        (click)="closeLightbox()"
-        [attr.aria-label]="'listings.gallery.closeLightbox' | translate"
-      >
-        <i class="pi pi-times" aria-hidden="true"></i>
-      </button>
+    <!-- Fullscreen viewer: topbar (counter + close) anchored to the
+         viewport, a centred stage for the photo, and — for multi-photo
+         listings — a bottom filmstrip. Every top-level section here also
+         carries `lightboxBackdropClass` on its own empty area so clicking
+         "the dark chrome" anywhere still dismisses the lightbox, see
+         `onWindowMousedown()`. -->
+    <div class="listing-gallery__lightbox" [class]="lightboxBackdropClass">
+      <div class="listing-gallery__lightbox-topbar" [class]="lightboxBackdropClass">
+        <span class="listing-gallery__lightbox-counter" aria-hidden="true">
+          {{
+            'listings.gallery.counter'
+              | translate: { current: lightboxIndex() + 1, total: totalCount() }
+          }}
+        </span>
+        <button
+          type="button"
+          class="listing-gallery__lightbox-close"
+          (click)="closeLightbox()"
+          [attr.aria-label]="'listings.gallery.closeLightbox' | translate"
+        >
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </div>
 
-      @if (sortedImages()[lightboxIndex()]; as active) {
-        <img
-          class="listing-gallery__lightbox-img"
-          [src]="active.url"
-          [alt]="'listings.gallery.photoAlt' | translate: { index: lightboxIndex() + 1, total: totalCount() }"
-        />
-      }
+      <div class="listing-gallery__lightbox-stage" [class]="lightboxBackdropClass">
+        @if (hasMultipleImages()) {
+          <button
+            type="button"
+            class="listing-gallery__lightbox-nav listing-gallery__lightbox-nav--prev"
+            (click)="lightboxPrev()"
+            [attr.aria-label]="'listings.gallery.prev' | translate"
+          >
+            <span class="pi pi-chevron-left" aria-hidden="true"></span>
+          </button>
+        }
+
+        @if (sortedImages()[lightboxIndex()]; as active) {
+          <img
+            class="listing-gallery__lightbox-img"
+            [src]="active.url"
+            [alt]="
+              'listings.gallery.photoAlt'
+                | translate: { index: lightboxIndex() + 1, total: totalCount() }
+            "
+          />
+        }
+
+        @if (hasMultipleImages()) {
+          <button
+            type="button"
+            class="listing-gallery__lightbox-nav listing-gallery__lightbox-nav--next"
+            (click)="lightboxNext()"
+            [attr.aria-label]="'listings.gallery.next' | translate"
+          >
+            <span class="pi pi-chevron-right" aria-hidden="true"></span>
+          </button>
+        }
+      </div>
 
       @if (hasMultipleImages()) {
-        <button
-          type="button"
-          class="listing-gallery__lightbox-nav listing-gallery__lightbox-nav--prev"
-          (click)="lightboxPrev()"
-          [attr.aria-label]="'listings.gallery.prev' | translate"
+        <div
+          class="listing-gallery__lightbox-thumbs"
+          [class]="lightboxBackdropClass"
+          role="list"
+          [attr.aria-label]="'listings.gallery.thumbnailsLabel' | translate"
         >
-          <span class="pi pi-chevron-left" aria-hidden="true"></span>
-        </button>
-        <button
-          type="button"
-          class="listing-gallery__lightbox-nav listing-gallery__lightbox-nav--next"
-          (click)="lightboxNext()"
-          [attr.aria-label]="'listings.gallery.next' | translate"
-        >
-          <span class="pi pi-chevron-right" aria-hidden="true"></span>
-        </button>
+          @for (image of sortedImages(); track trackByImageId($index, image); let i = $index) {
+            <button
+              #lightboxThumbBtn
+              type="button"
+              role="listitem"
+              class="listing-gallery__lightbox-thumb"
+              [class.listing-gallery__lightbox-thumb--active]="i === lightboxIndex()"
+              (click)="lightboxSelectIndex(i)"
+              [attr.aria-label]="'listings.gallery.dotLabel' | translate: { index: i + 1 }"
+            >
+              <img
+                class="listing-gallery__lightbox-thumb-img"
+                [src]="image.url"
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
+            </button>
+          }
+        </div>
       }
     </div>
   }

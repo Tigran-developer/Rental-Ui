@@ -327,16 +327,24 @@
             </div>
           }
 
-          @if (v.showLoadMore) {
-            <div class="listings-page__load-more">
-              <p-button
-                type="button"
-                [outlined]="true"
-                icon="pi pi-angle-down"
-                [label]="'listings.page.loadMore' | translate"
-                (onClick)="loadMore()"
-              />
-            </div>
+          @if (v.hasMore && !v.hasError) {
+            @if (intersectionObserverSupported) {
+              <!-- Infinite-scroll trigger: observed by the component, never
+                   focusable/announced — it carries no content of its own. -->
+              <div #scrollSentinel class="listings-page__scroll-sentinel" aria-hidden="true"></div>
+            } @else if (v.showLoadMore) {
+              <!-- Fallback for environments without IntersectionObserver, so
+                   the page never becomes a dead end. -->
+              <div class="listings-page__load-more">
+                <p-button
+                  type="button"
+                  [outlined]="true"
+                  icon="pi pi-angle-down"
+                  [label]="'listings.page.loadMore' | translate"
+                  (onClick)="loadMore()"
+                />
+              </div>
+            }
           }
         } @else {
           <app-listings-map class="listings-page__map" />

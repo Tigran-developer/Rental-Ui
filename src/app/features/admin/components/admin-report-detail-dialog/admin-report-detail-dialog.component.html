@@ -1,0 +1,170 @@
+<div
+  class="admin-report-detail-dialog__backdrop"
+  (click)="onBackdropClick()"
+  aria-hidden="true"
+></div>
+<div
+  class="admin-report-detail-dialog"
+  [class.admin-report-detail-dialog--sheet]="!isDesktop()"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-label]="
+    'admin.reports.detail.dialogAria' | translate: { target: report().targetLabel }
+  "
+>
+  <div class="admin-report-detail-dialog__header">
+    <div class="admin-report-detail-dialog__thumb-wrap">
+      @if (report().targetImageUrl; as imageUrl) {
+        <img
+          class="admin-report-detail-dialog__thumb"
+          [class.admin-report-detail-dialog__thumb--round]="isTargetUser()"
+          [src]="imageUrl"
+          [alt]="report().targetLabel"
+        />
+      } @else if (isTargetUser()) {
+        <app-ui-avatar [name]="report().targetLabel" size="lg" />
+      } @else {
+        <span class="admin-report-detail-dialog__thumb-fallback" aria-hidden="true">
+          <app-icon [name]="typeIcon()" [size]="22" />
+        </span>
+      }
+      <span class="admin-report-detail-dialog__type-badge" aria-hidden="true">
+        <app-icon [name]="typeIcon()" [size]="12" />
+      </span>
+    </div>
+    <div class="admin-report-detail-dialog__header-text">
+      <div class="admin-report-detail-dialog__eyebrow">{{ typeLabelKey() | translate }}</div>
+      <div class="admin-report-detail-dialog__target">{{ report().targetLabel }}</div>
+      <div class="admin-report-detail-dialog__pills">
+        <app-admin-report-severity-pill [severity]="report().severity" />
+        <app-admin-report-status-pill [status]="report().status" />
+      </div>
+    </div>
+    <button
+      type="button"
+      class="admin-report-detail-dialog__close"
+      [attr.aria-label]="'admin.reports.detail.closeAria' | translate"
+      (click)="close.emit()"
+    >
+      <app-icon name="x" [size]="16" />
+    </button>
+  </div>
+
+  <div class="admin-report-detail-dialog__body">
+    <div class="admin-report-detail-dialog__info-grid">
+      <div class="admin-report-detail-dialog__info-cell">
+        <span class="admin-report-detail-dialog__info-label">{{
+          'admin.reports.detail.reportedBy' | translate
+        }}</span>
+        <span class="admin-report-detail-dialog__info-value"
+          >{{ report().reporterFirstName }} {{ report().reporterLastName }}</span
+        >
+      </div>
+      <div class="admin-report-detail-dialog__info-cell">
+        <span class="admin-report-detail-dialog__info-label">{{
+          'admin.reports.detail.reporterEmail' | translate
+        }}</span>
+        <span class="admin-report-detail-dialog__info-value">{{ report().reporterEmail }}</span>
+      </div>
+      <div class="admin-report-detail-dialog__info-cell">
+        <span class="admin-report-detail-dialog__info-label">{{
+          'admin.reports.detail.submitted' | translate
+        }}</span>
+        <span class="admin-report-detail-dialog__info-value">{{
+          report().createdAt | date: 'medium'
+        }}</span>
+      </div>
+      <div class="admin-report-detail-dialog__info-cell">
+        <span class="admin-report-detail-dialog__info-label">{{
+          'admin.reports.detail.targetType' | translate
+        }}</span>
+        <span class="admin-report-detail-dialog__info-value">{{ typeLabelKey() | translate }}</span>
+      </div>
+    </div>
+
+    <div class="admin-report-detail-dialog__section-label">
+      {{ 'admin.reports.detail.whatWasReported' | translate }}
+    </div>
+    <div class="admin-report-detail-dialog__reason">
+      @if (reasonLabelKey(); as key) {
+        {{ key | translate }}
+      } @else {
+        {{ report().reasonCode }}
+      }
+    </div>
+
+    @if (report().detail; as detail) {
+      <div class="admin-report-detail-dialog__note-block">
+        <div class="admin-report-detail-dialog__section-label">
+          {{ 'admin.reports.detail.reporterNote' | translate }}
+        </div>
+        <div class="admin-report-detail-dialog__quote">
+          <app-icon name="message" [size]="15" />
+          <div class="admin-report-detail-dialog__quote-body">
+            <p class="admin-report-detail-dialog__quote-text">&ldquo;{{ detail }}&rdquo;</p>
+            <div class="admin-report-detail-dialog__quote-attr">
+              &mdash; {{ report().reporterFirstName }} {{ report().reporterLastName }}
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (!isOpen() && report().resolutionNote) {
+      <div class="admin-report-detail-dialog__note-block">
+        <div class="admin-report-detail-dialog__section-label">
+          {{ 'admin.reports.detail.resolutionNote' | translate }}
+        </div>
+        <p class="admin-report-detail-dialog__resolution-text">{{ report().resolutionNote }}</p>
+      </div>
+    }
+
+    @if (isOpen()) {
+      <div class="admin-report-detail-dialog__note-field">
+        <label class="admin-report-detail-dialog__note-label" for="admin-report-detail-dialog-note">
+          {{ 'admin.reports.detail.noteLabel' | translate }}
+        </label>
+        <textarea
+          id="admin-report-detail-dialog-note"
+          class="admin-report-detail-dialog__note-input"
+          rows="2"
+          [disabled]="busy()"
+          [value]="note()"
+          [placeholder]="'admin.reports.detail.notePlaceholder' | translate"
+          (input)="onNoteInput($event)"
+        ></textarea>
+      </div>
+    }
+  </div>
+
+  <div class="admin-report-detail-dialog__footer">
+    @if (isOpen()) {
+      <button
+        type="button"
+        class="admin-report-detail-dialog__btn admin-report-detail-dialog__btn--dismiss"
+        [disabled]="busy()"
+        (click)="onDismiss()"
+      >
+        {{ 'admin.reports.actions.dismiss' | translate }}
+      </button>
+      <button
+        type="button"
+        class="admin-report-detail-dialog__btn admin-report-detail-dialog__btn--resolve"
+        [disabled]="busy()"
+        (click)="onResolve()"
+      >
+        <app-icon name="check" [size]="15" />
+        {{ 'admin.reports.actions.resolve' | translate }}
+      </button>
+    } @else {
+      <button
+        type="button"
+        class="admin-report-detail-dialog__btn admin-report-detail-dialog__btn--reopen"
+        [disabled]="busy()"
+        (click)="reopen.emit()"
+      >
+        {{ 'admin.reports.actions.reopen' | translate }}
+      </button>
+    }
+  </div>
+</div>

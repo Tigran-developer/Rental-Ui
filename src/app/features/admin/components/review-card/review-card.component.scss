@@ -1,0 +1,327 @@
+// Pixel values with no matching design token (104/78px photo, 152px actions
+// column, 11px button radii, the rgba(15,17,21,.78) photo-count chip, the
+// '#FFF1DC' unverified chip) are hardcoded straight from
+// admin-desktop.jsx/admin-mobile.jsx's review card — flagged in the report.
+:host {
+  display: block;
+}
+
+.review-card {
+  background: var(--ui-color-surface);
+  border-radius: var(--ui-radius-card);
+  border: 1px solid var(--ui-color-border);
+  box-shadow: 0 1px 2px rgba(20, 15, 5, 0.05);
+  overflow: hidden;
+}
+
+.review-card--rejecting {
+  border-color: rgba(217, 52, 43, 0.33);
+  box-shadow: 0 6px 24px rgba(217, 52, 43, 0.12);
+}
+
+.review-card__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-16);
+  padding: var(--ui-space-16);
+}
+
+.review-card--desktop .review-card__row {
+  flex-wrap: nowrap;
+}
+
+.review-card__photo {
+  position: relative;
+  display: block;
+  width: 78px;
+  height: 78px;
+  border-radius: var(--ui-radius-12);
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--ui-color-surface-muted);
+}
+
+.review-card--desktop .review-card__photo {
+  width: 104px;
+  height: 104px;
+}
+
+.review-card__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.review-card__photo-placeholder {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: var(--ui-color-text-hint);
+}
+
+.review-card__photo-count {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: var(--ui-radius-pill);
+  background: rgba(15, 17, 21, 0.78);
+  color: #fff;
+  font-size: 0.65625rem;
+  font-weight: 700;
+}
+
+.review-card__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.review-card__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-10);
+  flex-wrap: wrap;
+}
+
+.review-card__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ui-color-text-primary);
+  text-decoration: none;
+}
+
+.review-card__title:hover {
+  text-decoration: underline;
+}
+
+.review-card__owner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 7px;
+  font-size: 0.78125rem;
+  color: var(--ui-color-text-secondary);
+}
+
+.review-card__owner-identity {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ui-color-text-secondary);
+}
+
+.review-card__owner-identity strong {
+  color: var(--ui-color-text-primary);
+  font-weight: 700;
+}
+
+.review-card__owner-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.review-card__verified-icon {
+  color: var(--ui-color-success);
+}
+
+.review-card__unverified {
+  font-size: 0.65625rem;
+  font-weight: 700;
+  color: var(--dash-warn);
+  background: var(--dash-warn-surface);
+  padding: 1px 6px;
+  border-radius: 6px;
+}
+
+.review-card__dot {
+  color: var(--ui-color-text-hint);
+}
+
+.review-card__rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.review-card__rating-icon {
+  color: #f2a900;
+}
+
+.review-card__city {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.review-card__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-16);
+  margin-top: var(--ui-space-10);
+  flex-wrap: wrap;
+}
+
+.review-card__price {
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: var(--ui-color-primary);
+}
+
+.review-card__price-suffix {
+  font-size: 0.6875rem;
+  color: var(--ui-color-text-secondary);
+  font-weight: 600;
+}
+
+.review-card__age {
+  font-size: 0.78125rem;
+  color: var(--ui-color-text-primary);
+  font-weight: 600;
+}
+
+.review-card__category {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-8);
+}
+
+.review-card__category-label {
+  font-size: 0.71875rem;
+  color: var(--ui-color-text-secondary);
+  font-weight: 600;
+}
+
+.review-card__category-static {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78125rem;
+  font-weight: 700;
+  color: var(--ui-color-text-primary);
+}
+
+.review-card__category-tile {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ui-color-surface-muted);
+  color: var(--ui-color-text-secondary);
+}
+
+// Phase 6 "Needs category fix" explanatory line — "Owner picked X — suggested Y." (matches the
+// design's flagged-row sub-line under the category control, dash-blue like the flag badge).
+.review-card__suggestion {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: var(--ui-space-8) 0 0;
+  font-size: 0.71875rem;
+  font-weight: 600;
+  color: var(--dash-blue);
+}
+
+.review-card__rejection-reason {
+  margin: var(--ui-space-8) 0 0;
+  font-size: 0.71875rem;
+  font-weight: 600;
+  color: var(--ui-color-danger);
+}
+
+.review-card__description {
+  margin: var(--ui-space-10) 0 0;
+  font-size: 0.78125rem;
+  color: var(--ui-color-text-primary);
+  line-height: 1.55;
+  opacity: 0.82;
+}
+
+.review-card__checklist {
+  display: flex;
+  gap: var(--ui-space-8);
+  margin-top: var(--ui-space-12);
+  flex-wrap: wrap;
+}
+
+.review-card__actions {
+  display: flex;
+  flex-direction: row;
+  gap: var(--ui-space-8);
+  width: 100%;
+  flex-basis: 100%;
+}
+
+.review-card--desktop .review-card__actions {
+  flex-direction: column;
+  width: 152px;
+  flex-basis: auto;
+  flex-shrink: 0;
+}
+
+.review-card__btn {
+  flex: 1;
+  height: 42px;
+  border-radius: 11px;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  text-decoration: none;
+}
+
+.review-card--desktop .review-card__btn {
+  flex: none;
+}
+
+.review-card__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.review-card__btn--approve {
+  border: 0;
+  background: var(--ui-color-success);
+  color: #fff;
+}
+
+.review-card__btn--reject {
+  border: 1.5px solid var(--ui-color-border);
+  background: var(--ui-color-surface);
+  color: var(--ui-color-danger);
+}
+
+.review-card__btn--reject-active {
+  border-color: var(--ui-color-danger);
+  background: var(--ui-color-danger-surface);
+}
+
+.review-card__btn--inspect {
+  height: 38px;
+  background: var(--ui-color-surface-muted);
+  color: var(--ui-color-text-primary);
+  font-size: 0.78125rem;
+  font-weight: 700;
+}
+
+.review-card__title:focus-visible,
+.review-card__photo:focus-visible,
+.review-card__btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-ring);
+}

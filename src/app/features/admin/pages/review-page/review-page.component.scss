@@ -1,0 +1,122 @@
+:host {
+  display: block;
+}
+
+.review-page__queue-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-8);
+  padding: 9px 14px;
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-12);
+  font-size: 0.78125rem;
+  font-weight: 700;
+  color: var(--ui-color-text-primary);
+}
+
+.review-page__queue-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dash-warn);
+}
+
+.review-page__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-14);
+}
+
+.review-page__skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-14);
+}
+
+.review-page__skeleton-card {
+  display: flex;
+  gap: var(--ui-space-16);
+  padding: var(--ui-space-16);
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-card);
+}
+
+.review-page__skeleton-photo {
+  flex-shrink: 0;
+  border-radius: var(--ui-radius-12);
+  overflow: hidden;
+}
+
+.review-page__skeleton-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-10);
+}
+
+.review-page__empty-wrap {
+  padding: var(--ui-space-32) 0;
+}
+
+.review-page__error {
+  margin-bottom: var(--ui-space-16);
+}
+
+.review-page__error-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.review-page__retry-btn {
+  margin-top: var(--ui-space-8);
+  height: 36px;
+  padding: 0 var(--ui-space-16);
+  border-radius: var(--ui-radius-pill);
+  border: 1px solid var(--ui-color-border);
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.review-page__pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-space-12);
+  margin-top: var(--ui-space-16);
+}
+
+.review-page__pager-btn {
+  height: 36px;
+  padding: 0 var(--ui-space-16);
+  border-radius: var(--ui-radius-pill);
+  border: 1px solid var(--ui-color-border);
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.review-page__pager-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.review-page__pager-status {
+  font-size: 0.8125rem;
+  color: var(--ui-color-text-secondary);
+  font-weight: 600;
+}
+
+.review-page__retry-btn:focus-visible,
+.review-page__pager-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-ring);
+}

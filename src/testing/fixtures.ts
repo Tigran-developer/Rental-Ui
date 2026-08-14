@@ -14,7 +14,25 @@ import type {
 import type { ListingPreview } from '../app/features/listings/models/listing.model';
 import type { ListingMapPin } from '../app/features/listings/models/listing-map-pin.model';
 import type { ListingDetails } from '../app/features/listings/models/listing-details.model';
-import type { PendingListing } from '../app/features/admin/models/pending-listing.model';
+import type {
+  AdminListingDetail,
+  AdminListingSummary,
+} from '../app/features/admin/models/admin-listing-queue.model';
+import type { AdminCategory } from '../app/features/admin/models/admin-category.model';
+import type {
+  AdminUser,
+  AdminUserQueue,
+  AdminUserQueueSummary,
+} from '../app/features/admin/models/admin-user.model';
+import type {
+  AdminReportQueue,
+  AdminReportQueueCounts,
+  AdminReportRow,
+} from '../app/features/admin/models/admin-report.model';
+import type {
+  AdminActivityItem,
+  AdminOverview,
+} from '../app/features/admin/models/admin-overview.model';
 import type { BookingReviewStatus } from '../app/features/reviews/models/review.model';
 
 export function makeUser(overrides: Partial<CurrentUser> = {}): CurrentUser {
@@ -32,9 +50,7 @@ export function makeAdmin(overrides: Partial<CurrentUser> = {}): CurrentUser {
   return makeUser({ id: 'admin-1', roles: ['User', 'Admin'], ...overrides });
 }
 
-export function makeListingPreview(
-  overrides: Partial<ListingPreview> = {},
-): ListingPreview {
+export function makeListingPreview(overrides: Partial<ListingPreview> = {}): ListingPreview {
   return {
     id: 'listing-1',
     title: 'Wooden Train Set',
@@ -46,9 +62,7 @@ export function makeListingPreview(
   };
 }
 
-export function makeListingDetails(
-  overrides: Partial<ListingDetails> = {},
-): ListingDetails {
+export function makeListingDetails(overrides: Partial<ListingDetails> = {}): ListingDetails {
   return {
     id: 'listing-1',
     title: 'Wooden Train Set',
@@ -80,9 +94,7 @@ export function makeListingDetails(
   };
 }
 
-export function makeListingMapPin(
-  overrides: Partial<ListingMapPin> = {},
-): ListingMapPin {
+export function makeListingMapPin(overrides: Partial<ListingMapPin> = {}): ListingMapPin {
   return {
     id: 'listing-1',
     latitude: 40.1,
@@ -115,9 +127,7 @@ export function makeMyBooking(overrides: Partial<MyBooking> = {}): MyBooking {
   };
 }
 
-export function makeBookingRequest(
-  overrides: Partial<BookingRequest> = {},
-): BookingRequest {
+export function makeBookingRequest(overrides: Partial<BookingRequest> = {}): BookingRequest {
   return {
     id: 'booking-1',
     listingId: 'listing-1',
@@ -137,9 +147,7 @@ export function makeBookingRequest(
   };
 }
 
-export function makeBookingDetail(
-  overrides: Partial<BookingDetail> = {},
-): BookingDetail {
+export function makeBookingDetail(overrides: Partial<BookingDetail> = {}): BookingDetail {
   return {
     id: 'booking-1',
     status: 'Approved',
@@ -174,26 +182,195 @@ export function makeBookingDetail(
   };
 }
 
-export function makePendingListing(
-  overrides: Partial<PendingListing> = {},
-): PendingListing {
+export function makeAdminListingSummary(
+  overrides: Partial<AdminListingSummary> = {},
+): AdminListingSummary {
   return {
     id: 'pending-1',
+    ownerId: 'owner-1',
+    ownerEmail: 'owner@example.com',
+    ownerFirstName: 'Anahit',
+    ownerLastName: 'Owner',
+    categoryId: 'cat-1',
+    categoryName: 'Wooden Toys',
     title: 'Toy Kitchen',
     description: 'A play kitchen',
-    city: 'Yerevan',
-    country: 'Armenia',
-    categoryName: 'Toys',
     pricePerDay: 4,
+    currency: 'AMD',
+    country: 'Armenia',
+    city: 'Yerevan',
+    addressLine: null,
+    ageFromMonths: 36,
+    ageToMonths: 84,
+    condition: 'Good',
+    hygieneNotes: 'Wiped down between rentals.',
+    safetyNotes: 'No small parts.',
     depositAmount: null,
-    imageUrl: null,
+    images: [],
     createdAt: '2026-06-20T10:00:00.000Z',
-    owner: null,
-    ageFromMonths: null,
-    ageToMonths: null,
-    condition: null,
-    hygieneNotes: null,
-    safetyNotes: null,
+    photoCount: 3,
+    primaryImageUrl: null,
+    rejectionReasonCode: null,
+    rejectionNote: null,
+    moderatedAt: null,
+    ownerAvatarUrl: null,
+    ownerIsIdConfirmed: true,
+    ownerRating: 4.8,
+    ownerReviewCount: 12,
+    ownerListingCount: 3,
+    ownerCompletedRentals: 9,
+    ownerJoinedAt: '2025-01-10T00:00:00.000Z',
+    suggestedCategoryId: null,
+    suggestedCategoryName: null,
+    ...overrides,
+  };
+}
+
+export function makeAdminListingDetail(
+  overrides: Partial<AdminListingDetail> = {},
+): AdminListingDetail {
+  return {
+    ...makeAdminListingSummary(),
+    status: 'PendingApproval',
+    ownerOpenReportCount: 0,
+    ...overrides,
+  };
+}
+
+export function makeAdminOverview(overrides: Partial<AdminOverview> = {}): AdminOverview {
+  return {
+    awaitingReviewCount: 5,
+    oldestAwaitingCreatedAt: '2026-08-11T10:00:00.000Z',
+    liveListingCount: 1724,
+    liveListingsAddedThisWeek: 38,
+    categoryCount: 10,
+    visibleCategoryCount: 9,
+    openReportCount: 2,
+    averageReviewTimeMinutes: 192,
+    reviewTimeTargetHours: 6,
+    ...overrides,
+  };
+}
+
+export function makeAdminActivityItem(
+  overrides: Partial<AdminActivityItem> = {},
+): AdminActivityItem {
+  return {
+    id: 'log-1',
+    action: 'ListingApproved',
+    targetType: 'Listing',
+    targetId: 'listing-1',
+    targetLabel: 'STEM discovery lab kit',
+    createdAt: '2026-08-13T09:48:00.000Z',
+    actorId: 'user-1',
+    actorFirstName: 'Sona',
+    actorLastName: 'K.',
+    actorAvatarUrl: null,
+    detailJson: null,
+    ...overrides,
+  };
+}
+
+export function makeAdminCategory(overrides: Partial<AdminCategory> = {}): AdminCategory {
+  return {
+    id: 'cat-1',
+    name: 'Ride-ons',
+    slug: 'ride-ons',
+    iconName: 'truck',
+    colorHex: '#D9E8FF',
+    displayOrder: 0,
+    isVisible: true,
+    listingCount: 0,
+    ...overrides,
+  };
+}
+
+export function makeAdminUser(overrides: Partial<AdminUser> = {}): AdminUser {
+  return {
+    id: 'user-1',
+    email: 'anahit@toyrent.am',
+    firstName: 'Anahit',
+    lastName: 'Grigoryan',
+    avatarUrl: null,
+    role: 'User',
+    status: 'Active',
+    isIdConfirmed: true,
+    marketplaceRole: 'Owner',
+    listingCount: 5,
+    rentalCount: 2,
+    flagCount: 0,
+    createdAt: '2026-01-01T00:00:00Z',
+    ...overrides,
+  };
+}
+
+export function makeAdminUserQueueSummary(
+  overrides: Partial<AdminUserQueueSummary> = {},
+): AdminUserQueueSummary {
+  return {
+    totalUsers: 0,
+    verifiedCount: 0,
+    pendingCount: 0,
+    suspendedCount: 0,
+    ...overrides,
+  };
+}
+
+export function makeAdminUserQueue(overrides: Partial<AdminUserQueue> = {}): AdminUserQueue {
+  return {
+    items: [],
+    page: 1,
+    pageSize: 20,
+    totalCount: 0,
+    totalPages: 0,
+    summary: makeAdminUserQueueSummary(),
+    ...overrides,
+  };
+}
+
+export function makeAdminReportRow(overrides: Partial<AdminReportRow> = {}): AdminReportRow {
+  return {
+    id: 'report-1',
+    targetType: 'Listing',
+    targetId: 'listing-1',
+    targetLabel: 'Wooden balance bike',
+    targetImageUrl: null,
+    reasonCode: 'unsafeItem',
+    detail: 'The wheel is loose.',
+    severity: 'High',
+    status: 'Open',
+    createdAt: '2026-08-01T00:00:00Z',
+    reporterId: 'user-2',
+    reporterFirstName: 'Anahit',
+    reporterLastName: 'Grigoryan',
+    reporterEmail: 'anahit@toyrent.am',
+    reporterAvatarUrl: null,
+    resolvedAt: null,
+    resolutionNote: null,
+    ...overrides,
+  };
+}
+
+export function makeAdminReportQueueCounts(
+  overrides: Partial<AdminReportQueueCounts> = {},
+): AdminReportQueueCounts {
+  return {
+    open: 0,
+    resolved: 0,
+    dismissed: 0,
+    all: 0,
+    ...overrides,
+  };
+}
+
+export function makeAdminReportQueue(overrides: Partial<AdminReportQueue> = {}): AdminReportQueue {
+  return {
+    items: [],
+    page: 1,
+    pageSize: 20,
+    totalCount: 0,
+    totalPages: 0,
+    counts: makeAdminReportQueueCounts(),
     ...overrides,
   };
 }

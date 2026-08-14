@@ -1,0 +1,133 @@
+<app-admin-page-header
+  [title]="'admin.overview.page.title' | translate"
+  [subtitle]="'admin.overview.page.subtitle' | translate"
+/>
+
+@if (overviewError() !== null) {
+  <div class="overview-page__error" role="alert">
+    <p-message severity="error" styleClass="overview-page__error-message">
+      <div class="overview-page__error-content">
+        <strong>{{ 'admin.overview.page.errorTitle' | translate }}</strong>
+        <span>{{ overviewError() }}</span>
+      </div>
+    </p-message>
+    <button type="button" class="overview-page__retry-btn" (click)="retryOverview()">
+      {{ 'listings.common.retry' | translate }}
+    </button>
+  </div>
+} @else if (overview(); as ov) {
+  <div class="overview-page__stats">
+    <app-admin-stat-card
+      [value]="ov.awaitingReviewCount"
+      [label]="'admin.overview.stats.awaitingReview.label' | translate"
+      [subLabel]="awaitingReviewSubLabel()"
+      subTone="warn"
+      icon="shield"
+    />
+    <app-admin-stat-card
+      [value]="ov.liveListingCount"
+      [label]="'admin.overview.stats.liveListings.label' | translate"
+      [subLabel]="liveListingsSubLabel()"
+      subTone="success"
+      icon="grid"
+    />
+    <app-admin-stat-card
+      [value]="ov.categoryCount"
+      [label]="'admin.overview.stats.categories.label' | translate"
+      [subLabel]="categoriesSubLabel()"
+      subTone="neutral"
+      icon="tag"
+    />
+    <app-admin-stat-card
+      [value]="ov.openReportCount"
+      [label]="'admin.overview.stats.reports.label' | translate"
+      [subLabel]="reportsSubLabel()"
+      [subTone]="ov.openReportCount > 0 ? 'danger' : 'success'"
+      icon="flag"
+    />
+  </div>
+} @else {
+  <div class="overview-page__stats">
+    <app-admin-stat-card
+      [label]="'admin.overview.stats.awaitingReview.label' | translate"
+      icon="shield"
+    />
+    <app-admin-stat-card
+      [label]="'admin.overview.stats.liveListings.label' | translate"
+      icon="grid"
+    />
+    <app-admin-stat-card [label]="'admin.overview.stats.categories.label' | translate" icon="tag" />
+    <app-admin-stat-card [label]="'admin.overview.stats.reports.label' | translate" icon="flag" />
+  </div>
+}
+
+<div class="overview-page__body">
+  <div
+    class="overview-page__cta"
+    [class.overview-page__cta--caught-up]="overview() !== null && ctaCaughtUp()"
+  >
+    @if (overviewError() === null && overview(); as ov) {
+      <span class="overview-page__cta-kicker">{{ 'admin.overview.cta.kicker' | translate }}</span>
+      <div class="overview-page__cta-title">{{ ctaTitle() }}</div>
+      <p class="overview-page__cta-subtitle">{{ ctaSubtitle() }}</p>
+      <a class="overview-page__cta-btn" routerLink="/admin/review">
+        {{ 'admin.overview.cta.button' | translate }}
+        <app-icon name="arrow" [size]="15" />
+      </a>
+    } @else {
+      <p-skeleton width="60%" height="0.75rem" styleClass="overview-page__cta-skeleton" />
+      <p-skeleton width="85%" height="1.75rem" styleClass="overview-page__cta-skeleton" />
+      <p-skeleton width="70%" height="1rem" styleClass="overview-page__cta-skeleton" />
+    }
+  </div>
+
+  <div class="overview-page__activity">
+    <div class="overview-page__activity-title">
+      {{ 'admin.overview.activity.title' | translate }}
+    </div>
+
+    @if (activityError() !== null) {
+      <div class="overview-page__activity-error" role="alert">
+        <span>{{ 'admin.overview.activity.errorTitle' | translate }}</span>
+        <button type="button" class="overview-page__retry-btn" (click)="retryActivity()">
+          {{ 'listings.common.retry' | translate }}
+        </button>
+      </div>
+    } @else if (showActivitySkeleton()) {
+      <div class="overview-page__activity-skeleton" aria-busy="true">
+        @for (i of [0, 1, 2, 3]; track i) {
+          <div class="overview-page__activity-skeleton-row">
+            <p-skeleton shape="circle" size="8px" />
+            <div class="overview-page__activity-skeleton-body">
+              <p-skeleton width="80%" height="0.8rem" />
+              <p-skeleton width="40%" height="0.7rem" />
+            </div>
+          </div>
+        }
+      </div>
+    } @else if (showActivityEmpty()) {
+      <app-ui-empty-state
+        tone="neutral"
+        icon="pi pi-history"
+        [title]="'admin.overview.activity.empty.title' | translate"
+        [description]="'admin.overview.activity.empty.description' | translate"
+      />
+    } @else {
+      <div class="overview-page__activity-list">
+        @for (item of activity(); track item.id) {
+          <div class="overview-page__activity-row">
+            <span
+              class="overview-page__activity-dot"
+              [class]="'overview-page__activity-dot--' + activityTone(item)"
+              aria-hidden="true"
+            ></span>
+            <div class="overview-page__activity-text">
+              <div class="overview-page__activity-line">{{ activityLineText(item) }}</div>
+              <div class="overview-page__activity-detail">{{ activityDetailText(item) }}</div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

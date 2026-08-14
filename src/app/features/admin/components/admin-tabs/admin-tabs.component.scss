@@ -1,0 +1,68 @@
+// admin-desktop.jsx's `AdminTabs`: white pill container with a border (not a
+// filled surface-muted pill), a 12px container radius / 9px tab radius (no
+// exact token for 9px — hardcoded, flagged), and a dark "active" pill using
+// text-primary (not the navy secondary/accent token — verified against the
+// design file byte-for-byte: `background: on ? t.text : 'transparent'`).
+.admin-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-12);
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.admin-tabs__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ui-color-text-secondary);
+  font: inherit;
+  font-size: 0.78125rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.admin-tabs__tab:hover:not(.admin-tabs__tab--active) {
+  color: var(--ui-color-text-primary);
+}
+
+.admin-tabs__tab--active {
+  background: var(--ui-color-text-primary);
+  color: #fff;
+}
+
+.admin-tabs__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 1px 7px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-color-surface-muted);
+  color: var(--ui-color-text-secondary);
+  font-size: 0.65625rem;
+  font-weight: 800;
+}
+
+.admin-tabs__tab--active .admin-tabs__count {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+.admin-tabs__tab:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-ring);
+}

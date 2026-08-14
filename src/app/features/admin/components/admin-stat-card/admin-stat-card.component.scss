@@ -1,0 +1,87 @@
+.admin-stat-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ui-space-12);
+  padding: var(--ui-space-20);
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-card);
+  box-shadow: var(--ui-shadow-card);
+}
+
+.admin-stat-card__icon-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: var(--ui-radius-12);
+  background: var(--ui-color-primary-soft);
+  color: var(--ui-color-primary);
+}
+
+.admin-stat-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-stat-card__value {
+  font-size: 1.75rem;
+  font-weight: var(--ui-font-weight-extrabold);
+  color: var(--ui-color-text-primary);
+  line-height: var(--ui-line-height-tight);
+}
+
+.admin-stat-card__value-skeleton {
+  width: 3.5rem;
+  height: 1.75rem;
+  border-radius: var(--ui-radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--ui-color-surface-muted) 0%,
+    #eef0f6 40%,
+    var(--ui-color-surface-muted) 80%
+  );
+  background-size: 200% 100%;
+  animation: admin-stat-card-skeleton 1200ms ease-in-out infinite;
+}
+
+@keyframes admin-stat-card-skeleton {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.admin-stat-card__label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ui-color-text-secondary);
+}
+
+.admin-stat-card__sub {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.admin-stat-card__sub--success {
+  color: var(--ui-color-success);
+}
+
+.admin-stat-card__sub--warn {
+  color: var(--dash-warn);
+}
+
+.admin-stat-card__sub--danger {
+  color: var(--ui-color-danger);
+}
+
+.admin-stat-card__sub--neutral {
+  color: var(--ui-color-text-secondary);
+}

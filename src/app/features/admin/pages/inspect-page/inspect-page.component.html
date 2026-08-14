@@ -1,0 +1,522 @@
+@if (error() !== null) {
+  <div class="inspect-page__error" role="alert">
+    <p-message severity="error" styleClass="inspect-page__error-message">
+      <div class="inspect-page__error-content">
+        <strong>{{ 'admin.inspect.page.errorTitle' | translate }}</strong>
+        <span>{{ error() }}</span>
+      </div>
+    </p-message>
+    <div class="inspect-page__error-actions">
+      <button type="button" class="inspect-page__error-btn" (click)="retry()">
+        {{ 'listings.common.retry' | translate }}
+      </button>
+      <a class="inspect-page__error-btn" routerLink="/admin/review">
+        {{ 'admin.inspect.page.backToQueue' | translate }}
+      </a>
+    </div>
+  </div>
+} @else if (isLoading() && listing() === null) {
+  <div class="inspect-page__skeleton">
+    <p-skeleton width="100%" height="320px" styleClass="inspect-page__skeleton-hero" />
+    <p-skeleton width="50%" height="1.5rem" />
+    <p-skeleton width="30%" height="1rem" />
+    <p-skeleton width="100%" height="6rem" />
+  </div>
+} @else if (listing(); as listing) {
+  @if (isDesktop()) {
+    <!-- ══════════════════════ Desktop dossier ══════════════════════ -->
+    <div class="inspect-desktop">
+      <div class="inspect-desktop__breadcrumb">
+        <a class="inspect-desktop__back" routerLink="/admin/review">
+          <app-icon name="chevronL" [size]="16" />
+          {{ 'admin.inspect.page.backToQueue' | translate }}
+        </a>
+        <span class="inspect-desktop__crumb-muted">{{
+          'admin.review.page.title' | translate
+        }}</span>
+        <app-icon name="chevron" [size]="13" class="inspect-desktop__crumb-icon" />
+        <span class="inspect-desktop__crumb-title">{{ listing.title }}</span>
+        <app-admin-status-badge
+          class="inspect-desktop__status"
+          [variant]="
+            isFlagged()
+              ? 'flag'
+              : listing.status === 'PendingApproval'
+                ? 'pending'
+                : listing.status === 'Approved'
+                  ? 'approved'
+                  : 'rejected'
+          "
+        />
+      </div>
+
+      <div class="inspect-desktop__body">
+        <div class="inspect-desktop__main">
+          <div class="inspect-desktop__gallery">
+            <div class="inspect-desktop__thumbs">
+              @for (image of images(); track image.url; let i = $index) {
+                <button
+                  type="button"
+                  class="inspect-desktop__thumb"
+                  [class.inspect-desktop__thumb--active]="i === heroIndex()"
+                  (click)="setHero(i)"
+                >
+                  <img [src]="image.url" [alt]="listing.title" />
+                </button>
+              }
+            </div>
+            <div class="inspect-desktop__hero">
+              @if (images().length > 0) {
+                <img [src]="images()[heroIndex()].url" [alt]="listing.title" />
+              } @else {
+                <span class="inspect-desktop__hero-placeholder" aria-hidden="true">
+                  <app-icon name="image" [size]="28" />
+                </span>
+              }
+              @if (images().length > 0) {
+                <span class="inspect-desktop__hero-chip">
+                  <app-icon name="image" [size]="12" />
+                  {{ heroIndex() + 1 }} / {{ images().length }}
+                </span>
+              }
+            </div>
+          </div>
+
+          <div class="inspect-desktop__title-block">
+            <h1>{{ listing.title }}</h1>
+            <div class="inspect-desktop__title-meta">
+              <span class="inspect-desktop__price">
+                {{ listing.pricePerDay | dram }}
+                <span>{{ 'admin.review.card.perDay' | translate }}</span>
+              </span>
+              <span>
+                <app-icon name="user" [size]="14" />
+                @if (listing.ageFromMonths !== null && listing.ageToMonths !== null) {
+                  {{
+                    'admin.pendingListings.card.ageFromTo'
+                      | translate: { from: listing.ageFromMonths, to: listing.ageToMonths }
+                  }}
+                } @else {
+                  {{ 'admin.pendingListings.common.notAvailable' | translate }}
+                }
+              </span>
+              <span>
+                <app-icon name="pin" [size]="14" />
+                {{ listing.city }}
+              </span>
+              <span class="inspect-desktop__submitted">
+                <app-icon name="clock" [size]="14" />
+                {{ listing.createdAt | date: 'medium' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="inspect-desktop__category-card">
+            <div class="inspect-desktop__category-head">
+              <div>
+                <div class="inspect-desktop__category-title">
+                  {{ 'admin.review.category.label' | translate }}
+                </div>
+                <div class="inspect-desktop__category-hint">
+                  {{ 'admin.inspect.category.hint' | translate }}
+                </div>
+              </div>
+              <app-admin-cat-select
+                [categories]="categories()"
+                [value]="listing.categoryId"
+                [disabled]="isBusy() || listing.status !== 'PendingApproval'"
+                [flagged]="isFlagged()"
+                (valueChange)="changeCategory($event)"
+              />
+            </div>
+            @if (isFlagged()) {
+              <div class="inspect-desktop__category-suggestion">
+                <app-icon name="sparkle" [size]="15" />
+                <span>
+                  {{
+                    'admin.inspect.category.suggestion'
+                      | translate
+                        : {
+                            owner: listing.categoryName,
+                            suggested: listing.suggestedCategoryName,
+                          }
+                  }}
+                </span>
+                <button
+                  type="button"
+                  class="inspect-desktop__category-suggestion-apply"
+                  [disabled]="isBusy()"
+                  (click)="applySuggestion()"
+                >
+                  {{ 'admin.inspect.category.apply' | translate }}
+                </button>
+              </div>
+            }
+          </div>
+
+          <div class="inspect-desktop__description">
+            <div class="inspect-desktop__section-title">
+              {{ 'admin.inspect.description.title' | translate }}
+            </div>
+            <p>{{ listing.description }}</p>
+          </div>
+
+          <div class="inspect-desktop__attributes">
+            <div class="inspect-desktop__attribute">
+              <app-icon name="image" [size]="16" />
+              <div class="inspect-desktop__attribute-label">
+                {{ 'admin.inspect.attributes.photos' | translate }}
+              </div>
+              <div class="inspect-desktop__attribute-value">
+                {{
+                  'admin.inspect.attributes.photosValue' | translate: { count: listing.photoCount }
+                }}
+              </div>
+            </div>
+            <div class="inspect-desktop__attribute">
+              <app-icon name="star" [size]="16" />
+              <div class="inspect-desktop__attribute-label">
+                {{ 'admin.inspect.attributes.condition' | translate }}
+              </div>
+              <div class="inspect-desktop__attribute-value">
+                {{
+                  listing.condition
+                    ? ('admin.pendingListings.condition.' + listing.condition | translate)
+                    : ('admin.pendingListings.common.notAvailable' | translate)
+                }}
+              </div>
+            </div>
+            <div class="inspect-desktop__attribute">
+              <app-icon name="tag" [size]="16" />
+              <div class="inspect-desktop__attribute-label">
+                {{ 'admin.inspect.attributes.deposit' | translate }}
+              </div>
+              <div class="inspect-desktop__attribute-value">
+                {{
+                  listing.depositAmount !== null
+                    ? (listing.depositAmount | dram)
+                    : ('admin.inspect.attributes.noDeposit' | translate)
+                }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="inspect-desktop__rail">
+          <app-owner-trust-panel [listing]="listing" [isDesktop]="true" />
+
+          <div class="inspect-desktop__checklist-card">
+            <div class="inspect-desktop__section-title">
+              {{ 'admin.inspect.checklist.title' | translate }}
+            </div>
+            <div class="inspect-desktop__checklist">
+              <div class="inspect-desktop__check-row">
+                <span
+                  class="inspect-desktop__check-icon"
+                  [class.inspect-desktop__check-icon--ok]="compliance()?.photos"
+                >
+                  <app-icon [name]="compliance()?.photos ? 'check' : 'x'" [size]="13" />
+                </span>
+                <span class="inspect-desktop__check-label">{{
+                  'admin.review.checklist.photos' | translate
+                }}</span>
+                <span
+                  class="inspect-desktop__check-status"
+                  [class.inspect-desktop__check-status--ok]="compliance()?.photos"
+                >
+                  {{
+                    (compliance()?.photos
+                      ? 'admin.inspect.checklist.pass'
+                      : 'admin.inspect.checklist.missing'
+                    ) | translate
+                  }}
+                </span>
+              </div>
+              <div class="inspect-desktop__check-row">
+                <span
+                  class="inspect-desktop__check-icon"
+                  [class.inspect-desktop__check-icon--ok]="compliance()?.safety"
+                >
+                  <app-icon [name]="compliance()?.safety ? 'check' : 'x'" [size]="13" />
+                </span>
+                <span class="inspect-desktop__check-label">{{
+                  'admin.review.checklist.safety' | translate
+                }}</span>
+                <span
+                  class="inspect-desktop__check-status"
+                  [class.inspect-desktop__check-status--ok]="compliance()?.safety"
+                >
+                  {{
+                    (compliance()?.safety
+                      ? 'admin.inspect.checklist.pass'
+                      : 'admin.inspect.checklist.missing'
+                    ) | translate
+                  }}
+                </span>
+              </div>
+              <div class="inspect-desktop__check-row">
+                <span
+                  class="inspect-desktop__check-icon"
+                  [class.inspect-desktop__check-icon--ok]="compliance()?.hygiene"
+                >
+                  <app-icon [name]="compliance()?.hygiene ? 'check' : 'x'" [size]="13" />
+                </span>
+                <span class="inspect-desktop__check-label">{{
+                  'admin.review.checklist.hygiene' | translate
+                }}</span>
+                <span
+                  class="inspect-desktop__check-status"
+                  [class.inspect-desktop__check-status--ok]="compliance()?.hygiene"
+                >
+                  {{
+                    (compliance()?.hygiene
+                      ? 'admin.inspect.checklist.pass'
+                      : 'admin.inspect.checklist.missing'
+                    ) | translate
+                  }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          @if (listing.status === 'PendingApproval') {
+            <div class="inspect-desktop__decision">
+              @if (!isRejecting()) {
+                <button
+                  type="button"
+                  class="inspect-desktop__decision-approve"
+                  [disabled]="isBusy()"
+                  (click)="approve()"
+                >
+                  <app-icon name="check" [size]="18" />
+                  {{ 'admin.inspect.decision.approve' | translate }}
+                </button>
+                <button
+                  type="button"
+                  class="inspect-desktop__decision-reject"
+                  [disabled]="isBusy()"
+                  (click)="openReject()"
+                >
+                  {{ 'admin.inspect.decision.reject' | translate }}
+                </button>
+              } @else {
+                <app-reject-panel
+                  [reasonSel]="reasonSel()"
+                  [note]="note()"
+                  [busy]="isBusy()"
+                  [columns]="1"
+                  (reasonSelect)="reasonSel.set($event)"
+                  (noteChange)="note.set($event)"
+                  (cancel)="cancelReject()"
+                  (confirm)="confirmReject()"
+                />
+              }
+            </div>
+          }
+        </aside>
+      </div>
+    </div>
+  } @else {
+    <!-- ══════════════════════ Mobile dossier ══════════════════════ -->
+    <div
+      class="inspect-mobile"
+      [class.inspect-mobile--decidable]="listing.status === 'PendingApproval'"
+    >
+      <div class="inspect-mobile__topbar">
+        <a class="inspect-mobile__back" routerLink="/admin/review">
+          <app-icon name="chevronL" [size]="17" />
+        </a>
+        <div class="inspect-mobile__topbar-title">
+          {{ 'admin.inspect.page.mobileTitle' | translate }}
+        </div>
+        <app-admin-status-badge
+          size="sm"
+          [variant]="
+            isFlagged()
+              ? 'flag'
+              : listing.status === 'PendingApproval'
+                ? 'pending'
+                : listing.status === 'Approved'
+                  ? 'approved'
+                  : 'rejected'
+          "
+        />
+      </div>
+
+      <div class="inspect-mobile__body">
+        <div class="inspect-mobile__hero">
+          @if (images().length > 0) {
+            <img [src]="images()[heroIndex()].url" [alt]="listing.title" />
+            <div class="inspect-mobile__dots">
+              @for (image of images(); track image.url; let i = $index) {
+                <span
+                  class="inspect-mobile__dot"
+                  [class.inspect-mobile__dot--active]="i === heroIndex()"
+                  (click)="setHero(i)"
+                ></span>
+              }
+            </div>
+          } @else {
+            <span class="inspect-desktop__hero-placeholder" aria-hidden="true">
+              <app-icon name="image" [size]="28" />
+            </span>
+          }
+        </div>
+        @if (images().length > 1) {
+          <div class="inspect-mobile__thumbs">
+            @for (image of images(); track image.url; let i = $index) {
+              <button
+                type="button"
+                class="inspect-desktop__thumb inspect-mobile__thumb"
+                [class.inspect-desktop__thumb--active]="i === heroIndex()"
+                (click)="setHero(i)"
+              >
+                <img [src]="image.url" [alt]="listing.title" />
+              </button>
+            }
+          </div>
+        }
+
+        <div class="inspect-mobile__content">
+          <h1 class="inspect-mobile__title">{{ listing.title }}</h1>
+          <div class="inspect-mobile__meta">
+            <span class="inspect-desktop__price">
+              {{ listing.pricePerDay | dram }}
+              <span>{{ 'admin.review.card.perDay' | translate }}</span>
+            </span>
+            @if (listing.ageFromMonths !== null && listing.ageToMonths !== null) {
+              <span>{{
+                'admin.pendingListings.card.ageFromTo'
+                  | translate: { from: listing.ageFromMonths, to: listing.ageToMonths }
+              }}</span>
+            }
+            <span><app-icon name="pin" [size]="12" /> {{ listing.city }}</span>
+          </div>
+
+          <app-owner-trust-panel [listing]="listing" [isDesktop]="false" />
+
+          <div class="inspect-desktop__category-card inspect-mobile__category-card">
+            <div class="inspect-desktop__category-head">
+              <div class="inspect-desktop__category-title">
+                {{ 'admin.review.category.label' | translate }}
+              </div>
+              <app-admin-cat-select
+                [categories]="categories()"
+                [value]="listing.categoryId"
+                [disabled]="isBusy() || listing.status !== 'PendingApproval'"
+                [flagged]="isFlagged()"
+                (valueChange)="changeCategory($event)"
+              />
+            </div>
+            @if (isFlagged()) {
+              <div class="inspect-desktop__category-suggestion">
+                <app-icon name="sparkle" [size]="15" />
+                <span>
+                  {{
+                    'admin.inspect.category.suggestion'
+                      | translate
+                        : {
+                            owner: listing.categoryName,
+                            suggested: listing.suggestedCategoryName,
+                          }
+                  }}
+                </span>
+                <button
+                  type="button"
+                  class="inspect-desktop__category-suggestion-apply"
+                  [disabled]="isBusy()"
+                  (click)="applySuggestion()"
+                >
+                  {{ 'admin.inspect.category.apply' | translate }}
+                </button>
+              </div>
+            }
+          </div>
+
+          <div class="inspect-desktop__description">
+            <div class="inspect-desktop__section-title">
+              {{ 'admin.inspect.description.title' | translate }}
+            </div>
+            <p>{{ listing.description }}</p>
+          </div>
+
+          <div class="inspect-desktop__checklist-card">
+            <div class="inspect-desktop__section-title">
+              {{ 'admin.inspect.checklist.title' | translate }}
+            </div>
+            <div class="inspect-desktop__checklist">
+              <div class="inspect-desktop__check-row">
+                <span
+                  class="inspect-desktop__check-icon"
+                  [class.inspect-desktop__check-icon--ok]="compliance()?.photos"
+                >
+                  <app-icon [name]="compliance()?.photos ? 'check' : 'x'" [size]="13" />
+                </span>
+                <span class="inspect-desktop__check-label">{{
+                  'admin.review.checklist.photos' | translate
+                }}</span>
+              </div>
+              <div class="inspect-desktop__check-row">
+                <span
+                  class="inspect-desktop__check-icon"
+                  [class.inspect-desktop__check-icon--ok]="compliance()?.safety"
+                >
+                  <app-icon [name]="compliance()?.safety ? 'check' : 'x'" [size]="13" />
+                </span>
+                <span class="inspect-desktop__check-label">{{
+                  'admin.review.checklist.safety' | translate
+                }}</span>
+              </div>
+              <div class="inspect-desktop__check-row">
+                <span
+                  class="inspect-desktop__check-icon"
+                  [class.inspect-desktop__check-icon--ok]="compliance()?.hygiene"
+                >
+                  <app-icon [name]="compliance()?.hygiene ? 'check' : 'x'" [size]="13" />
+                </span>
+                <span class="inspect-desktop__check-label">{{
+                  'admin.review.checklist.hygiene' | translate
+                }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      @if (listing.status === 'PendingApproval') {
+        <div class="inspect-mobile__action-bar">
+          <button
+            type="button"
+            class="inspect-mobile__action-btn inspect-mobile__action-btn--reject"
+            [disabled]="isBusy()"
+            (click)="openReject()"
+          >
+            {{ 'admin.review.actions.reject' | translate }}
+          </button>
+          <button
+            type="button"
+            class="inspect-mobile__action-btn inspect-mobile__action-btn--approve"
+            [disabled]="isBusy()"
+            (click)="approve()"
+          >
+            <app-icon name="check" [size]="17" />
+            {{ 'admin.review.actions.approve' | translate }}
+          </button>
+        </div>
+      }
+
+      @if (isRejecting()) {
+        <app-reject-sheet
+          [title]="listing.title"
+          [reasonSel]="reasonSel()"
+          [note]="note()"
+          [busy]="isBusy()"
+          (reasonSelect)="reasonSel.set($event)"
+          (noteChange)="note.set($event)"
+          (cancel)="cancelReject()"
+          (confirm)="confirmReject()"
+        />
+      }
+    </div>
+  }
+}

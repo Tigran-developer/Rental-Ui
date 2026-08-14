@@ -1,0 +1,228 @@
+// Desktop: centered 460px modal (`AdminUserProfileModal` in admin-desktop.jsx). Mobile: a
+// full-bleed sheet, same `isDesktop`-flag single-component idiom as
+// `category-delete-dialog.component.scss` (see that file's doc comment) — the design's mobile
+// profile is a screen-replacing view rather than an overlay; this renders it as a full-height
+// bottom sheet with a backdrop instead, for a consistent, testable focus-trap dialog idiom
+// with the rest of this console (flagged in the implementation report).
+:host {
+  display: contents;
+}
+
+.admin-user-profile-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ui-z-modal);
+  background: rgba(20, 15, 5, 0.42);
+}
+
+.admin-user-profile-dialog {
+  position: fixed;
+  z-index: calc(var(--ui-z-modal) + 1);
+  background: var(--ui-color-surface);
+  box-sizing: border-box;
+
+  // Desktop default: centered modal.
+  inset: 0;
+  margin: auto;
+  width: 460px;
+  max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 40px);
+  height: fit-content;
+  border-radius: 18px;
+  border: 1px solid var(--ui-color-border);
+  box-shadow: 0 24px 60px -20px rgba(20, 15, 5, 0.5);
+  overflow-y: auto;
+}
+
+.admin-user-profile-dialog--sheet {
+  inset: 0;
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: 0;
+}
+
+.admin-user-profile-dialog__header {
+  padding: var(--ui-space-24);
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-16);
+  border-bottom: 1px solid var(--ui-color-border);
+}
+
+.admin-user-profile-dialog__header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-user-profile-dialog__name {
+  font-size: 1.1875rem;
+  font-weight: 800;
+  color: var(--ui-color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-6);
+}
+
+.admin-user-profile-dialog__email {
+  margin-top: 2px;
+  font-size: 0.8125rem;
+  color: var(--ui-color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-user-profile-dialog__status {
+  margin-top: 7px;
+}
+
+.admin-user-profile-dialog__close {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-color-surface-muted);
+  border: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  align-self: flex-start;
+  color: var(--ui-color-text-primary);
+}
+
+.admin-user-profile-dialog__body {
+  padding: var(--ui-space-20);
+}
+
+.admin-user-profile-dialog__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--ui-space-10);
+  margin-bottom: var(--ui-space-16);
+}
+
+.admin-user-profile-dialog__stat {
+  text-align: center;
+  padding: var(--ui-space-14);
+  background: var(--ui-color-background);
+  border-radius: var(--ui-radius-12);
+}
+
+.admin-user-profile-dialog__stat-value {
+  font-size: 1.375rem;
+  font-weight: 900;
+  color: var(--ui-color-text-primary);
+}
+
+.admin-user-profile-dialog__stat-value--danger {
+  color: var(--ui-color-danger);
+}
+
+.admin-user-profile-dialog__stat-label {
+  margin-top: 2px;
+  font-size: 0.71875rem;
+  color: var(--ui-color-text-secondary);
+}
+
+.admin-user-profile-dialog__info {
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border);
+  border-radius: 13px;
+  overflow: hidden;
+  margin-bottom: var(--ui-space-18);
+}
+
+.admin-user-profile-dialog__info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 11px 14px;
+  border-top: 1px solid var(--ui-color-border);
+}
+
+.admin-user-profile-dialog__info-row:first-child {
+  border-top: 0;
+}
+
+.admin-user-profile-dialog__info-row > span:first-child {
+  font-size: 0.8125rem;
+  color: var(--ui-color-text-secondary);
+}
+
+.admin-user-profile-dialog__info-row > span:last-child {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--ui-color-text-primary);
+}
+
+.admin-user-profile-dialog__reports-btn {
+  width: 100%;
+  height: 42px;
+  border-radius: var(--ui-radius-12);
+  background: var(--ui-color-danger-surface);
+  border: 0;
+  color: var(--ui-color-danger);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-space-8);
+  margin-bottom: var(--ui-space-18);
+}
+
+.admin-user-profile-dialog__actions {
+  display: flex;
+  gap: var(--ui-space-10);
+}
+
+.admin-user-profile-dialog__action {
+  flex: 1;
+  height: 46px;
+  border-radius: var(--ui-radius-12);
+  border: 0;
+  font-size: 0.875rem;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.admin-user-profile-dialog__action:disabled,
+.admin-user-profile-dialog__action[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.admin-user-profile-dialog__action--primary {
+  background: var(--ui-color-primary);
+  color: var(--ui-color-on-primary);
+}
+
+.admin-user-profile-dialog__action--success {
+  background: var(--ui-color-success-surface);
+  color: var(--ui-color-success);
+}
+
+.admin-user-profile-dialog__action--danger {
+  background: var(--ui-color-danger-surface);
+  color: var(--ui-color-danger);
+}
+
+.admin-user-profile-dialog__reason {
+  margin: var(--ui-space-8) 0 0;
+  font-size: 0.75rem;
+  color: var(--ui-color-text-secondary);
+  text-align: center;
+}
+
+.admin-user-profile-dialog__close:focus-visible,
+.admin-user-profile-dialog__reports-btn:focus-visible,
+.admin-user-profile-dialog__action:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-ring);
+}

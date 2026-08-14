@@ -1,0 +1,117 @@
+<app-admin-page-header
+  [title]="'admin.review.page.title' | translate"
+  [subtitle]="'admin.review.page.subtitle' | translate"
+>
+  <span class="review-page__queue-pill">
+    <span class="review-page__queue-dot" aria-hidden="true"></span>
+    {{ 'admin.review.page.awaitingReview' | translate: { count: counts().pending } }}
+  </span>
+</app-admin-page-header>
+
+<app-admin-tabs
+  [tabs]="tabs()"
+  [value]="statusFilter()"
+  [ariaLabel]="'admin.review.page.tabsAria' | translate"
+  (valueChange)="selectTab($event)"
+/>
+
+@if (error() !== null) {
+  <div class="review-page__error" role="alert">
+    <p-message severity="error" styleClass="review-page__error-message">
+      <div class="review-page__error-content">
+        <strong>{{ 'admin.review.page.errorTitle' | translate }}</strong>
+        <span>{{ error() }}</span>
+      </div>
+    </p-message>
+    <button type="button" class="review-page__retry-btn" (click)="retry()">
+      {{ 'listings.common.retry' | translate }}
+    </button>
+  </div>
+}
+
+@if (showInitialSkeleton()) {
+  <div class="review-page__skeleton-list">
+    @for (i of [0, 1, 2]; track i) {
+      <div class="review-page__skeleton-card">
+        <p-skeleton width="104px" height="104px" styleClass="review-page__skeleton-photo" />
+        <div class="review-page__skeleton-body">
+          <p-skeleton width="60%" height="1.25rem" />
+          <p-skeleton width="40%" height="1rem" />
+          <p-skeleton width="80%" height="1rem" />
+          <p-skeleton width="90%" height="2.5rem" />
+        </div>
+      </div>
+    }
+  </div>
+}
+
+@if (showEmpty()) {
+  <div class="review-page__empty-wrap">
+    <app-ui-empty-state
+      tone="success"
+      icon="pi pi-check-circle"
+      [title]="'admin.review.empty.title' | translate"
+      [description]="'admin.review.empty.' + statusFilter().toLowerCase() | translate"
+    />
+  </div>
+}
+
+@if (!showInitialSkeleton() && items().length > 0) {
+  <div class="review-page__list">
+    @for (item of items(); track item.id) {
+      <app-review-card
+        [item]="item"
+        [tab]="statusFilter()"
+        [categories]="categories()"
+        [isDesktop]="isDesktop()"
+        [isBusy]="isBusy(item.id)"
+        [isRejectOpen]="rejectingId() === item.id"
+        [reasonSel]="reasonSel()"
+        [note]="note()"
+        (approve)="approve(item.id)"
+        (openReject)="openReject(item.id)"
+        (cancelReject)="cancelReject()"
+        (reasonSelect)="reasonSel.set($event)"
+        (noteChange)="note.set($event)"
+        (confirmReject)="confirmReject()"
+        (categoryChange)="changeCategory(item.id, $event)"
+      />
+    }
+  </div>
+
+  @if (totalPages() > 1) {
+    <nav class="review-page__pager" [attr.aria-label]="'admin.review.page.pagerAria' | translate">
+      <button
+        type="button"
+        class="review-page__pager-btn"
+        [disabled]="page() <= 1"
+        (click)="goToPage(page() - 1)"
+      >
+        {{ 'admin.review.page.pagerPrev' | translate }}
+      </button>
+      <span class="review-page__pager-status">
+        {{ 'admin.review.page.pagerStatus' | translate: { page: page(), total: totalPages() } }}
+      </span>
+      <button
+        type="button"
+        class="review-page__pager-btn"
+        [disabled]="page() >= totalPages()"
+        (click)="goToPage(page() + 1)"
+      >
+        {{ 'admin.review.page.pagerNext' | translate }}
+      </button>
+    </nav>
+  }
+}
+
+@if (!isDesktop() && rejectingId() !== null) {
+  <app-reject-sheet
+    [title]="rejectSheetTitle()"
+    [reasonSel]="reasonSel()"
+    [note]="note()"
+    (reasonSelect)="reasonSel.set($event)"
+    (noteChange)="note.set($event)"
+    (cancel)="cancelReject()"
+    (confirm)="confirmReject()"
+  />
+}

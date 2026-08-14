@@ -1,0 +1,53 @@
+// Visual recipe copied from `admin-status-badge` (dot + pill). Colour mapping per
+// `REPORT_SEV` in `admin-shared.jsx`: high -> danger, medium -> warn (reusing the existing
+// `--dash-warn*` tokens), low -> neutral (`--dash-mute*` — nearest token pair to the design's
+// literal #EEF1F6/#5A6472; no dedicated "neutral" semantic token exists today).
+.admin-report-severity-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: var(--ui-radius-pill);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-report-severity-pill--md {
+  padding: 3px 9px;
+  font-size: 0.6875rem;
+}
+
+.admin-report-severity-pill--sm {
+  padding: 2px 8px;
+  font-size: 0.640625rem;
+}
+
+.admin-report-severity-pill__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.admin-report-severity-pill--high {
+  background: var(--ui-color-danger-surface);
+  color: var(--ui-color-danger);
+}
+.admin-report-severity-pill--high .admin-report-severity-pill__dot {
+  background: var(--ui-color-danger);
+}
+
+.admin-report-severity-pill--medium {
+  background: var(--dash-warn-surface);
+  color: var(--dash-warn-text);
+}
+.admin-report-severity-pill--medium .admin-report-severity-pill__dot {
+  background: var(--dash-warn);
+}
+
+.admin-report-severity-pill--low {
+  background: var(--dash-mute-surface);
+  color: var(--dash-mute-text);
+}
+.admin-report-severity-pill--low .admin-report-severity-pill__dot {
+  background: var(--dash-mute-text);
+}

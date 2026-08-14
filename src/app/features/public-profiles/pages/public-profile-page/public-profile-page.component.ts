@@ -17,6 +17,7 @@ import { distinctUntilChanged, map, of, switchMap } from 'rxjs';
 
 import { ListingCardComponent } from '../../../listings/components/listing-card/listing-card.component';
 import * as ListingsActions from '../../../listings/store/listings.actions';
+import { ReportDialogComponent } from '../../../reports/components/report-dialog/report-dialog.component';
 import { ReviewCardComponent } from '../../../reviews/components/review-card/review-card.component';
 import * as ReviewsActions from '../../../reviews/store/reviews.actions';
 import {
@@ -25,7 +26,7 @@ import {
   selectRenterReviews,
   selectRenterReviewsLoading,
 } from '../../../reviews/store/reviews.selectors';
-import { selectIsAuthenticated } from '../../../auth/store/auth.selectors';
+import { selectAuthUser, selectIsAuthenticated } from '../../../auth/store/auth.selectors';
 import * as PublicProfilesActions from '../../store/public-profiles.actions';
 import {
   selectPublicProfile,
@@ -44,6 +45,7 @@ export type ProfileTab = 'owner' | 'renter';
     ButtonModule,
     DecimalPipe,
     ListingCardComponent,
+    ReportDialogComponent,
     ReviewCardComponent,
     RouterLink,
     SkeletonModule,
@@ -70,45 +72,35 @@ export class PublicProfilePageComponent {
 
   protected readonly profile = toSignal(
     this.userId$.pipe(
-      switchMap((id) =>
-        id ? this.store.select(selectPublicProfile(id)) : of(null),
-      ),
+      switchMap((id) => (id ? this.store.select(selectPublicProfile(id)) : of(null))),
     ),
     { initialValue: null },
   );
 
   protected readonly profileLoading = toSignal(
     this.userId$.pipe(
-      switchMap((id) =>
-        id ? this.store.select(selectPublicProfileLoading(id)) : of(false),
-      ),
+      switchMap((id) => (id ? this.store.select(selectPublicProfileLoading(id)) : of(false))),
     ),
     { initialValue: false },
   );
 
   protected readonly profileError = toSignal(
     this.userId$.pipe(
-      switchMap((id) =>
-        id ? this.store.select(selectPublicProfileError(id)) : of(null),
-      ),
+      switchMap((id) => (id ? this.store.select(selectPublicProfileError(id)) : of(null))),
     ),
     { initialValue: null },
   );
 
   private readonly ownerSummary = toSignal(
     this.userId$.pipe(
-      switchMap((id) =>
-        id ? this.store.select(selectOwnerReviews(id)) : of(null),
-      ),
+      switchMap((id) => (id ? this.store.select(selectOwnerReviews(id)) : of(null))),
     ),
     { initialValue: null },
   );
 
   private readonly renterSummary = toSignal(
     this.userId$.pipe(
-      switchMap((id) =>
-        id ? this.store.select(selectRenterReviews(id)) : of(null),
-      ),
+      switchMap((id) => (id ? this.store.select(selectRenterReviews(id)) : of(null))),
     ),
     { initialValue: null },
   );
@@ -118,36 +110,28 @@ export class PublicProfilePageComponent {
 
   protected readonly ownerReviewsLoading = toSignal(
     this.userId$.pipe(
-      switchMap((id) =>
-        id ? this.store.select(selectOwnerReviewsLoading(id)) : of(false),
-      ),
+      switchMap((id) => (id ? this.store.select(selectOwnerReviewsLoading(id)) : of(false))),
     ),
     { initialValue: false },
   );
 
   protected readonly renterReviewsLoading = toSignal(
     this.userId$.pipe(
-      switchMap((id) =>
-        id ? this.store.select(selectRenterReviewsLoading(id)) : of(false),
-      ),
+      switchMap((id) => (id ? this.store.select(selectRenterReviewsLoading(id)) : of(false))),
     ),
     { initialValue: false },
   );
 
   protected readonly userListings = toSignal(
     this.userId$.pipe(
-      switchMap((id) =>
-        id ? this.store.select(selectUserListings(id)) : of(null),
-      ),
+      switchMap((id) => (id ? this.store.select(selectUserListings(id)) : of(null))),
     ),
     { initialValue: null },
   );
 
   protected readonly userListingsLoading = toSignal(
     this.userId$.pipe(
-      switchMap((id) =>
-        id ? this.store.select(selectUserListingsLoading(id)) : of(false),
-      ),
+      switchMap((id) => (id ? this.store.select(selectUserListingsLoading(id)) : of(false))),
     ),
     { initialValue: false },
   );
@@ -187,6 +171,17 @@ export class PublicProfilePageComponent {
   );
 
   protected readonly isAuthenticated = this.store.selectSignal(selectIsAuthenticated);
+  private readonly currentUser = this.store.selectSignal(selectAuthUser);
+
+  /** The "Report this user" affordance is a safety control, not a primary action — hidden for
+   *  guests (it requires authentication) and on your own profile. The server enforces the
+   *  latter too via `report.cannot_report_own`, but there's no reason to ever offer it here. */
+  protected readonly showReportDialog = signal(false);
+  protected readonly canReportUser = computed(() => {
+    const id = this.userIdSignal();
+    const user = this.currentUser();
+    return this.isAuthenticated() && id !== null && id !== '' && user !== null && user.id !== id;
+  });
 
   protected readonly showSkeleton = computed(
     () => this.profileLoading() && this.profile() === null,
@@ -239,5 +234,14 @@ export class PublicProfilePageComponent {
 
   protected onFavoriteToggled(listingId: string): void {
     this.store.dispatch(ListingsActions.toggleFavoriteOptimistic({ listingId }));
+  }
+
+  protected openReportDialog(): void {
+    if (!this.canReportUser()) return;
+    this.showReportDialog.set(true);
+  }
+
+  protected closeReportDialog(): void {
+    this.showReportDialog.set(false);
   }
 }

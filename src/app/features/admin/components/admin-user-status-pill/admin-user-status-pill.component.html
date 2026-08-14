@@ -1,0 +1,9 @@
+<span
+  class="admin-user-status-pill"
+  [class]="
+    'admin-user-status-pill--' + status().toLowerCase() + ' admin-user-status-pill--' + size()
+  "
+>
+  <span class="admin-user-status-pill__dot" aria-hidden="true"></span>
+  {{ labelKey() | translate }}
+</span>

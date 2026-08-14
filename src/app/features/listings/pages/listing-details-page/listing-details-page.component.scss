@@ -112,8 +112,12 @@
 
 /* ── Article ──────────────────────────────────────────── */
 @keyframes detail-page-fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .detail-page__article {
@@ -395,6 +399,17 @@
   }
 }
 
+/* Report — a quieter safety control than the other two pills. */
+.detail-page__pill-btn--report {
+  color: var(--ui-color-text-secondary);
+  font-weight: 600;
+
+  &:hover {
+    background: var(--ui-color-surface-muted);
+    color: var(--ui-color-text-primary);
+  }
+}
+
 /* ── Location + Rating row ────────────────────────────── */
 .detail-page__meta-row {
   display: flex;
@@ -497,11 +512,11 @@
   @media (max-width: 1099px) {
     padding: 12px;
 
-    &:nth-child(2n+1) {
+    &:nth-child(2n + 1) {
       border-left: none;
     }
 
-    &:nth-child(n+3) {
+    &:nth-child(n + 3) {
       border-top: 1px solid var(--ui-color-border);
     }
   }
@@ -838,7 +853,9 @@
   font-weight: 700;
   text-decoration: none;
   white-space: nowrap;
-  transition: background-color 140ms ease, color 140ms ease;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
 
   &:hover {
     background: var(--ui-color-primary-wash);
@@ -1062,16 +1079,54 @@
     position: sticky;
     top: calc(4.25rem + 20px);
     /* Both the CTA card and the protection card below it must stay
-       reachable — `position: sticky` only pins the *top* of this wrapper;
-       once the two cards' combined height exceeds the viewport, sticky
-       can't help and the protection card was hanging off the bottom of the
-       screen with no way to scroll to it (worst case: hy, existing-booking
-       hint shown, long assurance copy wrapped to multiple lines). Cap the
-       wrapper to the space actually available below the sticky offset and
-       let it scroll internally as a last resort — the card-level spacing
-       trims below have already reduced how often this triggers. */
+       reachable AND pinned together — `position: sticky` only pins the
+       *top* of this wrapper; once the two cards' combined height exceeds
+       the viewport, sticky can't help and the protection card was hanging
+       off the bottom of the screen with nothing to reveal it (worst case:
+       hy, existing-booking hint shown, long assurance copy wrapped to
+       multiple lines). Cap the wrapper to the space actually available
+       below the sticky offset and let it scroll internally as a last
+       resort — the card-level spacing trims below have already reduced how
+       often this triggers, and when it does, the browser's default
+       scrollbar is replaced below with a slim, low-contrast one so a rare
+       fallback doesn't read as a chunk of stray UI chrome. */
     max-height: calc(100dvh - 4.25rem - 40px);
     overflow-y: auto;
+    /* `overflow-y: auto` forces the used value of `overflow-x` to a
+       non-visible value too (per spec, browsers can't leave one axis
+       `visible` once the other clips) — without this padding, that clips
+       the cards' box-shadow and, in a tight corner case, their own border,
+       flush at the wrapper's edge, and leaves the scrollbar thumb sitting
+       right against the card border with no breathing room. The right side
+       gets slightly more so the thumb has clear space of its own. */
+    overflow-x: hidden;
+    padding: 6px 10px 6px 4px;
+
+    /* Slim, low-contrast scrollbar — this was the actual complaint before
+       (not that a scrollbar could appear at all, just that the default one
+       was visually heavy). Firefox/standards track: */
+    scrollbar-width: thin;
+    scrollbar-color: var(--ui-color-border-strong) transparent;
+
+    /* WebKit/Blink track — 6px, transparent track, pill thumb using the
+       same border-strong token as above so both engines land on the same
+       look; darkens slightly on hover for feedback without becoming loud. */
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: var(--ui-color-border-strong);
+      border-radius: var(--ui-radius-pill);
+
+      &:hover {
+        background: var(--ui-color-text-secondary);
+      }
+    }
   }
 }
 
@@ -1205,7 +1260,9 @@
   font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;
-  transition: border-color 140ms ease, background-color 140ms ease;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease;
 
   &:hover {
     border-color: var(--ui-color-primary);

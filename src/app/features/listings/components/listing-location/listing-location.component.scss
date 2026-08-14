@@ -138,9 +138,15 @@
   position: absolute;
   top: 12px;
   left: 12px;
-  /* Leaflet's own panes/attribution top out at z-index 1000/1001 (see
-     app-map's own crosshair comment) — this sibling overlay needs to clear
-     that to actually read as "on top of" the map. */
+  /* This is a SIBLING of `<app-listings-map>` (see the template), not
+     projected inside it, so it sits outside `.app-map`'s own isolated
+     stacking context (`isolation: isolate`, map.component.scss) — Leaflet's
+     panes/attribution/zoom-stack (up to 1000/1001/1002) are sealed inside
+     that context and no longer participate in this comparison at all. This
+     only needs to clear `.app-map`'s own implicit (~0) paint level to read
+     as "on top of" the map, so 1002 is over-specified now (kept as-is —
+     the value still works, just isn't load-bearing against Leaflet's
+     specific numbers the way it used to be). */
   z-index: 1002;
   display: inline-flex;
   align-items: center;

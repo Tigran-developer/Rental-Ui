@@ -452,6 +452,7 @@
       "shareLabel": "Поделиться",
       "saveLabel": "Сохранить",
       "savedLabel": "Сохранено",
+      "reportLabel": "Пожаловаться",
       "linkCopied": "Ссылка скопирована",
       "messageOwner": "Написать владельцу",
       "handoverLabel": "Передача",
@@ -1380,11 +1381,532 @@
           "unsafeItem": {
             "title": "Небезопасный предмет",
             "description": "Опасен для детей, отозван или сломан"
+          },
+          "hygiene": {
+            "title": "Гигиена",
+            "description": "Нет информации об очистке или гигиене"
+          },
+          "pricing": {
+            "title": "Цена",
+            "description": "Нереалистичная цена"
+          },
+          "other": {
+            "title": "Другое",
+            "description": "Не подходит ни под одну из причин выше"
           }
         }
       },
       "common": {
         "notAvailable": "Недоступно"
+      }
+    },
+    "overview": {
+      "page": {
+        "title": "Обзор",
+        "subtitle": "Модерация маркетплейса на одном экране",
+        "errorTitle": "Не удалось загрузить обзор"
+      },
+      "stats": {
+        "awaitingReview": {
+          "label": "Ожидают проверки",
+          "oldest": "старейшее {{time}}",
+          "caughtUp": "очередь пуста"
+        },
+        "liveListings": {
+          "label": "Активные объявления",
+          "addedThisWeek": "+{{count}} за неделю"
+        },
+        "categories": {
+          "label": "Категории",
+          "visible": "{{count}} видимых"
+        },
+        "reports": {
+          "label": "Открытые жалобы",
+          "needsAction": "требуют внимания",
+          "allClear": "всё чисто"
+        }
+      },
+      "cta": {
+        "kicker": "Приоритет",
+        "titleOne": "1 игрушка ждёт вашей проверки",
+        "title": "{{count}} игрушек ждут вашей проверки",
+        "subtitle": "Держите время проверки в пределах {{hours}} часов, чтобы владельцы могли начать зарабатывать быстрее.",
+        "caughtUpTitle": "Всё проверено",
+        "caughtUpSubtitle": "Сейчас нет игрушек, ожидающих проверки.",
+        "button": "Перейти к очереди проверки"
+      },
+      "activity": {
+        "title": "Последние действия модерации",
+        "errorTitle": "Не удалось загрузить последние действия",
+        "removedActor": "Удалённый модератор",
+        "empty": {
+          "title": "Пока нет активности",
+          "description": "Действия модерации будут появляться здесь по мере совершения."
+        },
+        "lines": {
+          "ListingApproved": "{{actor}} одобрил(а) {{target}}",
+          "ListingRejected": "{{actor}} отклонил(а) {{target}}",
+          "ListingRecategorised": "{{actor}} изменил(а) категорию {{target}}",
+          "CategoryCreated": "{{actor}} создал(а) категорию {{target}}",
+          "CategoryRenamed": "{{actor}} переименовал(а) категорию {{target}}",
+          "CategoryReordered": "{{actor}} изменил(а) порядок категорий",
+          "CategoryVisibilityChanged": "{{actor}} изменил(а) видимость категории {{target}}",
+          "CategoryDeleted": "{{actor}} удалил(а) категорию {{target}}",
+          "UserVerified": "{{actor}} подтвердил(а) пользователя {{target}}",
+          "UserSuspended": "{{actor}} заблокировал(а) пользователя {{target}}",
+          "UserReactivated": "{{actor}} восстановил(а) пользователя {{target}}",
+          "ReportResolved": "{{actor}} решил(а) жалобу на {{target}}",
+          "ReportDismissed": "{{actor}} отклонил(а) жалобу на {{target}}",
+          "ReportReopened": "{{actor}} повторно открыл(а) жалобу на {{target}}",
+          "generic": "{{actor}} обновил(а) {{target}}"
+        }
+      },
+      "time": {
+        "justNow": "только что",
+        "minutesAgo": "{{value}} мин назад",
+        "hoursAgo": "{{value}} ч назад",
+        "daysAgo": "{{value}} дн назад",
+        "weeksAgo": "{{value}} нед назад",
+        "monthsAgo": "{{value}} мес назад",
+        "yearsAgo": "{{value}} г назад"
+      }
+    },
+    "review": {
+      "tabs": {
+        "pending": "На проверке",
+        "approved": "Одобрено",
+        "rejected": "Отклонено"
+      },
+      "page": {
+        "title": "Проверка объявлений",
+        "subtitle": "Одобряйте новые игрушки или отправляйте их обратно владельцам с понятной причиной.",
+        "awaitingReview": "{{count}} ожидает проверки",
+        "tabsAria": "Статус проверки",
+        "errorTitle": "Не удалось загрузить очередь проверки",
+        "pagerAria": "Страницы очереди",
+        "pagerPrev": "Назад",
+        "pagerNext": "Далее",
+        "pagerStatus": "Страница {{page}} из {{total}}"
+      },
+      "empty": {
+        "title": "Всё проверено",
+        "pending": "Нет объявлений, ожидающих проверки.",
+        "approved": "Пока нет одобренных объявлений.",
+        "rejected": "Пока нет отклонённых объявлений."
+      },
+      "card": {
+        "unverified": "Не подтверждён",
+        "listingCountOne": "1 объявление",
+        "listingCount": "{{count}} объявления(-й)",
+        "perDay": "/ день",
+        "rejectedFor": "Причина:"
+      },
+      "category": {
+        "label": "Категория",
+        "none": "Без категории",
+        "suggestion": "Владелец выбрал «{{owner}}» — предложено «{{suggested}}»."
+      },
+      "checklist": {
+        "photos": "Чёткие фото",
+        "safety": "Возраст и безопасность",
+        "hygiene": "Указана гигиена"
+      },
+      "actions": {
+        "approve": "Одобрить",
+        "reject": "Отклонить…",
+        "inspect": "Открыть"
+      },
+      "rejectPanel": {
+        "question": "Почему это объявление отклоняется?",
+        "confirm": "Отклонить и уведомить владельца",
+        "confirmMobile": "Отклонить и уведомить",
+        "mobileSubtitle": "«{{title}}» — владелец увидит эту причину и сможет отправить заново."
+      }
+    },
+    "inspect": {
+      "page": {
+        "errorTitle": "Не удалось загрузить объявление",
+        "backToQueue": "Очередь проверки",
+        "mobileTitle": "Проверка объявления"
+      },
+      "category": {
+        "hint": "Укажите категорию перед одобрением — по ней арендаторы ищут игрушки.",
+        "suggestion": "Владелец выбрал {{owner}}. Предложено: {{suggested}}.",
+        "apply": "Применить"
+      },
+      "description": {
+        "title": "Описание от владельца"
+      },
+      "attributes": {
+        "photos": "Фото",
+        "photosValue": "{{count}} загружено",
+        "condition": "Состояние",
+        "deposit": "Залог",
+        "noDeposit": "Без залога"
+      },
+      "owner": {
+        "label": "Владелец",
+        "rating": "Рейтинг",
+        "listings": "Объявления",
+        "rentals": "Аренды",
+        "memberSince": "На платформе с",
+        "identity": "Личность",
+        "identityVerified": "Подтверждена",
+        "identityUnverified": "Не подтверждена",
+        "flags": "Жалобы",
+        "flagsCount": "{{count}} открытых жалоб",
+        "viewProfile": "Открыть публичный профиль"
+      },
+      "checklist": {
+        "title": "Чек-лист соответствия",
+        "pass": "Пройдено",
+        "missing": "Отсутствует"
+      },
+      "decision": {
+        "approve": "Одобрить объявление",
+        "reject": "Отклонить с причиной"
+      }
+    },
+    "categories": {
+      "page": {
+        "title": "Категории",
+        "subtitle": "Управляйте категориями игрушек, которые видят арендаторы. Меняйте порядок, переименовывайте, скрывайте или добавляйте категории.",
+        "newCategory": "Новая категория",
+        "errorTitle": "Не удалось загрузить категории"
+      },
+      "stats": {
+        "categories": "Категории",
+        "visible": "Видны арендаторам",
+        "listedToys": "Размещено игрушек"
+      },
+      "form": {
+        "iconLabel": "Иконка",
+        "colorLabel": "Цвет",
+        "namePlaceholder": "Название категории, например «Музыкальные инструменты»",
+        "cancel": "Отмена",
+        "addCategory": "Добавить категорию",
+        "saveChanges": "Сохранить изменения"
+      },
+      "table": {
+        "category": "Категория",
+        "listings": "Объявления",
+        "visibility": "Видимость",
+        "actions": "Действия",
+        "change": "Изменить",
+        "deleteAria": "Удалить {{name}}",
+        "moveUp": "Переместить {{name}} вверх",
+        "moveDown": "Переместить {{name}} вниз"
+      },
+      "card": {
+        "listingCountOne": "1 активное объявление",
+        "listingCount": "{{count}} активных объявления(-й)"
+      },
+      "empty": {
+        "title": "Пока нет категорий",
+        "description": "Добавьте первую категорию, чтобы упорядочить объявления об игрушках."
+      },
+      "visibility": {
+        "visible": "Видна",
+        "hidden": "Скрыта",
+        "toggleAriaShow": "Показать категорию",
+        "toggleAriaHide": "Скрыть категорию",
+        "tooltipShow": "Вернуть эту категорию в список категорий и фильтр для арендаторов.",
+        "tooltipHide": "Скрывает эту категорию из списка категорий и фильтра для арендаторов. Её объявления по-прежнему видны в общем каталоге, поиске, на карте и на главной странице."
+      },
+      "editSheet": {
+        "title": "Редактировать категорию"
+      },
+      "deleteDialog": {
+        "title": "Удалить «{{name}}»?",
+        "subtitle": "Это действие нельзя отменить.",
+        "hasListingsOne": "В этой категории 1 активное объявление. Перед удалением перенесите его в другую категорию.",
+        "hasListings": "В этой категории {{count}} активных объявления(-й). Перед удалением перенесите их в другую категорию.",
+        "noListings": "В этой категории нет объявлений, она будет удалена сразу.",
+        "reassignLabel": "Перенести объявления в",
+        "selectPlaceholder": "Выберите категорию…",
+        "newCategoryOption": "+ Перенести в новую категорию…",
+        "newCategoryPlaceholder": "Название новой категории",
+        "cancel": "Отмена",
+        "confirmSimple": "Удалить категорию",
+        "confirmReassign": "Перенести и удалить"
+      },
+      "toast": {
+        "createSuccessTitle": "Категория создана",
+        "createSuccess": "Новая категория опубликована.",
+        "deleteSuccessTitle": "Категория удалена",
+        "deleteSuccess": "Категория была удалена.",
+        "deletePartialFailureTitle": "Категория не удалена",
+        "deletePartialFailure": "Новая категория создана, но перенести объявления и удалить старую категорию не удалось. Повторите удаление — новая категория уже доступна как цель переноса.",
+        "actionFailureTitle": "Действие не выполнено"
+      },
+      "errors": {
+        "nameTaken": "Категория с таким названием уже существует.",
+        "invalidName": "Введите корректное название категории.",
+        "invalidColor": "Выберите корректный цвет.",
+        "orderMismatch": "Порядок категорий устарел. Список обновляется.",
+        "reassignRequired": "Выберите, куда перенести объявления этой категории.",
+        "reassignInvalid": "Выберите корректную категорию для переноса объявлений.",
+        "notFound": "Эта категория больше не существует.",
+        "reassignTargetNotFound": "Выбранная категория больше не существует. Выберите другую."
+      }
+    },
+    "users": {
+      "page": {
+        "title": "Пользователи",
+        "subtitle": "Владельцы и арендаторы, статус их верификации и действия с аккаунтом.",
+        "searchPlaceholder": "Поиск по имени или email",
+        "searchPlaceholderShort": "Поиск пользователей",
+        "sortAria": "Сортировать по",
+        "tabsAria": "Статус пользователя",
+        "errorTitle": "Не удалось загрузить пользователей",
+        "pagerAria": "Страницы пользователей",
+        "pagerPrev": "Назад",
+        "pagerNext": "Далее",
+        "pagerStatus": "Страница {{page}} из {{total}}"
+      },
+      "stats": {
+        "total": "Всего пользователей",
+        "verified": "Верифицировано",
+        "pending": "Ожидает ID",
+        "suspended": "Заблокировано"
+      },
+      "tabs": {
+        "all": "Все",
+        "pending": "Ожидает ID",
+        "suspended": "Заблокировано"
+      },
+      "sort": {
+        "name": "Имя (А–Я)",
+        "newest": "Сначала новые",
+        "listings": "Больше всего объявлений",
+        "rentals": "Больше всего аренд",
+        "flags": "Больше всего жалоб"
+      },
+      "status": {
+        "active": "Активен",
+        "pending": "Ожидает ID",
+        "suspended": "Заблокирован"
+      },
+      "role": {
+        "renter": "Арендатор",
+        "owner": "Владелец",
+        "both": "Оба"
+      },
+      "table": {
+        "user": "Пользователь",
+        "status": "Статус",
+        "flags": "Жалобы",
+        "actions": "Действия",
+        "meta": "{{role}} · {{listings}} объявл. · {{rentals}} аренд · с {{joined}}",
+        "viewProfileAria": "Просмотреть профиль {{name}}",
+        "viewFlagsAria": "Просмотреть жалобы ({{count}}) на {{name}}",
+        "actionsAria": "Действия для {{name}}"
+      },
+      "actions": {
+        "menuAria": "Действия для {{name}}",
+        "verify": "Верифицировать",
+        "suspend": "Заблокировать",
+        "reactivate": "Разблокировать",
+        "cancel": "Отмена",
+        "suspendDisabledSelf": "Вы не можете заблокировать собственный аккаунт.",
+        "suspendDisabledAdmin": "Аккаунты администраторов нельзя заблокировать отсюда."
+      },
+      "profile": {
+        "dialogAria": "Профиль {{name}}",
+        "closeAria": "Закрыть",
+        "verifiedAria": "Личность подтверждена",
+        "listings": "Объявления",
+        "rentals": "Аренды",
+        "flags": "Жалобы",
+        "role": "Роль",
+        "memberSince": "На платформе с",
+        "identity": "Личность",
+        "identityVerified": "Подтверждена",
+        "identityUnverified": "Не подтверждена",
+        "viewReports": "Посмотреть жалобы ({{count}})"
+      },
+      "empty": {
+        "title": "Нет подходящих пользователей",
+        "description": "Попробуйте другой запрос или переключите вкладку."
+      },
+      "toast": {
+        "verifySuccessTitle": "Пользователь верифицирован",
+        "verifySuccess": "Личность пользователя подтверждена.",
+        "suspendSuccessTitle": "Пользователь заблокирован",
+        "suspendSuccess": "Аккаунт заблокирован.",
+        "reactivateSuccessTitle": "Пользователь разблокирован",
+        "reactivateSuccess": "Аккаунт снова активен.",
+        "actionFailureTitle": "Действие не выполнено"
+      },
+      "errors": {
+        "cannotSuspendSelf": "Вы не можете заблокировать собственный аккаунт.",
+        "cannotSuspendAdmin": "Аккаунты администраторов нельзя заблокировать.",
+        "userNotFound": "Этот пользователь больше не существует."
+      }
+    },
+    "reports": {
+      "page": {
+        "title": "Жалобы",
+        "subtitle": "Объявления, пользователи и сообщения, на которые пожаловались участники сообщества. Решите или отклоните каждую жалобу.",
+        "searchPlaceholder": "Поиск жалоб по объекту, автору жалобы или причине...",
+        "searchPlaceholderShort": "Поиск жалоб",
+        "tabsAria": "Статус жалобы",
+        "errorTitle": "Не удалось загрузить жалобы",
+        "pagerAria": "Страницы жалоб",
+        "pagerPrev": "Назад",
+        "pagerNext": "Далее",
+        "pagerStatus": "Страница {{page}} из {{total}}"
+      },
+      "stats": {
+        "open": "Открытые жалобы",
+        "resolved": "Решённые",
+        "dismissed": "Отклонённые",
+        "all": "Все жалобы"
+      },
+      "tabs": {
+        "open": "Открытые",
+        "resolved": "Решённые",
+        "dismissed": "Отклонённые",
+        "all": "Все"
+      },
+      "severity": {
+        "low": "Низкая",
+        "medium": "Средняя",
+        "high": "Высокая"
+      },
+      "status": {
+        "open": "Открыта",
+        "resolved": "Решена",
+        "dismissed": "Отклонена"
+      },
+      "time": {
+        "justNow": "Только что",
+        "minutesAgo": "{{value}} мин назад",
+        "hoursAgo": "{{value}} ч назад",
+        "daysAgo": "{{value}} дн назад"
+      },
+      "card": {
+        "meta": "Пожаловался(-ась) {{reporter}} · {{time}}"
+      },
+      "actions": {
+        "resolve": "Решить",
+        "dismiss": "Отклонить",
+        "reopen": "Открыть снова",
+        "openReport": "Открыть жалобу"
+      },
+      "empty": {
+        "title": "Здесь пусто",
+        "description": "Сейчас нет жалоб, подходящих под этот фильтр."
+      },
+      "filterBanner": {
+        "text": "Показаны жалобы ({{count}}), относящиеся к этому пользователю.",
+        "clear": "Показать все жалобы"
+      },
+      "detail": {
+        "dialogAria": "Жалоба на {{target}}",
+        "closeAria": "Закрыть",
+        "typeListing": "Жалоба на объявление",
+        "typeUser": "Жалоба на участника",
+        "typeMessage": "Жалоба на сообщение",
+        "reportedBy": "Автор жалобы",
+        "reporterEmail": "Email автора жалобы",
+        "submitted": "Подана",
+        "targetType": "Тип жалобы",
+        "whatWasReported": "На что пожаловались",
+        "reporterNote": "Комментарий автора жалобы",
+        "resolutionNote": "Комментарий к решению",
+        "noteLabel": "Добавить комментарий (необязательно)",
+        "notePlaceholder": "Например: подтверждено с владельцем — товар снят с публикации."
+      },
+      "toast": {
+        "resolveSuccessTitle": "Жалоба решена",
+        "resolveSuccess": "Жалоба отмечена как решённая.",
+        "dismissSuccessTitle": "Жалоба отклонена",
+        "dismissSuccess": "Жалоба отклонена.",
+        "reopenSuccessTitle": "Жалоба открыта снова",
+        "reopenSuccess": "Жалоба снова открыта.",
+        "actionFailureTitle": "Действие не выполнено"
+      },
+      "errors": {
+        "reportNotFound": "Эта жалоба больше не существует."
+      }
+    },
+    "console": {
+      "nav": {
+        "overview": "Обзор",
+        "review": "Проверка объявлений",
+        "categories": "Категории",
+        "users": "Пользователи",
+        "reports": "Жалобы и метки"
+      },
+      "chrome": {
+        "brandAria": "На главную админ-консоли DoRent",
+        "adminPill": "Админ",
+        "searchPlaceholder": "Поиск объявлений, пользователей, категорий...",
+        "notificationsAria": "Уведомления",
+        "moderatorRole": "Модератор",
+        "moderation": "Модерация",
+        "navAria": "Навигация модерации",
+        "mobileSubtitle": "Консоль модерации",
+        "queueHealth": {
+          "title": "Состояние очереди",
+          "pending": "В ожидании",
+          "avgReview": "Среднее время проверки",
+          "flagged": "Помечено",
+          "hoursValue": "{{hours}} ч"
+        }
+      },
+      "comingSoon": {
+        "title": "Скоро появится",
+        "description": "Этот раздел админ-консоли пока в разработке — загляните позже."
+      },
+      "statusBadge": {
+        "pending": "Ожидает проверки",
+        "approved": "Одобрено",
+        "rejected": "Отклонено",
+        "flag": "Требуется исправление категории"
+      }
+    }
+  },
+  "reports": {
+    "reasons": {
+      "noShow": { "label": "Неявка на встречу" },
+      "unsafeItem": { "label": "Небезопасный или сломанный товар" },
+      "misleadingPhotos": { "label": "Вводящие в заблуждение фото или описание" },
+      "offPlatformPayment": { "label": "Просьба оплатить вне платформы" },
+      "rudeMessages": { "label": "Грубые или оскорбительные сообщения" },
+      "spam": { "label": "Спам или мошенничество" },
+      "other": { "label": "Другое" }
+    },
+    "dialog": {
+      "titleListing": "Пожаловаться на объявление",
+      "titleUser": "Пожаловаться на пользователя",
+      "titleMessage": "Пожаловаться на переписку",
+      "closeAria": "Закрыть",
+      "reasonLabel": "Почему вы жалуетесь?",
+      "detailLabel": "Добавить детали (необязательно)",
+      "detailPlaceholder": "Всё, что поможет модераторам разобраться в ситуации...",
+      "cancel": "Отмена",
+      "submit": "Отправить жалобу",
+      "done": "Готово",
+      "close": "Закрыть",
+      "tryAgain": "Попробовать снова",
+      "success": {
+        "title": "Жалоба отправлена",
+        "text": "Спасибо, что сообщили — наша команда модерации её рассмотрит."
+      },
+      "alreadyReported": {
+        "title": "Уже отправлено",
+        "text": "Вы уже пожаловались на это, и жалоба сейчас на рассмотрении."
+      },
+      "error": {
+        "title": "Не удалось отправить жалобу"
+      },
+      "errors": {
+        "cannotReportOwn": "Вы не можете пожаловаться на своё объявление или профиль.",
+        "userBlocked": "Ваш аккаунт сейчас не может отправлять жалобы.",
+        "invalidReason": "Выберите корректную причину и попробуйте снова.",
+        "targetNotFound": "Это больше не существует — возможно, было удалено."
       }
     }
   },
@@ -1586,6 +2108,7 @@
     "verifiedUser": "Верифицирован",
     "idConfirmed": "Удостоверение подтверждено",
     "emailPhone": "Email & телефон",
+    "reportUser": "Пожаловаться",
     "verifiedBadgeAria": "Верифицированный пользователь",
     "viewAllToys": "Все игрушки",
     "viewAllToysAria": "Посмотреть все игрушки",

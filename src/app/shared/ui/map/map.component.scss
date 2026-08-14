@@ -15,8 +15,36 @@
 // their own "currently animating" selector instead.
 @use '../dorent-symbol/dorent-symbol-motion' as dr-symbol-motion;
 
+/* `isolation: isolate` — contains every z-index this component (and its
+   Leaflet-owned descendants) sets, from 200 (`.leaflet-tile-pane`) up through
+   1005 (`.app-map__gate` below), inside `.app-map`'s OWN stacking context.
+   Without this, none of those numbers are scoped: `.app-map` is only
+   `position: relative` with no `z-index`, and `overflow: hidden` does NOT
+   create a stacking context, so every Leaflet pane/control z-index (and this
+   file's own 900-1005 range) used to participate directly in whatever
+   stacking context this component's caller happens to sit in — for a map
+   inside a normal scrolling page, that's the ROOT stacking context. There it
+   competed number-for-number against page chrome that also uses explicit
+   z-index — and won: the sticky app header (`z-index: 100`, the LIVE rule is
+   `app-header.component.css`'s `:host`; `app.css`'s `.app-shell__header-wrap`
+   duplicates the same value but that class is not present in `app.html` and
+   is currently dead CSS — see that file's own note), the mobile bottom nav
+   (`z-index: 99`, `app.css` `.app-bottom-nav`), and Home's mobile
+   scroll-revealed search pill (`z-index: 95`,
+   `home-page.component.scss`'s `.home__mobile-search`) are all ≤100, so a
+   scrolled hero/detail/catalogue map's tiles (200) and attribution (1000)
+   painted OVER all three — the confirmed bug this rule fixes.
+   `isolation: isolate` was chosen specifically because it creates the
+   stacking context WITHOUT giving `.app-map` an explicit `z-index` — the
+   element keeps painting at its existing implicit level (same position in
+   DOM/paint order it already had) among ITS OWN siblings, so nothing outside
+   `.app-map` that already relied on out-ranking it (see the callers audited
+   below) has its relative order changed. Everything INSIDE `.app-map` keeps
+   comparing against Leaflet's own pane/control numbers exactly as before —
+   only the OUTER boundary is now sealed. */
 .app-map {
   position: relative;
+  isolation: isolate;
   width: 100%;
   overflow: hidden;
   border-radius: var(--ui-radius-card);
@@ -38,11 +66,14 @@
   left: 50%;
   transform: translate(-50%, -50%);
   /* Leaflet's own panes/controls top out at z-index 1000 (its zoom control and
-     attribution). Neither `.app-map` nor its Leaflet-owned descendants create
-     an isolated stacking context (no z-index anywhere in the chain), so an
-     explicit z-index here is compared directly against Leaflet's — anything
-     ≤1000 can end up painted UNDER the attribution control despite coming
-     later in the DOM. */
+     attribution). `.app-map` DOES now create an isolated stacking context
+     (`isolation: isolate`, above) — but that only seals the OUTER boundary
+     against page chrome outside `.app-map`; it changes nothing for
+     descendants INSIDE it. This crosshair and Leaflet's own panes/controls
+     are both inside `.app-map`, so they still share that one (now-contained)
+     stacking context and this z-index is still compared directly against
+     Leaflet's — anything ≤1000 can end up painted UNDER the attribution
+     control despite coming later in the DOM. */
   z-index: 1001;
   display: flex;
   align-items: center;

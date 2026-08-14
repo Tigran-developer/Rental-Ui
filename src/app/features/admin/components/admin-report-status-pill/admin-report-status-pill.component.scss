@@ -1,0 +1,53 @@
+// Visual recipe copied from `admin-status-badge` (dot + pill). Colour mapping per
+// `REPORT_STATUS` in `admin-shared.jsx`: open -> `--dash-blue*` (matches the design's
+// #E8EAFF/#4A5FE3 "Open" pill, same token pair `admin-status-badge`'s `flag` variant already
+// reuses for its blue), resolved -> success, dismissed -> neutral (`--dash-mute*`).
+.admin-report-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: var(--ui-radius-pill);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-report-status-pill--md {
+  padding: 3px 9px;
+  font-size: 0.6875rem;
+}
+
+.admin-report-status-pill--sm {
+  padding: 2px 8px;
+  font-size: 0.640625rem;
+}
+
+.admin-report-status-pill__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.admin-report-status-pill--open {
+  background: var(--dash-blue-surface);
+  color: var(--dash-blue-text);
+}
+.admin-report-status-pill--open .admin-report-status-pill__dot {
+  background: var(--dash-blue);
+}
+
+.admin-report-status-pill--resolved {
+  background: var(--ui-color-success-surface);
+  color: var(--ui-color-success);
+}
+.admin-report-status-pill--resolved .admin-report-status-pill__dot {
+  background: var(--ui-color-success);
+}
+
+.admin-report-status-pill--dismissed {
+  background: var(--dash-mute-surface);
+  color: var(--dash-mute-text);
+}
+.admin-report-status-pill--dismissed .admin-report-status-pill__dot {
+  background: var(--dash-mute-text);
+}

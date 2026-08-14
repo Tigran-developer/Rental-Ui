@@ -1,0 +1,115 @@
+// Measurements (44px tile, 42px input, 36px swatches, 9-11px radii) come straight from
+// `admin-desktop.jsx`'s `AdminCategoriesDesktop` add/edit block — mapped to the nearest
+// design token (`--ui-radius-12`) where one exists, hardcoded where none does.
+:host {
+  display: block;
+}
+
+.category-form-panel__row {
+  display: flex;
+  gap: var(--ui-space-12);
+  align-items: center;
+}
+
+.category-form-panel__tile {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--ui-radius-12);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--ui-color-text-primary);
+}
+
+.category-form-panel__name-input {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  padding: 0 var(--ui-space-12);
+  border-radius: var(--ui-radius-12);
+  border: 1px solid var(--ui-color-border);
+  font: inherit;
+  font-size: 0.84375rem;
+  color: var(--ui-color-text-primary);
+  background: var(--ui-color-surface);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.category-form-panel__name-input:focus-visible {
+  border-color: var(--ui-color-primary);
+  box-shadow: var(--ui-focus-ring);
+}
+
+.category-form-panel__name-input--error {
+  border-color: var(--ui-color-danger);
+}
+
+.category-form-panel__name-error {
+  margin: var(--ui-space-6) 0 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ui-color-danger);
+}
+
+.category-form-panel__fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--ui-space-20);
+  margin-top: var(--ui-space-16);
+}
+
+@media (max-width: 640px) {
+  .category-form-panel__fields {
+    grid-template-columns: 1fr;
+    gap: var(--ui-space-14);
+  }
+}
+
+.category-form-panel__field-label {
+  font-size: 0.65625rem;
+  font-weight: 800;
+  color: var(--ui-color-text-secondary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: var(--ui-space-8);
+}
+
+.category-form-panel__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-6);
+}
+
+.category-form-panel__swatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  border: 1px solid var(--ui-color-border);
+  background: var(--ui-color-surface-muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--ui-color-text-primary);
+  padding: 0;
+}
+
+.category-form-panel__swatch:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.category-form-panel__swatch--selected:not(.category-form-panel__swatch--color) {
+  background: var(--ui-color-primary-soft);
+  border: 1.5px solid var(--ui-color-primary);
+  color: var(--ui-color-primary);
+}
+
+.category-form-panel__swatch--color.category-form-panel__swatch--selected {
+  border: 2.5px solid var(--ui-color-primary);
+}
+
+.category-form-panel__swatch:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-ring);
+}

@@ -1,0 +1,20 @@
+<div class="admin-tabs" role="tablist" [attr.aria-label]="ariaLabel() || null">
+  @for (tab of tabs(); track tab.id; let i = $index) {
+    <button
+      #tabButton
+      type="button"
+      role="tab"
+      class="admin-tabs__tab"
+      [class.admin-tabs__tab--active]="isActive(tab)"
+      [attr.aria-selected]="isActive(tab)"
+      [attr.tabindex]="isActive(tab) ? 0 : -1"
+      (click)="select(tab.id)"
+      (keydown)="onKeydown($event, i)"
+    >
+      <span class="admin-tabs__label">{{ tab.labelKey | translate }}</span>
+      @if (hasCount(tab)) {
+        <span class="admin-tabs__count">{{ tab.count }}</span>
+      }
+    </button>
+  }
+</div>

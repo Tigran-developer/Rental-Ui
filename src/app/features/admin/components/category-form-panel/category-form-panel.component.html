@@ -1,0 +1,85 @@
+<div class="category-form-panel">
+  <div class="category-form-panel__row">
+    <span class="category-form-panel__tile" [style.background]="colorHex()" aria-hidden="true">
+      <app-icon [name]="iconName()" [size]="20" />
+    </span>
+    <input
+      type="text"
+      class="category-form-panel__name-input"
+      [class.category-form-panel__name-input--error]="nameErrorMessage() !== null"
+      [value]="name()"
+      [placeholder]="namePlaceholder()"
+      [disabled]="busy()"
+      [attr.autofocus]="autoFocusName() ? true : null"
+      (input)="onNameInput($event)"
+      (keydown)="onNameKeydown($event)"
+      [attr.aria-invalid]="nameErrorMessage() !== null"
+      [attr.aria-describedby]="
+        nameErrorMessage() !== null ? 'category-form-panel-name-error' : null
+      "
+    />
+  </div>
+
+  @if (nameErrorMessage(); as message) {
+    <p class="category-form-panel__name-error" id="category-form-panel-name-error" role="alert">
+      {{ message }}
+    </p>
+  }
+
+  <div class="category-form-panel__fields">
+    <div class="category-form-panel__field">
+      <div class="category-form-panel__field-label">
+        {{ 'admin.categories.form.iconLabel' | translate }}
+      </div>
+      <div
+        class="category-form-panel__grid"
+        role="group"
+        [attr.aria-label]="'admin.categories.form.iconLabel' | translate"
+      >
+        @for (icon of icons; track icon) {
+          <button
+            type="button"
+            class="category-form-panel__swatch"
+            [class.category-form-panel__swatch--selected]="iconName() === icon"
+            [disabled]="busy()"
+            [attr.aria-pressed]="iconName() === icon"
+            [attr.aria-label]="icon"
+            [title]="icon"
+            (click)="iconChange.emit(icon)"
+          >
+            <app-icon [name]="icon" [size]="17" />
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="category-form-panel__field">
+      <div class="category-form-panel__field-label">
+        {{ 'admin.categories.form.colorLabel' | translate }}
+      </div>
+      <div
+        class="category-form-panel__grid"
+        role="group"
+        [attr.aria-label]="'admin.categories.form.colorLabel' | translate"
+      >
+        @for (color of colors; track color) {
+          <button
+            type="button"
+            class="category-form-panel__swatch category-form-panel__swatch--color"
+            [class.category-form-panel__swatch--selected]="colorHex() === color"
+            [style.background]="color"
+            [disabled]="busy()"
+            [attr.aria-pressed]="colorHex() === color"
+            [attr.aria-label]="color"
+            [title]="color"
+            (click)="colorChange.emit(color)"
+          >
+            @if (colorHex() === color) {
+              <app-icon name="check" [size]="15" />
+            }
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+</div>

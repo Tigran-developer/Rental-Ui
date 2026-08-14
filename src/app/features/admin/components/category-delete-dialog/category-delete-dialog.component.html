@@ -1,0 +1,98 @@
+<div class="category-delete-dialog__backdrop" (click)="onBackdropClick()" aria-hidden="true"></div>
+<div
+  class="category-delete-dialog"
+  [class.category-delete-dialog--sheet]="!isDesktop()"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-label]="'admin.categories.deleteDialog.title' | translate: { name: categoryName() }"
+>
+  @if (!isDesktop()) {
+    <div class="category-delete-dialog__handle" aria-hidden="true"></div>
+  }
+
+  <div class="category-delete-dialog__header">
+    <span class="category-delete-dialog__icon" aria-hidden="true">
+      <app-icon name="trash" [size]="isDesktop() ? 20 : 19" />
+    </span>
+    <div>
+      <div class="category-delete-dialog__title">
+        {{ 'admin.categories.deleteDialog.title' | translate: { name: categoryName() } }}
+      </div>
+      <div class="category-delete-dialog__subtitle">
+        {{ 'admin.categories.deleteDialog.subtitle' | translate }}
+      </div>
+    </div>
+  </div>
+
+  @if (hasListings()) {
+    <p class="category-delete-dialog__body-text">
+      {{ hasListingsKey() | translate: { count: listingCount() } }}
+    </p>
+
+    <label class="category-delete-dialog__label" for="category-delete-reassign-select">
+      {{ 'admin.categories.deleteDialog.reassignLabel' | translate }}
+    </label>
+    <select
+      id="category-delete-reassign-select"
+      class="category-delete-dialog__select"
+      [class.category-delete-dialog__select--error]="reassignTarget() === ''"
+      [disabled]="busy()"
+      (change)="onReassignTargetChange($event)"
+    >
+      <option value="">{{ 'admin.categories.deleteDialog.selectPlaceholder' | translate }}</option>
+      @for (category of otherCategories(); track category.id) {
+        <option [value]="category.id">{{ category.name }}</option>
+      }
+      <option [value]="newCategoryOption">
+        {{ 'admin.categories.deleteDialog.newCategoryOption' | translate }}
+      </option>
+    </select>
+
+    @if (isNewCategorySelected()) {
+      <input
+        type="text"
+        class="category-delete-dialog__input"
+        [class.category-delete-dialog__input--error]="newCategoryName().trim().length === 0"
+        [value]="newCategoryName()"
+        [disabled]="busy()"
+        [placeholder]="'admin.categories.deleteDialog.newCategoryPlaceholder' | translate"
+        (input)="onNewCategoryNameInput($event)"
+      />
+    }
+  } @else {
+    <p class="category-delete-dialog__body-text">
+      {{ 'admin.categories.deleteDialog.noListings' | translate }}
+    </p>
+  }
+
+  @if (errorMessage(); as message) {
+    <p class="category-delete-dialog__error" role="alert">{{ message }}</p>
+  }
+
+  <div class="category-delete-dialog__footer">
+    <button
+      type="button"
+      class="category-delete-dialog__btn category-delete-dialog__btn--cancel"
+      [disabled]="busy()"
+      (click)="cancel.emit()"
+    >
+      {{ 'admin.categories.deleteDialog.cancel' | translate }}
+    </button>
+    <button
+      type="button"
+      class="category-delete-dialog__btn category-delete-dialog__btn--confirm"
+      [disabled]="!deleteValid() || busy()"
+      (click)="confirm()"
+    >
+      @if (busy()) {
+        <span class="category-delete-dialog__spinner" aria-hidden="true"></span>
+      }
+      {{
+        (hasListings()
+          ? 'admin.categories.deleteDialog.confirmReassign'
+          : 'admin.categories.deleteDialog.confirmSimple'
+        ) | translate
+      }}
+    </button>
+  </div>
+</div>
