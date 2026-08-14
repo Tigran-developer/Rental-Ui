@@ -82,5 +82,7 @@ export interface ListingCategoryOption {
   slug: string;
   imageUrl?: string | null;
   iconName?: string | null;
+  /** Admin-picked tile colour (`#RRGGBB`/`#RRGGBBAA`), mirrors `CategoryResponse.colorHex`. */
+  colorHex?: string | null;
   displayOrder?: number | null;
 }

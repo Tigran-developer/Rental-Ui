@@ -52,14 +52,12 @@ import { UiInputComponent } from '../../../../shared/ui/input/ui-input.component
 import { HeaderSearchVisibilityService } from '../../../../shared/ui/app-header/header-search-visibility.service';
 import { LanguageSelectorComponent } from '../../../../shared/ui/language-selector/language-selector.component';
 import { DorentSymbolComponent } from '../../../../shared/ui/dorent-symbol/dorent-symbol.component';
+import {
+  DEFAULT_CATEGORY_COLOR,
+  DEFAULT_CATEGORY_ICON,
+} from '../../../../shared/utils/category-palette.model';
 
 type ProcessMode = 'renting' | 'lending';
-
-interface CategoryVisual {
-  readonly icon: string;
-  readonly tintA: string;
-  readonly tintB: string;
-}
 
 interface HomeFaqEntry {
   readonly id: string;
@@ -167,58 +165,6 @@ function deriveHeroMapViewModel(nearby: HomeNearbyState): HeroMapViewModel {
     locating: nearby.locating,
   };
 }
-
-const DEFAULT_VISUAL: CategoryVisual = {
-  icon: 'pi pi-tag',
-  tintA: '#2a2c41',
-  tintB: '#7b7a7a',
-};
-
-/**
- * Slug -> PrimeIcon + gradient tint mapping used when the API returns
- * categories without image URLs.
- */
-const CATEGORY_VISUALS: Readonly<Record<string, CategoryVisual>> = {
-  construction: {
-    icon: 'pi pi-wrench',
-    tintA: '#ff6008',
-    tintB: '#fd8b47',
-  },
-  'construction-equipment-tools': {
-    icon: 'pi pi-wrench',
-    tintA: '#ff6008',
-    tintB: '#fd8b47',
-  },
-  tools: { icon: 'pi pi-wrench', tintA: '#ff6008', tintB: '#fd8b47' },
-  electronics: { icon: 'pi pi-bolt', tintA: '#2a2c41', tintB: '#4a4d6f' },
-  film: { icon: 'pi pi-camera', tintA: '#8b5cf6', tintB: '#6366f1' },
-  'film-photography': {
-    icon: 'pi pi-camera',
-    tintA: '#8b5cf6',
-    tintB: '#6366f1',
-  },
-  photography: { icon: 'pi pi-camera', tintA: '#8b5cf6', tintB: '#6366f1' },
-  garden: { icon: 'pi pi-sun', tintA: '#15803d', tintB: '#65a30d' },
-  home: { icon: 'pi pi-home', tintA: '#0e7490', tintB: '#0284c7' },
-  party: { icon: 'pi pi-gift', tintA: '#db2777', tintB: '#ec4899' },
-  sports: { icon: 'pi pi-star', tintA: '#b91c1c', tintB: '#ef4444' },
-  'sports-hobbies': {
-    icon: 'pi pi-star',
-    tintA: '#b91c1c',
-    tintB: '#ef4444',
-  },
-  hobbies: { icon: 'pi pi-star', tintA: '#b91c1c', tintB: '#ef4444' },
-  vehicle: { icon: 'pi pi-car', tintA: '#1f2937', tintB: '#374151' },
-  vehicles: { icon: 'pi pi-car', tintA: '#1f2937', tintB: '#374151' },
-  premises: { icon: 'pi pi-building', tintA: '#0f766e', tintB: '#14b8a6' },
-  permises: { icon: 'pi pi-building', tintA: '#0f766e', tintB: '#14b8a6' },
-  other: { icon: 'pi pi-tag', tintA: '#475569', tintB: '#64748b' },
-  apartment: { icon: 'pi pi-building', tintA: '#0f766e', tintB: '#14b8a6' },
-  house: { icon: 'pi pi-home', tintA: '#0e7490', tintB: '#0284c7' },
-  villa: { icon: 'pi pi-star', tintA: '#b45309', tintB: '#f59e0b' },
-  studio: { icon: 'pi pi-box', tintA: '#4c1d95', tintB: '#7c3aed' },
-  cabin: { icon: 'pi pi-compass', tintA: '#78350f', tintB: '#b45309' },
-};
 
 const PROCESS_STEPS: readonly HomeProcessStep[] = [
   {
@@ -414,19 +360,13 @@ export class HomePageComponent implements OnInit {
         nearby,
       ]): HomePageViewModel => {
         const mappedCategories: HomeCategoryTileVm[] = source.categories.map(
-          (category): HomeCategoryTileVm => {
-            const visual = CATEGORY_VISUALS[category.slug.toLowerCase()] ?? DEFAULT_VISUAL;
-            return {
-              id: category.id,
-              slug: category.slug,
-              label: category.name,
-              imageUrl: category.imageUrl ?? null,
-              iconName: category.iconName ?? null,
-              icon: visual.icon,
-              tintA: visual.tintA,
-              tintB: visual.tintB,
-            };
-          },
+          (category): HomeCategoryTileVm => ({
+            id: category.id,
+            slug: category.slug,
+            label: category.name,
+            iconName: category.iconName || DEFAULT_CATEGORY_ICON,
+            colorHex: category.colorHex || DEFAULT_CATEGORY_COLOR,
+          }),
         );
 
         return {

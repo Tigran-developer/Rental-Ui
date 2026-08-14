@@ -250,6 +250,7 @@ export class ListingsApiService {
                   slug: typeof category.slug === 'string' ? category.slug : '',
                   imageUrl: normalizeNonEmptyString(category.imageUrl),
                   iconName: normalizeNonEmptyString(category.iconName),
+                  colorHex: normalizeNonEmptyString(category.colorHex),
                   displayOrder: normalizeFiniteNumber(category.displayOrder),
                 }))
             : [],

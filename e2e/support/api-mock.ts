@@ -602,7 +602,13 @@ export async function mockApi(page: Page, seed: ApiSeed = {}): Promise<void> {
     }
 
     if (pathname.endsWith('/api/categories') && method === 'GET') {
-      return json(route, 200, seed.categories ?? [{ id: 'cat-e2e-1', name: 'Toys', slug: 'toys' }]);
+      return json(
+        route,
+        200,
+        seed.categories ?? [
+          { id: 'cat-e2e-1', name: 'Toys', slug: 'toys', iconName: 'tag', colorHex: '#FFE6CC' },
+        ],
+      );
     }
 
     if (pathname.endsWith('/api/districts') && method === 'GET') {

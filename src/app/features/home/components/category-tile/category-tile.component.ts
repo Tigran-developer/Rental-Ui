@@ -6,36 +6,26 @@ import {
   input,
 } from '@angular/core';
 
+import { IconComponent } from '../../../../shared/ui/icon/icon.component';
+import { toSafeCategoryColor } from '../../../../shared/utils/category-palette.model';
+
 export interface HomeCategoryTileVm {
   readonly id: string | null;
   readonly slug: string;
   readonly label: string;
-  /** Actual category image from the backend, when provided. */
-  readonly imageUrl: string | null;
-  /** Backend-provided icon name, used when no image exists. */
-  readonly iconName: string | null;
-  /** Slug-mapped PrimeIcon class used as the final placeholder fallback. */
-  readonly icon: string;
-  readonly tintA: string;
-  readonly tintB: string;
-}
-
-/** Accepts "wrench", "pi-wrench" or "pi pi-wrench" and returns a PrimeIcon class. */
-function toPrimeIconClass(name: string): string {
-  const trimmed = name.trim();
-  if (trimmed.startsWith('pi pi-')) {
-    return trimmed;
-  }
-  if (trimmed.startsWith('pi-')) {
-    return `pi ${trimmed}`;
-  }
-  return `pi pi-${trimmed}`;
+  /** Admin-picked icon name (`shared/ui/icon/icon.component.ts`'s `ICONS` keys), already
+   *  resolved to `DEFAULT_CATEGORY_ICON` by the caller when the backend value is null/empty. */
+  readonly iconName: string;
+  /** Admin-picked tile colour, already resolved to `DEFAULT_CATEGORY_COLOR` by the caller
+   *  when the backend value is null/empty. Re-validated here (`toSafeCategoryColor`) before
+   *  it is rendered into a style binding, since it still comes from the network. */
+  readonly colorHex: string;
 }
 
 @Component({
   selector: 'app-home-category-tile',
   standalone: true,
-  imports: [],
+  imports: [IconComponent],
   templateUrl: './category-tile.component.html',
   styleUrl: './category-tile.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -45,10 +35,10 @@ export class CategoryTileComponent {
 
   @Output() readonly select = new EventEmitter<HomeCategoryTileVm>();
 
-  /** Icon class shown when no image exists: backend icon if present, else slug fallback. */
-  protected iconClass(): string {
-    const data = this.category();
-    return data.iconName ? toPrimeIconClass(data.iconName) : data.icon;
+  /** The tile's media background — guards against a malformed `colorHex` (anything not
+   *  matching `#RRGGBB`/`#RRGGBBAA`) rather than trusting the caller's resolution. */
+  protected backgroundColor(): string {
+    return toSafeCategoryColor(this.category().colorHex);
   }
 
   protected onClick(): void {

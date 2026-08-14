@@ -7,7 +7,7 @@ import {
   CATEGORY_ICON_OPTIONS,
   DEFAULT_CATEGORY_COLOR,
   DEFAULT_CATEGORY_ICON,
-} from '../../models/category-palette.model';
+} from '../../../../shared/utils/category-palette.model';
 
 /**
  * The shared field block from the design's create panel / edit row / mobile edit sheet: a

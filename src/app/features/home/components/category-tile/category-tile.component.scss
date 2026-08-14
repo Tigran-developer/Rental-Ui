@@ -30,13 +30,6 @@
     box-shadow 160ms ease;
 }
 
-.category-tile__image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
 .category-tile:hover .category-tile__media,
 .category-tile:focus-visible .category-tile__media {
   transform: translateY(-2px);
@@ -54,24 +47,29 @@
   outline-offset: 2px;
 }
 
-/* Translucent chip behind the icon (desktop/tablet only — neutralized at
-   ≤560px below, where the tile itself shrinks to a 64px icon-only box and
-   nesting a second 64px chip inside it would be redundant). */
+/* Icon sizing box (desktop/tablet only — neutralized at ≤560px below, where
+   the tile itself shrinks to a 64px icon-only box and a nested 64px box
+   inside it would be redundant). No background of its own: the palette
+   colours are pastels, so the icon sits directly on the media tile — the
+   same flat treatment as the admin console's own colour+icon preview
+   (`category-form-panel.component.scss`'s `__tile`). */
 .category-tile__icon-chip {
   width: 64px;
   height: 64px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.22);
   display: grid;
   place-items: center;
 }
 
+/* Dark glyph on the pastel media — the palette swatches (`#FFE6CC`,
+   `#D9E8FF`, …) are all light, so a dark foreground is what stays readable;
+   matches the admin preview tile's own `color: var(--ui-color-text-primary)`. */
 .category-tile__icon {
-  font-size: 26px;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--ui-color-text-primary);
 }
 
-/* Label burned into the gradient media (desktop/tablet only). */
+/* Label burned into the pastel media (desktop/tablet only). Dark text, no
+   shadow — the white-on-gradient treatment this replaced doesn't carry over
+   to a light pastel background. */
 .category-tile__overlay-label {
   position: absolute;
   left: 0;
@@ -79,11 +77,10 @@
   bottom: 16px;
   padding: 0 12px;
   text-align: center;
-  color: #fff;
+  color: var(--ui-color-text-primary);
   font-size: 16px;
   font-weight: 800;
   line-height: 1.2;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
   pointer-events: none;
 }
 
@@ -124,17 +121,11 @@
     border-radius: 18px;
   }
 
-  /* No chip at this size — the tile itself is already a 64px icon box, so a
-     nested 64px chip would just duplicate it. Neutralize to a plain icon. */
+  /* No sizing box needed at this size — the tile itself is already a 64px
+     icon box, so a nested 64px box would just duplicate it. */
   .category-tile__icon-chip {
     width: auto;
     height: auto;
-    background: transparent;
-    border-radius: 0;
-  }
-
-  .category-tile__icon {
-    font-size: 24px;
   }
 
   /* No room for the burned-in label on the 64px icon tile — the compact

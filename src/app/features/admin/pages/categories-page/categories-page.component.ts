@@ -21,7 +21,10 @@ import { CategoryEditSheetComponent } from '../../components/category-edit-sheet
 import { CategoryFormPanelComponent } from '../../components/category-form-panel/category-form-panel.component';
 import { CategoryVisibilityToggleComponent } from '../../components/category-visibility-toggle/category-visibility-toggle.component';
 import type { AdminCategory } from '../../models/admin-category.model';
-import { DEFAULT_CATEGORY_COLOR, DEFAULT_CATEGORY_ICON } from '../../models/category-palette.model';
+import {
+  DEFAULT_CATEGORY_COLOR,
+  DEFAULT_CATEGORY_ICON,
+} from '../../../../shared/utils/category-palette.model';
 import * as AdminCategoriesActions from '../../store/admin-categories.actions';
 import {
   selectCategories,
