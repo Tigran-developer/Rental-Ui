@@ -4,8 +4,10 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "prebuild": "node scripts/generate-build-info.js",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
+    "pretest": "node scripts/generate-build-info.js",
     "test": "ng test",
     "e2e": "playwright test --project=chromium",
     "e2e:ui": "playwright test --project=chromium --ui",
